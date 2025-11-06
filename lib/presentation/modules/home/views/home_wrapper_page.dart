@@ -1,0 +1,112 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import '../../chat/views/chat_page.dart';
+import '../../product/views/favorites_page.dart';
+import '../../profile/views/account_page.dart';
+import '../widgets/bottom_navbar_widget.dart';
+import 'home_view.dart';
+
+class HomeWrapper extends StatefulWidget {
+  const HomeWrapper({super.key});
+
+  @override
+  State<HomeWrapper> createState() => _HomeWrapperState();
+}
+
+class _HomeWrapperState extends State<HomeWrapper> {
+  int _currentIndex = 0;
+  bool _isVisible = true;
+  final ScrollController _scrollController = ScrollController();
+
+  final List<Widget> _pages = [
+    const HomeView(),
+    const ChatPage(),
+    const FavoritesPage(),
+    const AccountPage(),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+
+    _scrollController.addListener(() {
+      if (_scrollController.position.userScrollDirection ==
+          ScrollDirection.reverse) {
+        if (_isVisible) setState(() => _isVisible = false);
+      } else if (_scrollController.position.userScrollDirection ==
+          ScrollDirection.forward) {
+        if (!_isVisible) setState(() => _isVisible = true);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onItemTapped(int index) => setState(() => _currentIndex = index);
+
+  void _onSellTap() {
+    SellBottomSheet.show(
+      context,
+      categories: [
+        'Mobiles',
+        'Vehicles',
+        'Property',
+        'Fashion',
+        'Electronics',
+        'Furniture',
+        'Services',
+        'Jobs',
+      ],
+      onCategorySelected: (category) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Selected: $category')));
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      // ❌ remove bottomNavigationBar property
+      body: Stack(
+        children: [
+          // 🔹 main content
+          NotificationListener<UserScrollNotification>(
+            onNotification: (notification) {
+              if (notification.direction == ScrollDirection.reverse &&
+                  _isVisible) {
+                setState(() => _isVisible = false);
+              } else if (notification.direction == ScrollDirection.forward &&
+                  !_isVisible) {
+                setState(() => _isVisible = true);
+              }
+              return true;
+            },
+            child: _pages[_currentIndex],
+          ),
+
+          // 🔹 bottom nav (animated overlay)
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 300),
+            bottom: _isVisible ? 0 : -100, // hides complete area
+            left: 0,
+            right: 0,
+            child: AnimatedOpacity(
+              opacity: _isVisible ? 1 : 0,
+              duration: const Duration(milliseconds: 300),
+              child: BottomNavBarWidget(
+                currentIndex: _currentIndex,
+                onTap: _onItemTapped,
+                onSellTap: _onSellTap,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

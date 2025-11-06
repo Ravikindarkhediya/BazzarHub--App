@@ -1,0 +1,395 @@
+{
+  "categories": [
+    {
+      "categoryId": 1,
+      "categoryName": "Mobiles",
+      "categoryIcon": "📱",
+      "products": [
+        {
+          "productId": 101,
+          "productName": "iPhone 14 Pro",
+          "ownerName": "John Doe",
+          "ownerContact": "+91 9876543210",
+          "price": 85000,
+          "addedDate": "2025-10-30",
+          "detail": "256GB, Deep Purple, 98% battery health",
+          "description": "Brand new iPhone 14 Pro in excellent condition with original accessories and warranty.",
+          "address": "Mumbai, Maharashtra",
+          "likes": 45,
+          "categoryId": 1,
+          "isFavorite": false,
+          "condition": "Excellent",
+          "stockStatus": "In Stock",
+          "sellerRating": 4.8,
+          "sellerTotalSales": 25,
+          "images": [
+            "assets/images/iphone1.jpeg",
+            "assets/images/iphone2.jpeg",
+            "assets/images/iphone3.jpeg"
+          ],
+          "specs": {
+            "Storage": "256 GB",
+            "Color": "Deep Purple",
+            "Battery Health": "98%",
+            "Warranty": "Till Dec 2025",
+            "Charger": "Original"
+          }
+        },
+        {
+          "productId": 102,
+          "productName": "Samsung Galaxy S23 Ultra",
+          "ownerName": "Sarah Smith",
+          "ownerContact": "+91 9876543211",
+          "price": 95000,
+          "addedDate": "2025-10-29",
+          "detail": "512GB, Phantom Black, Like New",
+          "description": "Premium flagship phone with S-Pen, excellent camera, barely used 2 months old.",
+          "address": "Delhi, NCR",
+          "likes": 67,
+          "categoryId": 1,
+          "isFavorite": false,
+          "condition": "Like New",
+          "stockStatus": "In Stock",
+          "sellerRating": 4.9,
+          "sellerTotalSales": 30,
+          "images": [
+            "assets/images/samsung1.jpeg",
+            "assets/images/samsung2.jpeg"
+          ],
+          "specs": {
+            "Storage": "512 GB",
+            "RAM": "12 GB",
+            "Battery": "5000 mAh",
+            "Camera": "200 MP",
+            "Color": "Phantom Black"
+          }
+        },
+        {
+          "productId": 103,
+          "productName": "OnePlus 11",
+          "ownerName": "Raj Kumar",
+          "ownerContact": "+91 9876543212",
+          "price": 52000,
+          "addedDate": "2025-10-28",
+          "detail": "128GB, Titan Black, 6 months old",
+          "description": "Fast charging, Snapdragon 8 Gen 2, smooth performance, mint condition.",
+          "address": "Bangalore, Karnataka",
+          "likes": 32,
+          "categoryId": 1,
+          "isFavorite": false,
+          "condition": "Good",
+          "stockStatus": "In Stock",
+          "sellerRating": 4.5,
+          "sellerTotalSales": 12,
+          "images": [
+            "assets/images/oneplus1.jpeg",
+            "assets/images/oneplus2.jpeg"
+          ],
+          "specs": {
+            "Storage": "128 GB",
+            "RAM": "8 GB",
+            "Processor": "Snapdragon 8 Gen 2",
+            "Battery": "5000 mAh",
+            "Charging": "100W SuperVOOC"
+          }
+        }
+      ]
+    },
+    {
+      "categoryId": 2,
+      "categoryName": "Cars",
+      "categoryIcon": "🚗",
+      "products": [
+        {
+          "productId": 201,
+          "productName": "Maruti Swift VXI",
+          "ownerName": "Amit Patel",
+          "ownerContact": "+91 9876543213",
+          "price": 550000,
+          "addedDate": "2025-10-29",
+          "detail": "2020 Model, 35,000 km, Petrol, Single Owner",
+          "description": "Well maintained Swift with complete service history from authorized service center. AC working perfectly, music system upgraded, new tires fitted 2 months ago. All papers clear, insurance valid till March 2026. Non-smoking, single owner, always garaged. Perfect family car with excellent fuel economy.",
+          "address": "Ahmedabad, Gujarat",
+          "likes": 89,
+          "categoryId": 2,
+          "isFavorite": false,
+          "condition": "Good",
+          "stockStatus": "In Stock",
+          "sellerRating": 4.6,
+          "sellerTotalSales": 12,
+          "images": [
+            "assets/images/swift1.webp",
+            "assets/images/swift2.webp"
+          ],
+          "specs": {
+            "Year": "2020",
+            "Fuel Type": "Petrol",
+            "Transmission": "Manual",
+            "Kilometers": "35,000 km",
+            "Owners": "1st Owner",
+            "Engine": "1197 cc",
+            "Mileage": "22 kmpl",
+            "Color": "Pearl Arctic White",
+            "Insurance": "Valid till March 2026"
+          }
+        },
+        {
+          "productId": 202,
+          "productName": "Hyundai Creta SX",
+          "ownerName": "Priya Sharma",
+          "ownerContact": "+91 9876543214",
+          "price": 1250000,
+          "addedDate": "2025-10-28",
+          "detail": "2021 Model, 28,000 km, Diesel, Top Variant",
+          "description": "Premium SUV with sunroof, leather seats, all features working, showroom maintained.",
+          "address": "Pune, Maharashtra",
+          "likes": 124,
+          "categoryId": 2,
+          "isFavorite": false,
+          "condition": "Excellent",
+          "stockStatus": "In Stock",
+          "sellerRating": 4.9,
+          "sellerTotalSales": 18,
+          "images": [
+            "assets/images/creta1.jpg",
+            "assets/images/creta2.jpg"
+          ],
+          "specs": {
+            "Year": "2021",
+            "Fuel Type": "Diesel",
+            "Transmission": "Automatic",
+            "Kilometers": "28,000 km",
+            "Owners": "1st Owner",
+            "Engine": "1493 cc",
+            "Mileage": "20 kmpl",
+            "Color": "White",
+            "Insurance": "Valid till May 2026"
+          }
+        },
+        {
+          "productId": 203,
+          "productName": "Tata Nexon XZ+ EV",
+          "ownerName": "Vikram Singh",
+          "ownerContact": "+91 9876543215",
+          "price": 950000,
+          "addedDate": "2025-10-27",
+          "detail": "2022 Model, 15,000 km, Electric, Blue",
+          "description": "Electric SUV, fast charging, zero maintenance, premium interiors, under warranty.",
+          "address": "Noida, Uttar Pradesh",
+          "likes": 78,
+          "categoryId": 2,
+          "isFavorite": false,
+          "condition": "Excellent",
+          "stockStatus": "In Stock",
+          "sellerRating": 4.7,
+          "sellerTotalSales": 9,
+          "images": [
+            "assets/images/nexon1.webp",
+            "assets/images/nexon2.webp"
+          ],
+          "specs": {
+            "Year": "2022",
+            "Fuel Type": "Electric",
+            "Transmission": "Automatic",
+            "Kilometers": "15,000 km",
+            "Battery": "40.5 kWh",
+            "Range": "312 km/charge",
+            "Color": "Signature Blue",
+            "Warranty": "Till 2027"
+          }
+        }
+      ]
+    },
+    {
+      "categoryId": 3,
+      "categoryName": "Bikes",
+      "categoryIcon": "🏍️",
+      "products": [
+        {
+          "productId": 301,
+          "productName": "Royal Enfield Classic 350",
+          "ownerName": "Arjun Reddy",
+          "ownerContact": "+91 9876543216",
+          "price": 165000,
+          "addedDate": "2025-10-30",
+          "detail": "2022 Model, 8,000 km, Black, Single Owner",
+          "description": "Iconic bike in pristine condition, well maintained, new tires, insurance valid.",
+          "address": "Hyderabad, Telangana",
+          "likes": 56,
+          "categoryId": 3,
+          "isFavorite": false,
+          "condition": "Excellent",
+          "stockStatus": "In Stock",
+          "sellerRating": 4.8,
+          "sellerTotalSales": 7,
+          "images": [
+            "assets/images/classic1.webp",
+            "assets/images/classic2.webp"
+          ],
+          "specs": {
+            "Year": "2022",
+            "Fuel Type": "Petrol",
+            "Engine": "349 cc",
+            "Mileage": "35 kmpl",
+            "Color": "Black",
+            "Insurance": "Valid till Aug 2026"
+          }
+        },
+        {
+          "productId": 302,
+          "productName": "Bajaj Pulsar NS200",
+          "ownerName": "Rahul Verma",
+          "ownerContact": "+91 9876543217",
+          "price": 95000,
+          "addedDate": "2025-10-29",
+          "detail": "2021 Model, 12,000 km, Red, Performance Bike",
+          "description": "Sporty bike with excellent pickup, recently serviced, perfect for daily rides.",
+          "address": "Jaipur, Rajasthan",
+          "likes": 43,
+          "categoryId": 3,
+          "isFavorite": false,
+          "condition": "Good",
+          "stockStatus": "In Stock",
+          "sellerRating": 4.4,
+          "sellerTotalSales": 5,
+          "images": [
+            "assets/images/pulsar1.webp",
+            "assets/images/pulsar2.webp"
+          ],
+          "specs": {
+            "Year": "2021",
+            "Fuel Type": "Petrol",
+            "Engine": "199.5 cc",
+            "Mileage": "36 kmpl",
+            "Color": "Red",
+            "Top Speed": "135 km/h"
+          }
+        },
+        {
+          "productId": 303,
+          "productName": "KTM Duke 390",
+          "ownerName": "Karan Mehta",
+          "ownerContact": "+91 9876543218",
+          "price": 225000,
+          "addedDate": "2025-10-27",
+          "detail": "2023 Model, 3,000 km, Orange, Like New",
+          "description": "Premium sports bike, barely used, all accessories included, ready to ride.",
+          "address": "Chandigarh",
+          "likes": 91,
+          "categoryId": 3,
+          "isFavorite": false,
+          "condition": "Like New",
+          "stockStatus": "In Stock",
+          "sellerRating": 4.9,
+          "sellerTotalSales": 10,
+          "images": [
+            "assets/images/duke1.webp",
+            "assets/images/duke2.webp"
+          ],
+          "specs": {
+            "Year": "2023",
+            "Fuel Type": "Petrol",
+            "Engine": "398 cc",
+            "Mileage": "30 kmpl",
+            "Color": "Orange",
+            "ABS": "Dual Channel"
+          }
+        }
+      ]
+    },
+    {
+      "categoryId": 4,
+      "categoryName": "Fashion",
+      "categoryIcon": "👕",
+      "products": [
+        {
+          "productId": 401,
+          "productName": "Nike Air Jordan 1",
+          "ownerName": "Sneha Gupta",
+          "ownerContact": "+91 9876543219",
+          "price": 12000,
+          "addedDate": "2025-10-30",
+          "detail": "Size 9 US, Limited Edition, Brand New",
+          "description": "Original Nike Air Jordan 1 with box and tags, never worn, perfect gift.",
+          "address": "Rajkot, Gujarat",
+          "likes": 112,
+          "categoryId": 4,
+          "isFavorite": false,
+          "condition": "Brand New",
+          "stockStatus": "In Stock",
+          "sellerRating": 4.9,
+          "sellerTotalSales": 20,
+          "images": [
+            "assets/images/jordan1.jfif",
+            "assets/images/jordan2.jfif"
+          ],
+          "specs": {
+            "Size": "9 US",
+            "Color": "White/Red",
+            "Material": "Leather",
+            "Edition": "Limited Edition",
+            "Warranty": "30 Days Return"
+          }
+        },
+        {
+          "productId": 402,
+          "productName": "Levi's Denim Jacket",
+          "ownerName": "Pooja Nair",
+          "ownerContact": "+91 9876543220",
+          "price": 3500,
+          "addedDate": "2025-10-29",
+          "detail": "Size M, Blue Wash, Vintage Style",
+          "description": "Classic denim jacket, gently used, timeless style, perfect condition.",
+          "address": "Kochi, Kerala",
+          "likes": 38,
+          "categoryId": 4,
+          "isFavorite": false,
+          "condition": "Good",
+          "stockStatus": "In Stock",
+          "sellerRating": 4.6,
+          "sellerTotalSales": 8,
+          "images": [
+            "assets/images/levis1.jpeg",
+            "assets/images/levis2.jpeg"
+          ],
+          "specs": {
+            "Size": "M",
+            "Color": "Blue Wash",
+            "Material": "Denim",
+            "Style": "Vintage",
+            "Fit": "Regular"
+          }
+        },
+        {
+          "productId": 403,
+          "productName": "Zara Women's Blazer",
+          "ownerName": "Anita Roy",
+          "ownerContact": "+91 9876543221",
+          "price": 2800,
+          "addedDate": "2025-10-28",
+          "detail": "Size S, Black, Formal Wear",
+          "description": "Professional blazer for office wear, excellent fit, barely used twice.",
+          "address": "Kolkata, West Bengal",
+          "likes": 29,
+          "categoryId": 4,
+          "isFavorite": false,
+          "condition": "Like New",
+          "stockStatus": "In Stock",
+          "sellerRating": 4.7,
+          "sellerTotalSales": 10,
+          "images": [
+            "assets/images/zara1.jpg",
+            "assets/images/zara2.jpg"
+          ],
+          "specs": {
+            "Size": "S",
+            "Color": "Black",
+            "Material": "Polyester Blend",
+            "Fit": "Slim",
+            "Occasion": "Formal"
+          }
+        }
+      ]
+    }
+  ]
+}
