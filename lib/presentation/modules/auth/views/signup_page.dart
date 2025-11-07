@@ -65,8 +65,12 @@ class _SignupPageState extends State<SignupPage> {
         final user = response.data.data;
         if (user != null) {
           SessionManager().saveUserData(user);
+          print('session stored............');
         }
-        Navigator.pushReplacementNamed(context, AppRoutes.homeWrapper);
+        if (mounted) {
+          Get.offAllNamed(AppRoutes.homeWrapper);
+        }
+
       } else {
         AppToast.showError(
           response.data.message ?? "Something went wrong, Please try again.",
