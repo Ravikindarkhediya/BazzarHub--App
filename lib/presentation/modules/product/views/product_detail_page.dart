@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
-import '../../../controllers/product_controller.dart';
+import '../../../controller/product_controller.dart';
 import '../model/proiduct_model.dart';
 import '../widgets/product_image_carousel.dart';
 import '../widgets/product_details_widget.dart';

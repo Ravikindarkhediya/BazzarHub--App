@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../controllers/sell_product_controller.dart';
+import '../../../controller/sell_product_controller.dart';
 import '../widgets/image_upload_section.dart';
 
 class SellProductPage extends StatefulWidget {

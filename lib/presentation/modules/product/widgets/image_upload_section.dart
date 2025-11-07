@@ -1,8 +1,7 @@
-import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../../../controllers/sell_product_controller.dart';
+import '../../../controller/sell_product_controller.dart';
 
 class ImageUploadSection extends StatelessWidget {
   final SellProductController controller;

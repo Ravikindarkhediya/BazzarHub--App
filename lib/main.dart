@@ -1,4 +1,3 @@
-import 'package:bazzar_hub_app/presentation/routes/app_bindings.dart';
 import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -20,7 +19,6 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       title: 'BazzarHub',
       debugShowCheckedModeBanner: false,
-      initialBinding: AppBinding(),
       initialRoute: AppRoutes.signup,
       getPages: AppPages.routes,
       themeMode: ThemeMode.system,

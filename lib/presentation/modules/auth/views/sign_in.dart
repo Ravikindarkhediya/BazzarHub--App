@@ -6,12 +6,15 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:get/get.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/core/utils/responsive_size.dart';
+import '../../../../app/core/utils/session_manager.dart';
+import '../../../../app/core/utils/utils.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
 import '../../../../app/data/constants/app_constant.dart';
+import '../../../commons/dialogs/app_toasts.dart';
 import '../../../commons/widgets/social_button.dart';
-import '../../../controllers/auth_controller.dart';
 import '../../../routes/app_routes.dart';
+import '../../../services/api_service.dart';
 import '../widget/common_widget.dart';
 
 class SignInPage extends StatefulWidget {
@@ -29,25 +32,53 @@ class _SignInPageState extends State<SignInPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  // final GoogleSignIn _googleSignIn = GoogleSignIn();
-  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  Future<void> requestLogin() async {
+    String email = _emailController.text.trim();
+    String password = _passwordController.text.trim();
+    if (Utils.isEmpty(email)) {
+      AppToast.showError('Please enter email');
+      return;
+    } else if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please enter a valid email')));
+      return;
+    } else if (Utils.isEmpty(password)) {
+      AppToast.showError('Please enter password');
+      return;
+    }
 
-  // GetX AuthController
-  late final AuthController authController;
-
-  @override
-  void initState() {
-    super.initState();
-    // Initialize AuthController
-    authController = Get.find<AuthController>();
-
-    // Sync text controllers with AuthController
-    _emailController.addListener(() {
-      authController.emailController.text = _emailController.text;
+    setState(() {
+      _isLoading = true;
     });
-    _passwordController.addListener(() {
-      authController.passwordController.text = _passwordController.text;
-    });
+    try {
+      var services = await getApiClient();
+      var params = {
+        "email": email,
+        "password": password,
+      };
+      var response = await services.requestLogin(params);
+      if (response.data.status == 1) {
+        if (!Utils.isEmpty(response.data.data?.token)) {
+          SessionManager().saveToken(response.data.data!.token);
+        }
+        if (response.data.data?.user != null) {
+          SessionManager().saveUserData(response.data.data!.user!);
+        }
+       if(!mounted) return;
+        Get.offAllNamed(AppRoutes.homeWrapper);
+      } else {
+        AppToast.showError(
+            response.data.message ?? "Something went wrong, Please try again.");
+      }
+    } on DioException catch (e) {
+      AppToast.showError('$e');
+    } catch (error) {
+      AppToast.showError('$error');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -56,73 +87,6 @@ class _SignInPageState extends State<SignInPage> {
     _passwordController.dispose();
     super.dispose();
   }
-
-  // Handle Dio Errors
-  void _handleDioError(DioException error) {
-    String message = 'An error occurred';
-    if (error.response?.data != null &&
-        error.response!.data['message'] != null) {
-      message = error.response!.data['message'];
-    } else {
-      message = error.message ?? message;
-    }
-    _showErrorSnackBar(message);
-  }
-
-  void _handleFirebaseError(FirebaseAuthException error) {
-    String message = 'An error occurred';
-    switch (error.code) {
-      case 'user-not-found':
-        message = 'No user found with this email.';
-        break;
-      case 'wrong-password':
-        message = 'Wrong password provided.';
-        break;
-      case 'invalid-email':
-        message = 'The email address is badly formatted.';
-        break;
-      case 'user-disabled':
-        message = 'This user has been disabled.';
-        break;
-      default:
-        message = error.message ?? message;
-    }
-    _showErrorSnackBar(message);
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
-  }
-
-  // Get Firebase error messages
-  String _getFirebaseErrorMessage(String code) {
-    switch (code) {
-      case 'account-exists-with-different-credential':
-        return 'Account exists with different sign-in method';
-      case 'invalid-credential':
-        return 'Invalid credentials';
-      case 'operation-not-allowed':
-        return 'Operation not allowed';
-      case 'user-disabled':
-        return 'User account has been disabled';
-      case 'user-not-found':
-        return 'User not found';
-      case 'wrong-password':
-        return 'Wrong password';
-      default:
-        return 'Authentication failed';
-    }
-  }
-
-  void _login() {}
 
   @override
   Widget build(BuildContext context) {
@@ -223,34 +187,15 @@ class _SignInPageState extends State<SignInPage> {
 
                       const SizedBox(height: 24),
 
-                      Obx(
-                        () => SizedBox(
+                       SizedBox(
                           width: double.infinity,
                           height: 55,
                           child: ElevatedButton(
-                            onPressed: authController.isLoading.value
+                            onPressed: _isLoading
                                 ? null
                                 : () async {
-                                    // Validate form before calling API
                                     if (_formKey.currentState!.validate()) {
-                                      // Call signup API
-                                      bool success = await authController
-                                          .loginWithEmail();
-
-                                      if (!success) {
-                                        print(
-                                          '❌ login failed: ${authController.errorMessage.value}',
-                                        );
-                                        Get.snackbar(
-                                          'Error',
-                                          authController.errorMessage.value,
-                                          snackPosition: SnackPosition.TOP,
-                                          backgroundColor: Colors.red,
-                                          colorText: Colors.white,
-                                        );
-                                      } else {
-                                        print('✅ Login successful');
-                                      }
+                                       requestLogin();
                                     } else {
                                       print('❌ Form validation failed');
                                     }
@@ -263,7 +208,7 @@ class _SignInPageState extends State<SignInPage> {
                               elevation: 12,
                               shadowColor: AppColors.primary.withOpacity(0.7),
                             ),
-                            child: _isLoading || authController.isLoading.value
+                            child: _isLoading || _isLoading
                                 ? const CircularProgressIndicator(
                                     color: AppColors.textOnAccent,
                                     strokeWidth: 2,
@@ -293,8 +238,7 @@ class _SignInPageState extends State<SignInPage> {
                                     ],
                                   ),
                           ),
-                        ),
-                      ).animate().fadeIn(duration: 900.ms, delay: 300.ms),
+                        ).animate().fadeIn(duration: 900.ms, delay: 300.ms),
 
                       const SizedBox(height: 20),
 

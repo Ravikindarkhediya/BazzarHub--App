@@ -5,7 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
-import '../../controllers/filter_controller.dart';
+import '../../controller/filter_controller.dart';
 
 /// Enhanced Search Bar Widget
 /// Live search with filter button and clear functionality

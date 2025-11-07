@@ -6,10 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
-import '../../../../app/data/services/location_service.dart';
+import '../../../controller/filter_controller.dart';
+import '../../../services/location_service.dart';
 import '../../../commons/widgets/filter_side_sheet.dart';
 import '../../../commons/widgets/search_bar_widget.dart';
-import '../../../controllers/filter_controller.dart';
 import '../../../routes/app_routes.dart';
 import '../../product/views/product_detail_page.dart';
 import '../model/category_model.dart';
@@ -17,7 +17,6 @@ import '../../product/model/proiduct_model.dart';
 import '../widgets/header_widget.dart';
 import '../widgets/category_list_widget.dart';
 import '../widgets/product_grid_widget.dart';
-import '../widgets/bottom_navbar_widget.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
