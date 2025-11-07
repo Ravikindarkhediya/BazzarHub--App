@@ -1,8 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:get/get.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/core/utils/responsive_size.dart';
@@ -154,14 +152,14 @@ class _SignInPageState extends State<SignInPage> {
                                 controller: _emailController,
                                 icon: Icons.email_outlined,
                                 keyboardType: TextInputType.emailAddress,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return "Please enter your email";
-                                  } else if (!value.contains("@")) {
-                                    return "Enter a valid email";
-                                  }
-                                  return null;
-                                },
+                                // validator: (value) {
+                                //   if (value == null || value.isEmpty) {
+                                //     return "Please enter your email";
+                                //   } else if (!value.contains("@")) {
+                                //     return "Enter a valid email";
+                                //   }
+                                //   return null;
+                                // },
                               ),
 
                               const SizedBox(height: 16),
@@ -187,14 +185,14 @@ class _SignInPageState extends State<SignInPage> {
                                     );
                                   },
                                 ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return "Please enter your password";
-                                  } else if (value.length < 6) {
-                                    return "Password must be at least 6 characters";
-                                  }
-                                  return null;
-                                },
+                                // validator: (value) {
+                                //   if (value == null || value.isEmpty) {
+                                //     return "Please enter your password";
+                                //   } else if (value.length < 6) {
+                                //     return "Password must be at least 6 characters";
+                                //   }
+                                //   return null;
+                                // },
                               ),
 
                               const SizedBox(height: 24),
