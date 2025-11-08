@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:bazzar_hub_app/presentation/modules/auth/views/social_tab.dart';
 import 'package:dio/dio.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_sign_in/google_sign_in.dart';
