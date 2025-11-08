@@ -1,0 +1,25 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'base_list_model.dart';
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+BaseListModel<T> _$BaseListModelFromJson<T>(
+  Map<String, dynamic> json,
+  T Function(Object? json) fromJsonT,
+) => BaseListModel<T>(
+  status: (json['status'] as num).toInt(),
+  data: (json['data'] as List<dynamic>?)?.map(fromJsonT).toList(),
+  message: json['message'] as String?,
+);
+
+Map<String, dynamic> _$BaseListModelToJson<T>(
+  BaseListModel<T> instance,
+  Object? Function(T value) toJsonT,
+) => <String, dynamic>{
+  'status': instance.status,
+  'data': instance.data?.map(toJsonT).toList(),
+  'message': instance.message,
+};
