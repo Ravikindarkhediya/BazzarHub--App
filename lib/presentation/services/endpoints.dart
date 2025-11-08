@@ -11,7 +11,7 @@ class Endpoints {
   // User Authentications Endpoints
   static const String USER_LOGIN = "/user/login";
   static const String USER_REGISTER = "/user/signup";
-  // static const String GOOGLE_LOGIN_ENDPOINT = "v1/user/login/google";
-  // static const String APPLE_LOGIN_ENDPOINT = "v1/user/login/apple";
+  static const String GOOGLE_LOGIN_ENDPOINT = "/user/auth/google";
+  // static const String APPLE_LOGIN_ENDPOINT = "/user/auth/apple";
 
 }

@@ -190,7 +190,7 @@ class BottomNavBarWidget extends StatelessWidget {
               ),
               Text(
                 'SELL',
-                style: AppTextStyles.badge.copyWith(
+                style: AppTextStyles.bodyLarge.copyWith(
                   color: AppColors.primary,
                   fontSize: 9,
                   fontWeight: FontWeight.w800,

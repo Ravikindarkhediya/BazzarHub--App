@@ -1,7 +1,10 @@
+import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:get/get.dart';
 import '../../chat/views/chat_page.dart';
 import '../../product/views/favorites_page.dart';
+import '../../product/views/sell_product_page.dart';
 import '../../profile/views/account_page.dart';
 import '../widgets/bottom_navbar_widget.dart';
 import 'home_view.dart';
@@ -49,25 +52,12 @@ class _HomeWrapperState extends State<HomeWrapper> {
   void _onItemTapped(int index) => setState(() => _currentIndex = index);
 
   void _onSellTap() {
-    SellBottomSheet.show(
-      context,
-      categories: [
-        'Mobiles',
-        'Vehicles',
-        'Property',
-        'Fashion',
-        'Electronics',
-        'Furniture',
-        'Services',
-        'Jobs',
-      ],
-      onCategorySelected: (category) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Selected: $category')));
-      },
+    Get.to(
+          () => const SellProductPage(),
+      transition: Transition.rightToLeft,
+      duration: const Duration(milliseconds: 400),
     );
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

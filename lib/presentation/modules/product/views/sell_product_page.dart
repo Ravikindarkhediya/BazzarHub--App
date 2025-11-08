@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../../app/data/constants/app_colors.dart';
 import '../../../controller/sell_product_controller.dart';
 import '../widgets/image_upload_section.dart';
 
@@ -54,13 +55,7 @@ class _SellProductPageState extends State<SellProductPage> {
         leading: CupertinoButton(
           padding: EdgeInsets.zero,
           onPressed: () => Navigator.pop(context),
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(CupertinoIcons.back, size: 28),
-              Text('Back'),
-            ],
-          ),
+          child: Icon(CupertinoIcons.back, size: 28, color: AppColors.black,),
         ),
         middle: const Text(
           'Sell Product',

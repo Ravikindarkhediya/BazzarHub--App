@@ -40,7 +40,7 @@ class CommonWidget{
             decoration: InputDecoration(
               labelText: label,
               labelStyle:
-              AppTextStyles.bodyLarge.copyWith(color: AppColors.white),
+              AppTextStyles.bodyLarge.copyWith(color: AppColors.primary),
               prefixIcon: Icon(icon, color: AppColors.primary),
               suffixIcon: suffixIcon,
               filled: true,

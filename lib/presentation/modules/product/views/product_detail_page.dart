@@ -42,9 +42,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   late ProductController _controller;
   final ScrollController _scrollController = ScrollController();
   // State Variables
-  int _currentNavIndex = 0;
-  int? _selectedCategoryId;
-  String? _currentLocation;
   @override
   void initState() {
     super.initState();
@@ -58,87 +55,87 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     super.dispose();
   }
 
-  Widget _buildActionButtons() {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        border: const Border(
-          top: BorderSide(
-            color: AppColors.border,
-            width: 1,
-          ),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.grey900.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          /// Reset Button
-          Expanded(
-            child: OutlinedButton(
-              onPressed: (){},
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.textPrimary,
-                side: const BorderSide(color: AppColors.border),
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                shape: const RoundedRectangleBorder(
-                  borderRadius: AppSpacing.borderRadiusMD,
-                ),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.refresh_rounded, size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    'Reset',
-                    style: AppTextStyles.button,
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          AppSpacing.horizontalSpaceMD,
-
-          /// Apply Button
-          Expanded(
-            flex: 2,
-            child: ElevatedButton(
-              onPressed: (){},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.white,
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                shape: const RoundedRectangleBorder(
-                  borderRadius: AppSpacing.borderRadiusMD,
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.check_rounded, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Apply Filters',
-                    style: AppTextStyles.button.copyWith(
-                      color: AppColors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildActionButtons() {
+  //   return Container(
+  //     padding: const EdgeInsets.all(AppSpacing.md),
+  //     decoration: BoxDecoration(
+  //       color: AppColors.white,
+  //       border: const Border(
+  //         top: BorderSide(
+  //           color: AppColors.border,
+  //           width: 1,
+  //         ),
+  //       ),
+  //       boxShadow: [
+  //         BoxShadow(
+  //           color: AppColors.grey900.withOpacity(0.05),
+  //           blurRadius: 8,
+  //           offset: const Offset(0, -2),
+  //         ),
+  //       ],
+  //     ),
+  //     child: Row(
+  //       children: [
+  //         /// Reset Button
+  //         Expanded(
+  //           child: OutlinedButton(
+  //             onPressed: (){},
+  //             style: OutlinedButton.styleFrom(
+  //               foregroundColor: AppColors.textPrimary,
+  //               side: const BorderSide(color: AppColors.border),
+  //               padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+  //               shape: const RoundedRectangleBorder(
+  //                 borderRadius: AppSpacing.borderRadiusMD,
+  //               ),
+  //             ),
+  //             child: const Row(
+  //               mainAxisAlignment: MainAxisAlignment.center,
+  //               children: [
+  //                 Icon(Icons.refresh_rounded, size: 20),
+  //                 SizedBox(width: 8),
+  //                 Text(
+  //                   'Reset',
+  //                   style: AppTextStyles.button,
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //         ),
+  //
+  //         AppSpacing.horizontalSpaceMD,
+  //
+  //         /// Apply Button
+  //         Expanded(
+  //           flex: 2,
+  //           child: ElevatedButton(
+  //             onPressed: (){},
+  //             style: ElevatedButton.styleFrom(
+  //               backgroundColor: AppColors.primary,
+  //               foregroundColor: AppColors.white,
+  //               padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+  //               shape: const RoundedRectangleBorder(
+  //                 borderRadius: AppSpacing.borderRadiusMD,
+  //               ),
+  //             ),
+  //             child: Row(
+  //               mainAxisAlignment: MainAxisAlignment.center,
+  //               children: [
+  //                 const Icon(Icons.check_rounded, size: 20),
+  //                 const SizedBox(width: 8),
+  //                 Text(
+  //                   'Apply Filters',
+  //                   style: AppTextStyles.button.copyWith(
+  //                     color: AppColors.white,
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -153,8 +150,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             expandedHeight: 340,
             backgroundColor: AppColors.white,
             elevation: 4,
-
-
             actions: [
               Padding(
                 padding: const EdgeInsets.only(left: AppSpacing.md),
@@ -186,12 +181,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               const SizedBox(width: AppSpacing.md),
             ],
             flexibleSpace: FlexibleSpaceBar(
-              background: ClipRRect(
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
-                child: ProductImageCarousel(
-                  controller: _controller,
-                  height: 340,
-                ),
+              background: ProductImageCarousel(
+                controller: _controller,
+                height: 340,
               ),
             ),
           ),

@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
@@ -7,8 +9,6 @@ import '../../../../app/data/constants/app_text_style.dart';
 import '../../../controller/product_controller.dart';
 import 'fullscreen_image_viewer.dart';
 
-/// Product Image Carousel Widget
-/// Displays product images with page indicator and tap-to-expand functionality
 class ProductImageCarousel extends StatefulWidget {
   final ProductController controller;
   final double height;
@@ -24,19 +24,22 @@ class ProductImageCarousel extends StatefulWidget {
 }
 
 class _ProductImageCarouselState extends State<ProductImageCarousel> {
-  late PageController _pageController;
+  int _currentIndex = 0;
+  late CarouselSliderController _carouselController;
+  bool _isInitialized = false;  // ✅ Add this
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
+    _initializeCarousel();  // ✅ Call in initState
   }
 
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
+  // ✅ Separate initialization method
+  void _initializeCarousel() {
+    _carouselController = CarouselSliderController();
+    _isInitialized = true;
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -53,8 +56,8 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
           height: widget.height,
           child: Stack(
             children: [
-              /// Image PageView
-              _buildImagePageView(images),
+              /// ✅ Carousel Slider
+              _isInitialized ? _buildCarousel(images) : SizedBox.shrink(),
 
               /// Image Counter Badge (Top Right)
               _buildImageCounter(images.length),
@@ -71,42 +74,55 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
     );
   }
 
-  Widget _buildImagePageView(List<String> images) {
-    return PageView.builder(
-      controller: _pageController,
-      onPageChanged: (index) {
-        widget.controller.updateImageIndex(index);
-      },
-      itemCount: images.length,
-      itemBuilder: (context, index) {
-        return GestureDetector(
-          onTap: () => _openFullscreenViewer(index),
-          child: Hero(
-            tag: 'product_image_$index',
-            child: Container(
-              color: AppColors.grey900,
-              child: Stack(
-                children: [
-                  /// Main Image
-                  Center(
-                    child: Image.asset(
-                      images[index],
-                      fit: BoxFit.contain,
-                      width: double.infinity,
-                      height: double.infinity,
-                      errorBuilder: (context, error, stackTrace) {
-                        return _buildImageError();
-                      },
+  // ✅ Carousel Slider Widget
+  Widget _buildCarousel(List<String> images) {
+    return CarouselSlider(
+      carouselController: _carouselController,
+      options: CarouselOptions(
+        height: widget.height,
+        autoPlay: true,
+        autoPlayInterval: const Duration(seconds: 4),
+        autoPlayAnimationDuration: const Duration(milliseconds: 800),
+        autoPlayCurve: Curves.easeInOut,
+        scrollPhysics: const BouncingScrollPhysics(),
+        onPageChanged: (index, reason) {
+          setState(() {
+            _currentIndex = index;
+            widget.controller.updateImageIndex(index);
+          });
+        },
+        viewportFraction: 1.0,
+        enlargeCenterPage: false,
+        enlargeStrategy: CenterPageEnlargeStrategy.height,
+      ),
+      items: images.map((image) {
+        return _buildImageItem(image);
+      }).toList(),
+    );
+  }
 
-                    ),
-                  ),
-
-                ],
-              ),
+  Widget _buildImageItem(String imagePath) {
+    return GestureDetector(
+      onTap: () => _openFullscreenViewer(
+        widget.controller.images.indexOf(imagePath),
+      ),
+      child: Hero(
+        tag: 'product_image_${widget.controller.images.indexOf(imagePath)}',
+        child: Container(
+          color: AppColors.white,
+          child: Center(
+            child: Image.asset(
+              imagePath,
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+              errorBuilder: (context, error, stackTrace) {
+                return _buildImageError();
+              },
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -133,7 +149,7 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
             ),
             const SizedBox(width: 4),
             Text(
-              '${widget.controller.currentImageIndex + 1}/$totalImages',
+              '${_currentIndex + 1}/$totalImages',
               style: AppTextStyles.caption.copyWith(
                 color: AppColors.white,
                 fontWeight: FontWeight.w600,
@@ -161,8 +177,13 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
             borderRadius: AppSpacing.borderRadiusSM,
           ),
           child: SmoothPageIndicator(
-            controller: _pageController,
+            controller: PageController(initialPage: _currentIndex),
             count: count,
+            onDotClicked: (index) {
+              if (_isInitialized) {
+                _carouselController.animateToPage(index);
+              }
+            },
             effect: ExpandingDotsEffect(
               activeDotColor: AppColors.accent,
               dotColor: AppColors.white.withOpacity(0.5),
@@ -170,7 +191,6 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
               dotWidth: 6,
               spacing: 4,
               expansionFactor: 3,
-              radius: AppSpacing.radiusXS,
             ),
           ),
         ),

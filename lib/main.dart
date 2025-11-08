@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       title: 'BazzarHub',
       debugShowCheckedModeBanner: false,
-      initialRoute: AppRoutes.signup,
+      initialRoute: AppRoutes.homeWrapper,
       getPages: AppPages.routes,
       themeMode: ThemeMode.system,
     );

@@ -20,7 +20,6 @@ class AppPages {
   static final routes = [
     GetPage(name: AppRoutes.splash, page: () => const SplashView()),
     GetPage(name: AppRoutes.onboarding, page: () => const OnboardingView()),
-    GetPage(name: AppRoutes.home, page: () => const HomeView()),
     GetPage(name: AppRoutes.login, page: () => const SignInPage()),
     GetPage(name: AppRoutes.signup, page: () => const SignupPage()),
     GetPage(name: AppRoutes.searchPage, page: () => const SearchPage(categoryData: [],)),

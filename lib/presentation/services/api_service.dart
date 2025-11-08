@@ -72,7 +72,10 @@ abstract class ApiServices{
   @POST(Endpoints.USER_LOGIN)
   Future<HttpResponse<BaseModel<UserTokenModel>>> requestLogin(@Body() Map<String, dynamic> params);
 
-@POST(Endpoints.USER_REGISTER)
-Future<HttpResponse<BaseModel<UserModel>>> requestNewRegister(@Body() Map<String, dynamic> params);
+  @POST(Endpoints.USER_REGISTER)
+  Future<HttpResponse<BaseModel<UserModel>>> requestNewRegister(@Body() Map<String, dynamic> params);
+
+  @POST(Endpoints.GOOGLE_LOGIN_ENDPOINT)
+  Future<HttpResponse<BaseModel<UserTokenModel>>> requestGoogleLogin(@Body() Map<String, dynamic> params);
 
 }

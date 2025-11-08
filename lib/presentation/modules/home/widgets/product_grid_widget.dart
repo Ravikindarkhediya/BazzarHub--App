@@ -26,9 +26,6 @@ class ProductGridWidget extends StatefulWidget {
 }
 
 class _ProductGridWidgetState extends State<ProductGridWidget> {
-
-
-
   @override
   Widget build(BuildContext context) {
     if (widget.isLoading) {
@@ -47,8 +44,8 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: _getCrossAxisCount(context),
           childAspectRatio: _getAspectRatio(context),
-          crossAxisSpacing: AppSpacing.sm,
-          mainAxisSpacing: AppSpacing.sm,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 16,
         ),
         itemCount: widget.products.length,
         itemBuilder: (context, index) {
@@ -71,70 +68,70 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
   }
 
   Widget _buildProductCard(
-      BuildContext context,
-      ProductModel product,
-      int index,
-      ) {
+    BuildContext context,
+    ProductModel product,
+    int index,
+  ) {
     return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => widget.onProductTap(product),
-      // borderRadius: AppSpacing.borderRadiusMD,
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: AppSpacing.borderRadiusMD,
-          border: Border.all(
-            color: AppColors.borderLight,
-            width: 1,
-          ),
-          boxShadow: AppColors.cardShadow,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            /// Product Image
-            _buildProductImage(product),
-
-            /// Product Info
-            Expanded(
-              child: Padding(
-                padding: AppSpacing.paddingSM,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    /// Price
-                    Text(
-                      product.formattedPrice,
-                      style: AppTextStyles.priceMedium.copyWith(
-                        fontSize: AppResponsiveSize.isMobile(context) ? 16 : 18,
-                      ),
-                    ),
-
-                    AppSpacing.verticalSpaceXS,
-
-                    /// Product Name
-                    Text(
-                      product.productName,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-
-                    const Spacer(),
-
-                    /// Location & Date
-                    _buildLocationInfo(context, product),
-                  ],
-                ),
-              ),
+          behavior: HitTestBehavior.opaque,
+          onTap: () => widget.onProductTap(product),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              borderRadius: AppSpacing.borderRadiusMD,
+              border: Border.all(color: AppColors.borderLight, width: 1),
+              boxShadow: AppColors.cardShadow,
             ),
-          ],
-        ),
-      ),
-    )
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                /// Product Image
+                _buildProductImage(product),
+
+                /// Product Info
+                Expanded(
+                  child: Padding(
+                    padding: AppSpacing.paddingSM,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        /// Price
+                        Text(
+                          product.productName,
+                          style: AppTextStyles.priceMedium.copyWith(
+                            fontSize: AppResponsiveSize.isMobile(context)
+                                ? 16
+                                : 18,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+
+                        AppSpacing.verticalSpaceXS,
+
+                        /// Product Name
+                        Text(
+                          product.formattedPrice,
+                          style: AppTextStyles.bodySmall.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+
+                        const Spacer(),
+
+                        /// Location & Date
+                        _buildLocationInfo(context, product),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        )
         .animate()
         .fadeIn(duration: 600.ms, delay: (50 * index).ms)
         .scale(delay: (50 * index).ms, duration: 400.ms);
@@ -154,34 +151,58 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
               color: AppColors.grey100,
               child: product.images.isNotEmpty
                   ? Image.asset(
-                product.images[0],
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return _buildImagePlaceholder();
-                },
-              )
+                      product.images[0],
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return _buildImagePlaceholder();
+                      },
+                    )
                   : _buildImagePlaceholder(),
             ),
           ),
         ),
 
         /// Favorite Button
+        /// Favorite Button - Better Visibility
         Positioned(
-          top: AppSpacing.xs,
-          right: AppSpacing.xs,
+          top: 8,
+          right: 8,
           child: Container(
-            padding: AppSpacing.paddingXS,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.white.withOpacity(0.9),
-              shape: BoxShape.circle,
+              color: Colors.white,  // Pure white for better contrast
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            child: const Icon(
-              Icons.favorite_border_rounded,
-              size: AppSpacing.iconSM,
-              color: AppColors.textPrimary,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.favorite_border_rounded,
+                  size: 16,
+                  color: AppColors.textPrimary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '${product.likes}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
+        )
+
+
       ],
     );
   }
@@ -208,14 +229,14 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
             const Icon(
               Icons.location_on_outlined,
               size: 12,
-              color: AppColors.textSecondary,
+              color: AppColors.textOnAccent,
             ),
             const SizedBox(width: 2),
             Expanded(
               child: Text(
                 product.address,
                 style: AppTextStyles.overline.copyWith(
-                  color: AppColors.textSecondary,
+                  color: AppColors.textOnAccent,
                   fontSize: AppResponsiveSize.isMobile(context) ? 10 : 11,
                 ),
                 maxLines: 1,
@@ -224,60 +245,8 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
             ),
           ],
         ),
-        const SizedBox(height: 2),
-        StatefulBuilder(
-          builder: (context, setInnerState) {
-            return GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: () {
-                // setInnerState(() {
-                //   product.toggleLike();
-                // });
-              },
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.favorite_rounded,
-                    // product.isLiked
-                    //     ? Icons.favorite_rounded
-                    //     : Icons.favorite_border_rounded,
-                    size: 14,
-                    color: AppColors.textSecondary,
-                    //     ? AppColors.error
-                    //     : AppColors.textSecondary,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${product.likes}',
-                    style: AppTextStyles.overline.copyWith(
-                      color: AppColors.textSecondary,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-
-
       ],
     );
-  }
-
-  String _getTimeAgo(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
-
-    if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}m ago';
-    } else {
-      return 'Just now';
-    }
   }
 
   Widget _buildEmptyState() {
@@ -344,16 +313,16 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AspectRatio(
-            aspectRatio: 1.2,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: AppColors.shimmerGradient,
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(AppSpacing.radiusMD),
+                aspectRatio: 1.2,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: AppColors.shimmerGradient,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(AppSpacing.radiusMD),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          )
+              )
               .animate(onPlay: (controller) => controller.repeat())
               .shimmer(duration: 1500.ms),
           Padding(
@@ -362,23 +331,23 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  height: 16,
-                  width: 80,
-                  decoration: BoxDecoration(
-                    gradient: AppColors.shimmerGradient,
-                    borderRadius: AppSpacing.borderRadiusXS,
-                  ),
-                )
+                      height: 16,
+                      width: 80,
+                      decoration: BoxDecoration(
+                        gradient: AppColors.shimmerGradient,
+                        borderRadius: AppSpacing.borderRadiusXS,
+                      ),
+                    )
                     .animate(onPlay: (controller) => controller.repeat())
                     .shimmer(duration: 1500.ms),
                 AppSpacing.verticalSpaceXS,
                 Container(
-                  height: 12,
-                  decoration: BoxDecoration(
-                    gradient: AppColors.shimmerGradient,
-                    borderRadius: AppSpacing.borderRadiusXS,
-                  ),
-                )
+                      height: 12,
+                      decoration: BoxDecoration(
+                        gradient: AppColors.shimmerGradient,
+                        borderRadius: AppSpacing.borderRadiusXS,
+                      ),
+                    )
                     .animate(onPlay: (controller) => controller.repeat())
                     .shimmer(duration: 1500.ms),
               ],

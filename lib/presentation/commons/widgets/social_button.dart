@@ -48,7 +48,7 @@ class SocialButton extends StatelessWidget {
       child: OutlinedButton.icon(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          side: BorderSide(color: AppColors.white.withOpacity(0.6)),
+          side: BorderSide(color: AppColors.primary.withOpacity(0.6)),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
@@ -58,7 +58,7 @@ class SocialButton extends StatelessWidget {
         label: Text(
           label,
           style: AppTextStyles.button.copyWith(
-            color: AppColors.textOnPrimary,
+            color: AppColors.textOnAccent,
             fontWeight: FontWeight.w500,
           ),
         ),
