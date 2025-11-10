@@ -1,6 +1,7 @@
 
 import 'package:bazzar_hub_app/presentation/services/endpoints.dart';
 import 'package:bazzar_hub_app/presentation/services/models/categorie/category_list_response_model.dart';
+import 'package:bazzar_hub_app/presentation/services/models/news/news_model.dart';
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 import '../../app/core/utils/session_manager.dart';
@@ -77,7 +78,7 @@ abstract class ApiServices{
   Future<HttpResponse<BaseModel<UserTokenModel>>> requestLogin(@Body() Map<String, dynamic> params);
 
   @POST(Endpoints.USER_REGISTER)
-  Future<HttpResponse<BaseModel<UserModel>>> requestNewRegister(@Body() Map<String, dynamic> params);
+  Future<HttpResponse<BaseModel<UserTokenModel>>> requestNewRegister(@Body() Map<String, dynamic> params);
 
   @POST(Endpoints.GOOGLE_LOGIN_ENDPOINT)
   Future<HttpResponse<BaseModel<UserTokenModel>>> requestGoogleLogin(@Body() Map<String, dynamic> params);
@@ -128,5 +129,41 @@ abstract class ApiServices{
       @Body() Map<String, dynamic> body,
       );
 
+  //News
+
+  @GET(Endpoints.NEWS)
+  Future<HttpResponse<BaseListModel<NewsModel>>> getNews(@Queries() Map<String, dynamic> queryParams);
+
+  @POST(Endpoints.NEWS)
+  Future<HttpResponse<BaseModel<NewsModel>>> createNews(@Body() Map<String, dynamic> body);
+
+  @GET("${Endpoints.NEWS}/{id}")
+  Future<HttpResponse<BaseModel<NewsModel>>> getNewsById(@Path("id") String id);
+
+  @PUT("${Endpoints.NEWS}/{id}")
+  Future<HttpResponse<BaseModel<NewsModel>>> updateNews(
+      @Path("id") String id,
+      @Body() Map<String, dynamic> body,
+      );
+
+  @DELETE("${Endpoints.NEWS}/{id}")
+  Future<HttpResponse<BaseModel<NewsModel>>> deleteNews(
+      @Path("id") String id,
+      );
+
+  @POST(Endpoints.NEWS_FAVORITE)
+  Future<HttpResponse<BaseModel<dynamic>>> addToFavoriteNews(
+      @Body() Map<String, dynamic> body,
+      );
+
+  // @GET(Endpoints.NEWS_FAVORITES_LIST)
+  // Future<HttpResponse<BaseListModel<MarketplaceModel>>> getFavoriteNews(
+  //     @Queries() Map<String, dynamic> queryParams,
+  //     );
+
+  @POST(Endpoints.NEWS_VIEW_LOG)
+  Future<HttpResponse<BaseModel<dynamic>>> trackNewsView(
+      @Body() Map<String, dynamic> body,
+      );
 
 }

@@ -64,9 +64,19 @@ class SessionManager {
 
   /// Check if user is logged in
   Future<bool> isLoggedIn() async {
-    final token = await getToken();
-    return token != null && token.isNotEmpty;
+    try {
+      final user = await getUser();
+      final token = await getToken();
+
+      return user != null &&
+          (user.name.isNotEmpty) &&
+          (user.email.isNotEmpty) &&
+          (token?.isNotEmpty ?? false);
+    } catch (e) {
+      return false;
+    }
   }
+
 
   Future<void> saveUserData(UserModel model) async {
     userObjectModel = model;

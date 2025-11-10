@@ -20,23 +20,23 @@ class CommonWidget{
         final hasFocus = Focus.of(context).hasFocus;
         return AnimatedContainer(
           duration: 300.ms,
-          decoration: BoxDecoration(
-            boxShadow: hasFocus
-                ? [
-              BoxShadow(
-                color: AppColors.primary.withOpacity(0.1),
-                blurRadius: 18,
-                spreadRadius: 2,
-              ),
-            ]
-                : [],
-          ),
+          // decoration: BoxDecoration(
+          //   boxShadow: hasFocus
+          //       ? [
+          //     BoxShadow(
+          //       color: AppColors.primary.withOpacity(0.1),
+          //       // blurRadius: 18,
+          //       // spreadRadius: 2,
+          //     ),
+          //   ]
+          //       : [],
+          // ),
           child: TextFormField(
             controller: controller,
             keyboardType: keyboardType,
             obscureText: obscureText,
             cursorColor: AppColors.primary,
-            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.white),
+            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.primary),
             decoration: InputDecoration(
               labelText: label,
               labelStyle:

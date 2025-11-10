@@ -39,7 +39,7 @@ class BottomNavBarWidget extends StatelessWidget {
             top: false,
             child: Container(
               height: 65,
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
               child: Row(
                 children: [
                   Expanded(
@@ -60,7 +60,7 @@ class BottomNavBarWidget extends StatelessWidget {
                   ),
 
                   /// Spacer for FAB
-                  const SizedBox(width: 70),
+                  const SizedBox(width: 60),
 
                   Expanded(
                     child: _buildNavItem(
@@ -103,19 +103,17 @@ class BottomNavBarWidget extends StatelessWidget {
     return InkWell(
       onTap: () => onTap(index),
       borderRadius: AppSpacing.borderRadiusSM,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.all(
-            AppSpacing.xs
-        ),
+      child: Container(
         decoration: BoxDecoration(
           color: isSelected
               ? AppColors.primary.withOpacity(0.1)
               : Colors.transparent,
           borderRadius: AppSpacing.borderRadiusSM,
         ),
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Stack(
               clipBehavior: Clip.none,
@@ -144,13 +142,20 @@ class BottomNavBarWidget extends StatelessWidget {
                   ),
               ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: AppTextStyles.overline.copyWith(
-                color: isSelected ? AppColors.primary : AppColors.grey500,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                fontSize: 11,
+            const SizedBox(height: 6),
+
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.visible,
+                style: AppTextStyles.overline.copyWith(
+                  color: isSelected ? AppColors.primary : AppColors.grey500,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  fontSize: 11,
+                ),
               ),
             ),
           ],
@@ -158,6 +163,7 @@ class BottomNavBarWidget extends StatelessWidget {
       ),
     );
   }
+
 
   Widget _buildFloatingSellButton() {
     return InkWell(

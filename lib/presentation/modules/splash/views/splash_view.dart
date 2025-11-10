@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../app/core/utils/responsive_size.dart';
+import '../../../../app/core/utils/session_manager.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_constant.dart';
 import '../../../../app/data/constants/app_text_style.dart';
@@ -31,13 +32,17 @@ class _SplashViewState extends State<SplashView>
   }
 
   void _startSplashTimer() {
-    Timer(const Duration(seconds: 4), () {
+    Timer(const Duration(seconds: 4), () async {
       if (kIsWeb) {
         Navigator.pushReplacementNamed(context, AppRoutes.login);
       } else {
-        Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
+        final hasSession = await SessionManager().isLoggedIn();
+        Navigator.pushReplacementNamed(context,
+            hasSession ? AppRoutes.homeWrapper : AppRoutes.onboarding);
       }
     });
+
+
   }
 
   @override

@@ -28,9 +28,7 @@ MarketplaceModel _$MarketplaceModelFromJson(Map<String, dynamic> json) =>
       isActive: json['isActive'] as bool? ?? false,
       location: json['location'] == null
           ? null
-          : MarketplaceLocationModel.fromJson(
-              json['location'] as Map<String, dynamic>,
-            ),
+          : LocationModel.fromJson(json['location'] as Map<String, dynamic>),
       contactInfo: json['contactInfo'] == null
           ? null
           : MarketplaceContactInfoModel.fromJson(

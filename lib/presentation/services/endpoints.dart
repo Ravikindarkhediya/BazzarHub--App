@@ -29,6 +29,14 @@ class Endpoints {
 
   static const String MARKETPLACE_VIEW_LOG = "/api/marketplace/view/log";
 
+  //Marketplace
 
+  static const String NEWS = "/api/news";
+
+  static const String NEWS_FAVORITE = "/api/news/favorite";
+
+  static const String NEWS_FAVORITES_LIST = "/api/news/favorites";
+
+  static const String NEWS_VIEW_LOG = "/api/news/view/log";
 
 }

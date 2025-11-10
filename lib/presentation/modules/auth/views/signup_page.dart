@@ -63,10 +63,14 @@ class _SignupPageState extends State<SignupPage> {
 
       var response = await services.requestNewRegister(params);
       if (response.data.status) {
-        final user = response.data.data;
-        if (user != null) {
-          SessionManager().saveUserData(user);
-          print('session stored............');
+        if (!Utils.isEmpty(response.data.data?.token)) {
+          SessionManager().saveToken(response.data.data!.token);
+        }
+        if (response.data.data?.user != null) {
+          SessionManager().saveUserData(response.data.data!.user!).then((
+              onValue,
+              ) {
+          });
         }
         if (mounted) {
           Get.offAllNamed(AppRoutes.homeWrapper);
@@ -151,7 +155,7 @@ class _SignupPageState extends State<SignupPage> {
                             shadows: [
                               Shadow(
                                 color: AppColors.primary.withOpacity(0.3),
-                                blurRadius: 18,
+                                blurRadius: 5,
                               ),
                             ],
                           ),
@@ -204,7 +208,7 @@ class _SignupPageState extends State<SignupPage> {
                               _obscurePassword
                                   ? Icons.visibility_off_rounded
                                   : Icons.visibility_rounded,
-                              color: AppColors.textOnPrimary.withOpacity(
+                              color: AppColors.primary.withOpacity(
                                 0.8,
                               ),
                             ),
@@ -267,49 +271,6 @@ class _SignupPageState extends State<SignupPage> {
                           delay: 300.ms,
                         ),
 
-
-                        const SizedBox(height: 20),
-
-                        TextButton(
-                          onPressed: () {
-                            // Navigate to forgot password screen
-                          },
-                          child: Text(
-                            "Forgot Password?",
-                            style: AppTextStyles.label.copyWith(
-                              color: AppColors.primary,
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 8),
-
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              "Already have an account?",
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.textOnAccent,
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.pushNamed(
-                                context,
-                                AppRoutes.login,
-                              ),
-                              child: Text(
-                                "Sign In",
-                                style: AppTextStyles.label.copyWith(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-
                         const SizedBox(height: 20),
 
                         Row(
@@ -332,7 +293,7 @@ class _SignupPageState extends State<SignupPage> {
                           ],
                         ),
 
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 20),
 
                         SocialButton(
                           label: "Continue with Google",
@@ -349,6 +310,43 @@ class _SignupPageState extends State<SignupPage> {
                           onPressed: () {},
                           animationDelay: 500.ms,
                         ),
+
+
+                        const SizedBox(height: 50),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "Already have an account?",
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.textOnAccent,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            TextButton(
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: Size(0, 0),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              onPressed: () {
+                                Get.back();
+                              },
+                              child: Text(
+                                "Sign In",
+                                style: AppTextStyles.label.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.bold,
+                                  decoration: TextDecoration.underline,
+                                  decorationThickness: 1.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+
                       ],
                     ),
                   )

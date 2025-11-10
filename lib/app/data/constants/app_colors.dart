@@ -5,7 +5,9 @@ class AppColors {
   AppColors._();
 
   // Primary Colors - Vibrant and trustworthy
-  static const Color primary = Color(0xFF002F34);
+  static const Color primary = Color(0xFF283593);
+
+
   static const Color primaryLight = Color(0xFF004D57);
   static const Color primaryDark = Color(0xFF001A1D);
   static const Color accent = Color(0xFFFFCE32);

@@ -1,12 +1,12 @@
 import 'package:json_annotation/json_annotation.dart';
-import 'marketplace_coordinates_model.dart';
+import 'coordinates_model.dart';
 
-part 'marketplace_location_model.g.dart';
+part 'location_model.g.dart';
 
 @JsonSerializable()
-class MarketplaceLocationModel {
+class LocationModel {
   @JsonKey(name: 'coordinates')
-  final MarketplaceCoordinatesModel? coordinates;
+  final CoordinatesModel? coordinates;
 
   @JsonKey(name: 'village', defaultValue: '')
   final String village;
@@ -23,7 +23,7 @@ class MarketplaceLocationModel {
   @JsonKey(name: 'country', defaultValue: '')
   final String country;
 
-  const MarketplaceLocationModel({
+  const LocationModel({
     this.coordinates,
     this.village = '',
     this.taluko = '',
@@ -32,8 +32,8 @@ class MarketplaceLocationModel {
     this.country = '',
   });
 
-  factory MarketplaceLocationModel.fromJson(Map<String, dynamic> json) =>
-      _$MarketplaceLocationModelFromJson(json);
+  factory LocationModel.fromJson(Map<String, dynamic> json) =>
+      _$LocationModelFromJson(json);
 
-  Map<String, dynamic> toJson() => _$MarketplaceLocationModelToJson(this);
+  Map<String, dynamic> toJson() => _$LocationModelToJson(this);
 }

@@ -1,4 +1,3 @@
-import 'package:bazzar_hub_app/presentation/modules/auth/views/social_tab.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -129,7 +128,7 @@ class _SignInPageState extends State<SignInPage> {
                             shadows: [
                               Shadow(
                                 color: AppColors.primary.withOpacity(0.3),
-                                blurRadius: 18,
+                                blurRadius: 5,
                               ),
                             ],
                           ),
@@ -164,7 +163,7 @@ class _SignInPageState extends State<SignInPage> {
                               _obscurePassword
                                   ? Icons.visibility_off_rounded
                                   : Icons.visibility_rounded,
-                              color: AppColors.textOnPrimary.withOpacity(
+                              color: AppColors.primary.withOpacity(
                                 0.8,
                               ),
                             ),
@@ -175,17 +174,30 @@ class _SignInPageState extends State<SignInPage> {
                               );
                             },
                           ),
-                          // validator: (value) {
-                          //   if (value == null || value.isEmpty) {
-                          //     return "Please enter your password";
-                          //   } else if (value.length < 6) {
-                          //     return "Password must be at least 6 characters";
-                          //   }
-                          //   return null;
-                          // },
                         ),
 
                         const SizedBox(height: 24),
+
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () {},
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size(0, 0),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: Text(
+                              "Forgot Password?",
+                              style: AppTextStyles.label.copyWith(
+                                color: AppColors.primary,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 25),
 
                         SizedBox(
                           width: double.infinity,
@@ -232,48 +244,7 @@ class _SignInPageState extends State<SignInPage> {
                           delay: 300.ms,
                         ),
 
-
-                        const SizedBox(height: 20),
-
-                        TextButton(
-                          onPressed: () {},
-                          child: Text(
-                            "Forgot Password?",
-                            style: AppTextStyles.label.copyWith(
-                              color: AppColors.primary,
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 8),
-
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              "Don't have an account?",
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.textOnAccent,
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () => Navigator.pushNamed(
-                                context,
-                                AppRoutes.signup,
-                              ),
-                              child: Text(
-                                "Sign Up",
-                                style: AppTextStyles.label.copyWith(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 25),
 
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -290,7 +261,7 @@ class _SignInPageState extends State<SignInPage> {
                           ],
                         ),
 
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 25),
 
                         SocialButton(
                           label: "Continue with Google",
@@ -307,6 +278,42 @@ class _SignInPageState extends State<SignInPage> {
                           onPressed: () {},
                           animationDelay: 500.ms,
                         ),
+
+                        const SizedBox(height: 60),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "Don't have an account?",
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.textOnAccent,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            TextButton(
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: Size(0, 0),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              onPressed: () => Navigator.pushNamed(
+                                context,
+                                AppRoutes.signup,
+                              ),
+                              child: Text(
+                                "Sign Up",
+                                style: AppTextStyles.label.copyWith(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.bold,
+                                  decoration: TextDecoration.underline,
+                                  decorationThickness: 1.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
                       ],
                     ),
                   )

@@ -1,9 +1,13 @@
+import 'package:bazzar_hub_app/presentation/modules/profile/widgets/profile_info.dart';
 import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import '../../../../app/core/utils/app_spacing.dart';
+import '../../../../app/core/utils/session_manager.dart';
 import '../../../../app/data/constants/app_colors.dart';
+import '../../../routes/app_routes.dart';
+import '../../../services/models/user/user_model.dart';
 import '../widgets/settings_section.dart';
 import '../widgets/settings_tile.dart';
 
@@ -46,28 +50,8 @@ class _AccountPageState extends State<AccountPage> with SingleTickerProviderStat
   Widget build(BuildContext context) {
     final isTablet = MediaQuery.of(context).size.width > 600;
     final horizontalPadding = isTablet ? AppSpacing.xl : AppSpacing.md;
-
     return Scaffold(
       backgroundColor: AppColors.background,
-
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: AppColors.primaryGradient,
-          ),
-        ),
-        title: Text(
-          'Profile',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: AppColors.white,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        centerTitle: true,
-      ),
-
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(
           horizontal: horizontalPadding,
@@ -77,6 +61,32 @@ class _AccountPageState extends State<AccountPage> with SingleTickerProviderStat
           opacity: _fadeAnimation,
           child: Column(
             children: [
+
+              AppSpacing.verticalSpaceLG,
+
+              FutureBuilder<UserModel?>(
+                future: SessionManager().getUser(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const CircularProgressIndicator();
+                  } else if (snapshot.hasError) {
+                    return const Text("Error loading user");
+                  } else if (!snapshot.hasData || snapshot.data == null) {
+                    return const Text("No user found");
+                  } else {
+                    final user = snapshot.data!;
+                    return ProfileCard(
+                      imageUrl:user.avatar,
+                      name: user.name,
+                      email: user.email,
+                    );
+                  }
+                },
+              ),
+
+
+              AppSpacing.verticalSpaceLG,
+
               // Account Settings Section
               SettingsSection(
                 title: 'Account Settings',
@@ -87,6 +97,27 @@ class _AccountPageState extends State<AccountPage> with SingleTickerProviderStat
                     subtitle: 'Update your personal information',
                     onTap: () => _navigateTo(context, 'Edit Profile'),
                   ),
+                  SettingsTile(
+                    icon: Icons.lock_outline,
+                    title: 'Privacy & Security',
+                    subtitle: 'Control your privacy settings',
+                    onTap: () => _navigateTo(context, 'Privacy & Security'),
+                  ),
+                  SettingsTile(
+                    icon: Icons.favorite_border,
+                    title: 'Favourites',
+                    subtitle: 'View your saved listings',
+                    onTap: () => _navigateTo(context, 'Favourites'),
+                  ),
+                ],
+              ),
+
+              AppSpacing.verticalSpaceLG,
+
+              // App Preferences
+              SettingsSection(
+                title: 'App Preferences',
+                tiles: [
                   SettingsTile(
                     icon: Icons.notifications_none,
                     title: 'Push Notifications',
@@ -99,27 +130,6 @@ class _AccountPageState extends State<AccountPage> with SingleTickerProviderStat
                       });
                     },
                   ),
-                  SettingsTile(
-                    icon: Icons.lock_outline,
-                    title: 'Privacy & Security',
-                    subtitle: 'Control your privacy settings',
-                    onTap: () => _navigateTo(context, 'Privacy & Security'),
-                  ),
-                  SettingsTile(
-                    icon: Icons.grid_view,
-                    title: 'Your Posts',
-                    subtitle: 'Manage your listings',
-                    onTap: () => _navigateTo(context, 'Your Posts'),
-                  ),
-                ],
-              ),
-
-              AppSpacing.verticalSpaceLG,
-
-              // App Preferences
-              SettingsSection(
-                title: 'App Preferences',
-                tiles: [
                   SettingsTile(
                     icon: Icons.dark_mode_outlined,
                     title: 'Dark Mode',
@@ -194,14 +204,14 @@ class _AccountPageState extends State<AccountPage> with SingleTickerProviderStat
                 tiles: [
                   SettingsTile(
                     icon: Icons.description_outlined,
-                    title: 'Terms of Service',
-                    subtitle: 'Read our terms',
-                    onTap: () => _navigateTo(context, 'Terms of Service'),
+                    title: 'Terms & Conditions',
+                    subtitle: 'Read app usage guidelines',
+                    onTap: () => _navigateTo(context, 'Terms & Conditions'),
                   ),
                   SettingsTile(
                     icon: Icons.privacy_tip_outlined,
                     title: 'Privacy Policy',
-                    subtitle: 'How we handle your data',
+                    subtitle: 'Learn how we protect your data',
                     onTap: () => _navigateTo(context, 'Privacy Policy'),
                   ),
                 ],
@@ -290,8 +300,9 @@ class _AccountPageState extends State<AccountPage> with SingleTickerProviderStat
           CupertinoDialogAction(
             isDestructiveAction: true,
             child: const Text('Logout'),
-            onPressed: () {
+            onPressed: () async {
               Navigator.of(context).pop();
+              await SessionManager().clearSession();
               Get.offAllNamed(AppRoutes.login);
             },
           ),

@@ -1,7 +1,7 @@
 import 'package:bazzar_hub_app/presentation/services/models/user/user_model.dart';
 import 'package:json_annotation/json_annotation.dart';
 import '../categorie/categorie_model.dart';
-import 'marketplace_location_model.dart';
+import '../Common/location_model.dart';
 import 'marketplace_contact_info_model.dart';
 
 part 'marketplace_model.g.dart';
@@ -45,7 +45,7 @@ class MarketplaceModel {
   final bool isActive;
 
   @JsonKey(name: 'location')
-  final MarketplaceLocationModel? location;
+  final LocationModel? location;
 
   @JsonKey(name: 'contactInfo')
   final MarketplaceContactInfoModel? contactInfo;

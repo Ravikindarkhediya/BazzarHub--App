@@ -52,7 +52,7 @@ class SocialButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          backgroundColor: AppColors.surfaceDark.withOpacity(0.2),
+          backgroundColor: Colors.white,
         ),
         icon: iconWidget,
         label: Text(
