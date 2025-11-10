@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../app/core/utils/responsive_size.dart';
@@ -31,7 +32,9 @@ class _SplashViewState extends State<SplashView>
 
   void _startSplashTimer() {
     Timer(const Duration(seconds: 4), () {
-      if (mounted) {
+      if (kIsWeb) {
+        Navigator.pushReplacementNamed(context, AppRoutes.login);
+      } else {
         Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
       }
     });

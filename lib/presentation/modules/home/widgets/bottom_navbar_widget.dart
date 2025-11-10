@@ -44,19 +44,18 @@ class BottomNavBarWidget extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _buildNavItem(
-                      icon: Icons.home_rounded,
-                      label: 'Home',
+                      icon: Icons.shopping_bag_outlined,
+                      label: 'News',
                       index: 0,
                       isSelected: currentIndex == 0,
                     ),
                   ),
                   Expanded(
                     child: _buildNavItem(
-                      icon: Icons.chat_bubble_rounded,
-                      label: 'Chat',
+                      icon: Icons.store,
+                      label: 'Marketplace',
                       index: 1,
                       isSelected: currentIndex == 1,
-                      hasBadge: true,
                     ),
                   ),
 
@@ -65,8 +64,8 @@ class BottomNavBarWidget extends StatelessWidget {
 
                   Expanded(
                     child: _buildNavItem(
-                      icon: Icons.favorite_rounded,
-                      label: 'Favorites',
+                      icon: Icons.chat_bubble,
+                      label: 'Chat',
                       index: 2,
                       isSelected: currentIndex == 2,
                     ),
@@ -74,7 +73,7 @@ class BottomNavBarWidget extends StatelessWidget {
                   Expanded(
                     child: _buildNavItem(
                       icon: Icons.person_rounded,
-                      label: 'Account',
+                      label: 'Profile',
                       index: 3,
                       isSelected: currentIndex == 3,
                     ),
@@ -189,7 +188,7 @@ class BottomNavBarWidget extends StatelessWidget {
                 color: AppColors.primary,
               ),
               Text(
-                'SELL',
+                'Ads',
                 style: AppTextStyles.bodyLarge.copyWith(
                   color: AppColors.primary,
                   fontSize: 9,

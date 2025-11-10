@@ -1,3 +1,4 @@
+import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
@@ -51,9 +52,6 @@ class _AccountPageState extends State<AccountPage> with SingleTickerProviderStat
 
       appBar: AppBar(
         elevation: 0,
-        leading: InkWell(
-          onTap: ()=> Get.back(),
-            child: const Icon(CupertinoIcons.back, color: AppColors.white,)),
         backgroundColor: Colors.transparent,
         flexibleSpace: Container(
           decoration: const BoxDecoration(
@@ -61,7 +59,7 @@ class _AccountPageState extends State<AccountPage> with SingleTickerProviderStat
           ),
         ),
         title: Text(
-          'Settings',
+          'Profile',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             color: AppColors.white,
             fontWeight: FontWeight.w600,
@@ -294,7 +292,7 @@ class _AccountPageState extends State<AccountPage> with SingleTickerProviderStat
             child: const Text('Logout'),
             onPressed: () {
               Navigator.of(context).pop();
-              // Handle logout logic
+              Get.offAllNamed(AppRoutes.login);
             },
           ),
         ],

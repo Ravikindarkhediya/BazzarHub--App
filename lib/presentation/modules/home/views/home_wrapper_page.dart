@@ -1,9 +1,8 @@
-import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
+import 'package:bazzar_hub_app/presentation/modules/marketplace/view/marketplace_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:get/get.dart';
 import '../../chat/views/chat_page.dart';
-import '../../product/views/favorites_page.dart';
 import '../../product/views/sell_product_page.dart';
 import '../../profile/views/account_page.dart';
 import '../widgets/bottom_navbar_widget.dart';
@@ -23,8 +22,8 @@ class _HomeWrapperState extends State<HomeWrapper> {
 
   final List<Widget> _pages = [
     const HomeView(),
+    const MarketplaceScreen(),
     const ChatPage(),
-    const FavoritesPage(),
     const AccountPage(),
   ];
 
