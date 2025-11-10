@@ -7,7 +7,7 @@ import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }
 
@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       title: 'BazzarHub',
       debugShowCheckedModeBanner: false,
-      initialRoute: AppRoutes.homeWrapper,
+      initialRoute: AppRoutes.splash,
       getPages: AppPages.routes,
       themeMode: ThemeMode.system,
     );

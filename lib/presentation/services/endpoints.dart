@@ -14,4 +14,21 @@ class Endpoints {
   static const String GOOGLE_LOGIN_ENDPOINT = "/user/auth/google";
   // static const String APPLE_LOGIN_ENDPOINT = "/user/auth/apple";
 
+
+  // Categories
+
+  static const String GET_ALL_CATEGORIES = "/api/categories";
+
+  //Marketplace
+
+  static const String MARKETPLACE = "/api/marketplace";
+
+  static const String MARKETPLACE_FAVORITE = "/api/marketplace/favorite";
+
+  static const String MARKETPLACE_FAVORITES_LIST = "/api/marketplace/favorites/list";
+
+  static const String MARKETPLACE_VIEW_LOG = "/api/marketplace/view/log";
+
+
+
 }

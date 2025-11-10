@@ -1,10 +1,14 @@
 
 import 'package:bazzar_hub_app/presentation/services/endpoints.dart';
+import 'package:bazzar_hub_app/presentation/services/models/categorie/category_list_response_model.dart';
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 import '../../app/core/utils/session_manager.dart';
 import '../../app/core/utils/utils.dart';
-import 'models/user/base_model.dart';
+import '../modules/home/model/category_model.dart';
+import 'models/base/base_list_model.dart';
+import 'models/base/base_model.dart';
+import 'models/marketplace/marketplace_model.dart';
 import 'models/user/user_model.dart';
 import 'models/user/user_token_model.dart';
 
@@ -77,5 +81,52 @@ abstract class ApiServices{
 
   @POST(Endpoints.GOOGLE_LOGIN_ENDPOINT)
   Future<HttpResponse<BaseModel<UserTokenModel>>> requestGoogleLogin(@Body() Map<String, dynamic> params);
+
+
+  // Categories
+
+  @GET(Endpoints.GET_ALL_CATEGORIES)
+  Future<HttpResponse<BaseModel<CategoryListResponseModel>>> requestAllCategories();
+
+  @GET("${Endpoints.GET_ALL_CATEGORIES}/{id}")
+  Future<HttpResponse<BaseModel<CategoryModel>>> requestCategoryById(@Path("id") String id);
+
+  //Marketplace
+
+  @GET(Endpoints.MARKETPLACE)
+  Future<HttpResponse<BaseListModel<MarketplaceModel>>> getMarketplace(@Queries() Map<String, dynamic> queryParams);
+
+  @POST(Endpoints.MARKETPLACE)
+  Future<HttpResponse<BaseModel<MarketplaceModel>>> createMarketplace(@Body() Map<String, dynamic> body);
+
+  @GET("${Endpoints.MARKETPLACE}/{id}")
+  Future<HttpResponse<BaseModel<MarketplaceModel>>> getMarketplaceById(@Path("id") String id);
+
+  @PUT("${Endpoints.MARKETPLACE}/{id}")
+  Future<HttpResponse<BaseModel<MarketplaceModel>>> updateMarketplace(
+      @Path("id") String id,
+      @Body() Map<String, dynamic> body,
+      );
+
+  @DELETE("${Endpoints.MARKETPLACE}/{id}")
+  Future<HttpResponse<BaseModel<MarketplaceModel>>> deleteMarketplace(
+      @Path("id") String id,
+      );
+
+  @POST(Endpoints.MARKETPLACE_FAVORITE)
+  Future<HttpResponse<BaseModel<dynamic>>> addToFavorite(
+      @Body() Map<String, dynamic> body,
+      );
+
+  @GET(Endpoints.MARKETPLACE_FAVORITES_LIST)
+  Future<HttpResponse<BaseListModel<MarketplaceModel>>> getFavoriteMarketplaces(
+      @Queries() Map<String, dynamic> queryParams,
+      );
+
+  @POST(Endpoints.MARKETPLACE_VIEW_LOG)
+  Future<HttpResponse<BaseModel<dynamic>>> trackMarketplaceView(
+      @Body() Map<String, dynamic> body,
+      );
+
 
 }
