@@ -1,18 +1,19 @@
 // lib/features/home/presentation/widgets/product_grid_widget.dart
 
+import 'package:bazzar_hub_app/presentation/services/models/Common/location_model.dart';
+import 'package:bazzar_hub_app/presentation/services/models/marketplace/marketplace_model.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../app/core/utils/responsive_size.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
-import '../model/category_model.dart';
-import '../../product/model/proiduct_model.dart';
 
 class ProductGridWidget extends StatefulWidget {
-  final List<ProductModel> products;
+  final List<MarketplaceModel> products;
   final bool isLoading;
-  final Function(ProductModel) onProductTap;
+  final Function(MarketplaceModel) onProductTap;
 
   const ProductGridWidget({
     super.key,
@@ -69,7 +70,7 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
 
   Widget _buildProductCard(
     BuildContext context,
-    ProductModel product,
+    MarketplaceModel product,
     int index,
   ) {
     return GestureDetector(
@@ -97,7 +98,7 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
                       children: [
                         /// Price
                         Text(
-                          product.productName,
+                          product.title,
                           style: AppTextStyles.priceMedium.copyWith(
                             fontSize: AppResponsiveSize.isMobile(context)
                                 ? 16
@@ -111,7 +112,7 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
 
                         /// Product Name
                         Text(
-                          product.formattedPrice,
+                          "₹ ${product.price}",
                           style: AppTextStyles.bodySmall.copyWith(
                             fontWeight: FontWeight.w600,
                             color: AppColors.textPrimary,
@@ -123,7 +124,7 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
                         const Spacer(),
 
                         /// Location & Date
-                        _buildLocationInfo(context, product),
+                        _buildLocationInfo(context, product.location),
                       ],
                     ),
                   ),
@@ -137,7 +138,7 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
         .scale(delay: (50 * index).ms, duration: 400.ms);
   }
 
-  Widget _buildProductImage(ProductModel product) {
+  Widget _buildProductImage(MarketplaceModel product) {
     return Stack(
       children: [
         /// Main Image
@@ -150,19 +151,18 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
             child: Container(
               color: AppColors.grey100,
               child: product.images.isNotEmpty
-                  ? Image.asset(
-                      product.images[0],
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return _buildImagePlaceholder();
-                      },
-                    )
+                  ? CachedNetworkImage(
+                imageUrl: product.images[0],
+                fit: BoxFit.cover,
+                placeholder: (context, url) => _buildImagePlaceholder(),
+                errorWidget: (context, url, error) => _buildImagePlaceholder(),
+              )
                   : _buildImagePlaceholder(),
             ),
           ),
         ),
 
-        /// Favorite Button
+    /// Favorite Button
         /// Favorite Button - Better Visibility
         Positioned(
           top: 8,
@@ -190,7 +190,7 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  '${product.likes}',
+                  '${product.favoritesCount}',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -220,7 +220,12 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
     );
   }
 
-  Widget _buildLocationInfo(BuildContext context, ProductModel product) {
+  Widget _buildLocationInfo(BuildContext context, LocationModel? location) {
+    if (location == null) {
+      return const SizedBox();
+    }
+    String fullAddress =
+        "${location.village}, ${location.taluko}, ${location.district} - ${location.zipCode}, ${location.country}";
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -234,7 +239,7 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
             const SizedBox(width: 2),
             Expanded(
               child: Text(
-                product.address,
+                fullAddress,
                 style: AppTextStyles.overline.copyWith(
                   color: AppColors.textOnAccent,
                   fontSize: AppResponsiveSize.isMobile(context) ? 10 : 11,

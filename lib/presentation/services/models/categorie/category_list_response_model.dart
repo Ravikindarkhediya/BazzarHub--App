@@ -1,6 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
-import '../../../modules/home/model/category_model.dart';
 import '../Common/pagination_model.dart';
+import 'categorie_model.dart';
 
 part 'category_list_response_model.g.dart';
 

@@ -1,18 +1,20 @@
 // lib/features/home/presentation/pages/home_view.dart (Updated)
 
+import 'package:bazzar_hub_app/presentation/services/models/marketplace/marketplace_model.dart';
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
+import '../../../commons/dialogs/app_toasts.dart';
 import '../../../controller/filter_controller.dart';
+import '../../../services/api_service.dart';
 import '../../../services/location_service.dart';
 import '../../../commons/widgets/filter_side_sheet.dart';
 import '../../../commons/widgets/search_bar_widget.dart';
 import '../../../routes/app_routes.dart';
-import '../../product/views/product_detail_page.dart';
-import '../model/category_model.dart';
+import '../../../services/models/categorie/categorie_model.dart';
 import '../../product/model/proiduct_model.dart';
 import '../widgets/header_widget.dart';
 import '../widgets/category_list_widget.dart';
@@ -27,15 +29,14 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView> {
   // State Variables
-  int _currentNavIndex = 0;
   int? _selectedCategoryId;
   String? _currentLocation;
 
   List<CategoryModel> _categories = [];
-  List<ProductModel> _allProducts = [];
-  List<ProductModel> _displayedProducts = [];
+  List<MarketplaceModel> _displayedProducts = [];
 
   bool _isLoading = true;
+  bool _isLoadingProducts = true;
 
   // Filter Controller
   late FilterController _filterController;
@@ -45,7 +46,8 @@ class _HomeViewState extends State<HomeView> {
     super.initState();
     _filterController = FilterController();
     _filterController.addListener(_onFilterUpdate);
-    _loadData();
+    _getCategory();
+    _getMarketplace();
     _mockGetLocation();
   }
 
@@ -59,63 +61,64 @@ class _HomeViewState extends State<HomeView> {
   /// Listen to filter updates
   void _onFilterUpdate() {
     setState(() {
-      // Get filtered products from controller
-      _displayedProducts = _filterController.filteredProducts;
-
-      // Apply category filter on top of search/filter results
-      if (_selectedCategoryId != null) {
-        _displayedProducts = _displayedProducts
-            .where((product) => product.categoryId == _selectedCategoryId)
-            .toList();
-      }
+      // // Get filtered products from controller
+      // _displayedProducts = _filterController.filteredProducts;
+      //
+      // // Apply category filter on top of search/filter results
+      // if (_selectedCategoryId != null) {
+      //   _displayedProducts = _displayedProducts
+      //       .where((product) => product.categoryId == _selectedCategoryId)
+      //       .toList();
+      // }
     });
     debugPrint('📊 Products Updated: ${_displayedProducts.length} items');
   }
 
-  /// 📦 Load JSON Data
-  Future<void> _loadData() async {
+  Future<void> _getCategory() async {
     setState(() => _isLoading = true);
-
     try {
-      await Future.delayed(const Duration(milliseconds: 1500));
-
-      final String jsonString = await rootBundle.loadString(
-        'assets/data/products.json',
-      );
-
-      final Map<String, dynamic> jsonData = json.decode(jsonString);
-      final List<dynamic> categoriesJson = jsonData['categories'];
-
-      _categories = categoriesJson
-          .map((json) => CategoryModel.fromJson(json))
-          .toList();
-
-      // Extract all products
-      _allProducts = _categories
-          .expand((category) => category.products)
-          .toList();
-
-      // Sort by date (newest first)
-      _allProducts.sort((a, b) => b.dateAdded.compareTo(a.dateAdded));
-
-      // Initialize filter controller with all products
-      _filterController.setAllProducts(_allProducts);
-      _displayedProducts = _allProducts;
-
-      setState(() => _isLoading = false);
-      debugPrint('✅ Data Loaded: ${_allProducts.length} products');
-    } catch (e) {
-      debugPrint('❌ Error loading data: $e');
-      setState(() => _isLoading = false);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to load products: $e'),
-            backgroundColor: AppColors.error,
-          ),
+      var services = await getApiClient();
+      var response = await services.requestAllCategories();
+      if (response.data.status) {
+         _categories = response.data.data?.categories ?? [];
+      } else {
+        AppToast.showError(
+          response.data.message ?? "Something went wrong, Please try again.",
         );
       }
+    } on DioException catch (e) {
+      AppToast.showError('$e');
+    } catch (error) {
+      AppToast.showError('$error');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _getMarketplace() async {
+    setState(() => _isLoadingProducts = true);
+    try {
+      var services = await getApiClient();
+
+      Map<String, dynamic> queryParams = {
+        "page": 1,
+        "limit": 50,
+      };
+
+      var response = await services.getMarketplace(queryParams);
+      if (response.data.status) {
+         _displayedProducts = response.data.data ?? [];
+      } else {
+        AppToast.showError(
+          response.data.message ?? "Something went wrong, Please try again.",
+        );
+      }
+    } on DioException catch (e) {
+      AppToast.showError('$e');
+    } catch (error) {
+      AppToast.showError('$error');
+    } finally {
+      if (mounted) setState(() => _isLoadingProducts = false);
     }
   }
 
@@ -149,16 +152,16 @@ class _HomeViewState extends State<HomeView> {
   }
 
   /// 📱 Handle Product Tap
-  void _handleProductTap(ProductModel product) {
-    debugPrint('➡️ Product Tapped: ${product.productName}');
-
-    Get.toNamed(
-      ProductDetailPage.routeName,
-      arguments: ProductPageArguments(
-        product: product,
-        currentLocation: _currentLocation,
-      ),
-    );
+  void _handleProductTap(MarketplaceModel product) {
+    // debugPrint('➡️ Product Tapped: ${product.productName}');
+    //
+    // Get.toNamed(
+    //   ProductDetailPage.routeName,
+    //   arguments: ProductPageArguments(
+    //     product: product,
+    //     currentLocation: _currentLocation,
+    //   ),
+    // );
   }
 
   @override
@@ -195,7 +198,7 @@ class _HomeViewState extends State<HomeView> {
             /// 📜 Scrollable Content
             Expanded(
               child: RefreshIndicator(
-                onRefresh: _loadData,
+                onRefresh: _getCategory,
                 color: AppColors.primary,
                 child: CustomScrollView(
                   slivers: [
@@ -253,7 +256,7 @@ class _HomeViewState extends State<HomeView> {
                     SliverToBoxAdapter(
                       child: ProductGridWidget(
                         products: _displayedProducts,
-                        isLoading: _isLoading,
+                        isLoading: _isLoadingProducts,
                         onProductTap: _handleProductTap,
                       ),
                     ),

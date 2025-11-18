@@ -5,7 +5,7 @@ part 'base_list_model.g.dart';
 @JsonSerializable(genericArgumentFactories: true)
 class BaseListModel<T> {
   @JsonKey(name: 'status')
-  int status;
+  bool status;
 
   @JsonKey(name: 'data')
   List<T>? data;

@@ -10,7 +10,7 @@ BaseListModel<T> _$BaseListModelFromJson<T>(
   Map<String, dynamic> json,
   T Function(Object? json) fromJsonT,
 ) => BaseListModel<T>(
-  status: (json['status'] as num).toInt(),
+  status: json['status'] as bool,
   data: (json['data'] as List<dynamic>?)?.map(fromJsonT).toList(),
   message: json['message'] as String?,
 );
