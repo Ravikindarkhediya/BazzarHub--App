@@ -28,6 +28,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   bool _isUploadingImage = false;
 
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
@@ -39,6 +40,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   String? _selectedGender;
   UserModel? _currentUser;
+
+  // Track which field is being edited
+  String? _editingField;
 
   final List<String> _genderOptions = ['Male', 'Female', 'Other'];
 
@@ -58,6 +62,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       if (user != null) {
         _currentUser = user;
         _nameController.text = user.name;
+        _emailController.text = user.email;
         _uploadedAvatarUrl = user.avatar;
         _phoneController.text = user.phone;
         _locationController.text = user.location;
@@ -112,7 +117,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
   }
 
-  /// Upload image to common upload URL
   Future<void> _uploadAvatarImage(File imageFile) async {
     setState(() {
       _isUploadingImage = true;
@@ -121,7 +125,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     try {
       final apiClient = await getApiClient();
 
-      // Create FormData for image upload
       String fileName = imageFile.path.split('/').last;
       FormData formData = FormData.fromMap({
         "myfile": await MultipartFile.fromFile(
@@ -130,10 +133,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         ),
       });
 
-      // REAL UPLOAD CODE - Using your upload API
       final dio = Dio();
-
-      // Get auth token from session
       final session = await SessionManager().getToken();
 
       final response = await dio.post(
@@ -172,7 +172,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
   }
 
-  /// Pick image from camera for avatar
   Future<void> _pickAvatarFromCamera() async {
     try {
       HapticFeedback.mediumImpact();
@@ -188,7 +187,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
         setState(() {
           _selectedAvatarImage = imageFile;
         });
-        // Upload image immediately after selection
         await _uploadAvatarImage(imageFile);
       }
     } catch (e) {
@@ -197,7 +195,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
   }
 
-  /// Pick image from gallery for avatar
   Future<void> _pickAvatarFromGallery() async {
     try {
       HapticFeedback.mediumImpact();
@@ -213,7 +210,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
         setState(() {
           _selectedAvatarImage = imageFile;
         });
-        // Upload image immediately after selection
         await _uploadAvatarImage(imageFile);
       }
     } catch (e) {
@@ -222,14 +218,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
   }
 
-  /// Show image picker bottom sheet
   void _showImagePickerBottomSheet() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor:AppColors.background,
       builder: (context) => Container(
         decoration: const BoxDecoration(
-          color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: SafeArea(
@@ -255,18 +249,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     },
                     child: Column(
                       children: [
-                        Container(
-                          width: 70,
-                          height: 70,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(35),
-                          ),
-                          child: const Icon(
-                            Icons.camera_alt,
-                            size: 32,
-                            color: AppColors.primary,
-                          ),
+                        const Icon(
+                          Icons.camera_alt,
+                          size: 32,
+                          color: AppColors.primary,
                         ),
                         const SizedBox(height: 8),
                         const Text(
@@ -283,18 +269,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     },
                     child: Column(
                       children: [
-                        Container(
-                          width: 70,
-                          height: 70,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(35),
-                          ),
-                          child: const Icon(
-                            Icons.photo_library,
-                            size: 32,
-                            color: AppColors.primary,
-                          ),
+                        const Icon(
+                          Icons.photo_library,
+                          size: 32,
+                          color: AppColors.primary,
                         ),
                         const SizedBox(height: 8),
                         const Text(
@@ -374,6 +352,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void dispose() {
     _nameController.dispose();
+    _emailController.dispose();
     _phoneController.dispose();
     _locationController.dispose();
     _bioController.dispose();
@@ -389,13 +368,27 @@ class _EditProfilePageState extends State<EditProfilePage> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        toolbarHeight: 80,
+        leading: Container(
+          margin: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
+          decoration: BoxDecoration(
+            color: AppColors.primary,
+            shape: BoxShape.circle,
+          ),
+          child: IconButton(
+            onPressed: () => Navigator.of(context).pop(),
+            icon: const Icon(
+              Icons.arrow_back,
+              color: AppColors.white,
+            ),
+          ),
+        ),
         title: const Text(
           'Edit Profile',
           style: TextStyle(
-            color: AppColors.white,
+            color: AppColors.primary,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -436,9 +429,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.primary.withOpacity(0.3),
-                              blurRadius: 10,
-                              spreadRadius: 2,
+                              color: AppColors.primary.withOpacity(0.2),
+                              blurRadius: 7,
+                              spreadRadius: 1,
                             ),
                           ],
                         ),
@@ -453,7 +446,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                               ),
                             ),
                           )
-                              : _uploadedAvatarUrl != null && _uploadedAvatarUrl!.isNotEmpty
+                              : _uploadedAvatarUrl != null &&
+                              _uploadedAvatarUrl!.isNotEmpty
                               ? Image.network(
                             _uploadedAvatarUrl!,
                             fit: BoxFit.cover,
@@ -467,7 +461,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                 ),
                               );
                             },
-                            loadingBuilder: (context, child, loadingProgress) {
+                            loadingBuilder:
+                                (context, child, loadingProgress) {
                               if (loadingProgress == null) return child;
                               return Container(
                                 color: AppColors.grey200,
@@ -500,7 +495,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       bottom: 0,
                       right: 0,
                       child: GestureDetector(
-                        onTap: _isUploadingImage ? null : _showImagePickerBottomSheet,
+                        onTap: _isUploadingImage
+                            ? null
+                            : _showImagePickerBottomSheet,
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
@@ -523,178 +520,145 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 ),
               ),
 
-              AppSpacing.verticalSpaceSM,
+              AppSpacing.verticalSpaceMD,
 
-              Center(
-                child: Text(
-                  _isUploadingImage
-                      ? 'Uploading image...'
-                      : 'Tap to change avatar',
-                  style: TextStyle(
-                    color: _isUploadingImage ? AppColors.primary : AppColors.textSecondary,
-                    fontSize: 13,
-                    fontWeight: _isUploadingImage ? FontWeight.w500 : FontWeight.normal,
+              // Card containing all form fields with inline editing
+              Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                color: AppColors.surface,
+                margin: EdgeInsets.zero,
+                child: Padding(
+                  padding: const EdgeInsets.all(0.0),
+                  child: Column(
+                    children: [
+                      // Name Field - Inline Editable
+                      SizedBox(height: 5,),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        child: _buildInlineEditField(
+                          fieldKey: 'name',
+                          icon: Icons.person_outline,
+                          controller: _nameController,
+                          keyboardType: TextInputType.name,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return "Please enter your full name";
+                            }
+                            if (value.length < 2) {
+                              return "Name must be at least 2 characters";
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+
+                      const Divider(height: 8),
+
+                      // Email Field - Inline Editable
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        child: _buildInlineEditField(
+                          fieldKey: 'email',
+                          icon: Icons.email_outlined,
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (value) {
+                            if (value != null && value.isNotEmpty) {
+                              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                                return "Enter a valid email address";
+                              }
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+
+                      const Divider(height: 8),
+
+                      // Phone Field - Inline Editable
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        child: _buildInlineEditField(
+                          fieldKey: 'phone',
+                          icon: Icons.phone_outlined,
+                          controller: _phoneController,
+                          keyboardType: TextInputType.phone,
+                          validator: (value) {
+                            if (value != null && value.isNotEmpty) {
+                              if (value.length < 10) {
+                                return "Enter a valid phone number";
+                              }
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+
+                      const Divider(height: 8),
+
+                      // Gender Field - Inline Selectable
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        child: _buildInlineGenderField(),
+                      ),
+
+                      const Divider(height: 8),
+
+                      // Date of Birth Field - Inline Selectable
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        child: _buildProfileListTile(
+                          icon: Icons.cake_outlined,
+                          subtitle: _dobController.text.isEmpty
+                              ? "Not specified"
+                              : _dobController.text,
+                          onTap: _selectDate,
+                        ),
+                      ),
+
+                      const Divider(height: 8),
+
+                      // Location Field - Inline Editable
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        child: _buildInlineEditField(
+                          fieldKey: 'location',
+                          icon: Icons.location_on_outlined,
+                          controller: _locationController,
+                          keyboardType: TextInputType.streetAddress,
+                        ),
+                      ),
+
+                      const Divider(height: 8),
+
+                      // Bio Field - Inline Editable
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        child: _buildInlineEditField(
+                          fieldKey: 'bio',
+                          icon: Icons.description_outlined,
+                          controller: _bioController,
+                          keyboardType: TextInputType.multiline,
+                          maxLines: 3,
+                        ),
+                      ),
+                      SizedBox(height: 5,)
+                    ],
                   ),
                 ),
-              ),
-
-              AppSpacing.verticalSpaceLG,
-
-              // Name Field
-              CommonWidget().buildTextField(
-                label: "Full Name",
-                controller: _nameController,
-                icon: Icons.person_outline,
-                keyboardType: TextInputType.name,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Please enter your full name";
-                  }
-                  if (value.length < 2) {
-                    return "Name must be at least 2 characters";
-                  }
-                  return null;
-                },
-              ),
-
-              AppSpacing.verticalSpaceMD,
-
-              // Phone Field
-              CommonWidget().buildTextField(
-                label: "Phone Number",
-                controller: _phoneController,
-                icon: Icons.phone_outlined,
-                keyboardType: TextInputType.phone,
-                validator: (value) {
-                  if (value != null && value.isNotEmpty) {
-                    if (value.length < 10) {
-                      return "Enter a valid phone number";
-                    }
-                  }
-                  return null;
-                },
-              ),
-
-              AppSpacing.verticalSpaceMD,
-
-              // Gender Dropdown
-              DropdownButtonFormField<String>(
-                value: _selectedGender,
-                decoration: InputDecoration(
-                  labelText: "Gender",
-                  labelStyle: const TextStyle(color: AppColors.primary),
-                  prefixIcon: const Icon(Icons.person_outline, color: AppColors.primary),
-                  filled: true,
-                  fillColor: AppColors.white.withOpacity(0.1),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: AppColors.white.withOpacity(0.4)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(
-                      color: AppColors.primary.withOpacity(0.8),
-                      width: 1.5,
-                    ),
-                  ),
-                ),
-                items: _genderOptions.map((String gender) {
-                  return DropdownMenuItem<String>(
-                    value: gender,
-                    child: Text(gender,style: TextStyle(color: AppColors.primary),),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    _selectedGender = newValue;
-                  });
-                },
-              ),
-
-              AppSpacing.verticalSpaceMD,
-
-              // Date of Birth Field
-              TextFormField(
-                controller: _dobController,
-                readOnly: true,
-                onTap: _selectDate,
-                decoration: InputDecoration(
-                  labelText: "Date of Birth",
-                  labelStyle: const TextStyle(color: AppColors.primary),
-                  prefixIcon: const Icon(Icons.calendar_today_outlined, color: AppColors.primary),
-                  suffixIcon: const Icon(Icons.arrow_drop_down, color: AppColors.primary),
-                  filled: true,
-                  fillColor: AppColors.white.withOpacity(0.1),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: AppColors.white.withOpacity(0.4)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(
-                      color: AppColors.primary.withOpacity(0.8),
-                      width: 1.5,
-                    ),
-                  ),
-                ),
-                style: const TextStyle(fontSize: 16, color: AppColors.primary),
-              ),
-
-              AppSpacing.verticalSpaceMD,
-
-              // Location Field
-              CommonWidget().buildTextField(
-                label: "Location",
-                controller: _locationController,
-                icon: Icons.location_on_outlined,
-                keyboardType: TextInputType.streetAddress,
-                validator: (value) {
-                  return null;
-                },
-              ),
-
-              AppSpacing.verticalSpaceMD,
-
-              // Bio Field
-              TextFormField(
-                controller: _bioController,
-                maxLines: 4,
-                minLines: 3,
-                decoration: InputDecoration(
-                  labelText: "Bio",
-                  labelStyle: const TextStyle(color: AppColors.primary),
-                  prefixIcon: const Icon(Icons.description_outlined, color: AppColors.primary),
-                  filled: true,
-                  fillColor: AppColors.white.withOpacity(0.1),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: AppColors.white.withOpacity(0.4)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(
-                      color: AppColors.primary.withOpacity(0.8),
-                      width: 1.5,
-                    ),
-                  ),
-                ),
-                style: const TextStyle(fontSize: 16, color: AppColors.primary),
-                validator: (value) {
-                  return null;
-                },
               ),
 
               AppSpacing.verticalSpaceXL,
 
               // Update Button
-              // Update Button
               SizedBox(
                 height: 55,
                 child: ElevatedButton(
-                  onPressed: (_isLoading || _isUploadingImage) ? null : _updateProfile,
+                  onPressed:
+                  (_isLoading || _isUploadingImage) ? null : _updateProfile,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     disabledBackgroundColor: AppColors.grey400,
@@ -722,13 +686,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                              AppColors.white),
                         ),
                       ),
                     ],
                   )
                       : const Text(
-                    "Update",
+                    "Update Profile",
                     style: TextStyle(
                       color: AppColors.white,
                       fontSize: 16,
@@ -738,12 +703,208 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 ),
               ),
 
-              AppSpacing.verticalSpaceLG,
+              AppSpacing.verticalSpaceMD,
             ],
           ),
         ),
       ),
     );
   }
-}
 
+  // Build inline editable field
+      Widget _buildInlineEditField({
+    required String fieldKey,
+    required IconData icon,
+    required TextEditingController controller,
+    TextInputType keyboardType = TextInputType.text,
+    int maxLines = 1,
+    String? Function(String?)? validator,
+  }) {
+    final isEditing = _editingField == fieldKey;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      child: Row(
+        children: [
+          // Icon
+          Icon(
+            icon,
+            color: AppColors.primary,
+            size: 24,
+          ),
+          const SizedBox(width: 12),
+
+          // Content - Either text or text field
+          Expanded(
+            child: isEditing
+                ? TextFormField(
+              controller: controller,
+              keyboardType: keyboardType,
+              maxLines: maxLines,
+              autofocus: true,
+              style: const TextStyle(
+                fontSize: 15,
+                color: AppColors.textPrimary,
+              ),
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.primary),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(
+                    color: AppColors.primary,
+                    width: 2,
+                  ),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                isDense: true,
+              ),
+              validator: validator,
+            )
+                : GestureDetector(
+              onTap: () {
+                setState(() {
+                  _editingField = fieldKey;
+                });
+              },
+              child: Text(
+                controller.text.isEmpty
+                    ? "Bio"
+                    : controller.text,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: controller.text.isEmpty
+                      ? AppColors.textSecondary.withOpacity(0.6)
+                      : AppColors.textPrimary,
+                ),
+                maxLines: maxLines,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+
+          // Action Icon
+        ],
+      ),
+    );
+  }
+
+  // Build inline gender selector
+  // Build inline gender dropdown selector
+  Widget _buildInlineGenderField() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      child: Row(
+        children: [
+          // Icon
+          const Icon(
+            Icons.wc_outlined,
+            color: AppColors.primary,
+            size: 24,
+          ),
+          const SizedBox(width: 12),
+
+          // Dropdown Content
+          Expanded(
+            child: DropdownButtonFormField<String>(
+              value: _selectedGender,
+              hint: Text(
+                "Select gender",
+                style: TextStyle(
+                  fontSize: 15,
+                  color: AppColors.textSecondary.withOpacity(0.6),
+                ),
+              ),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+                isDense: true,
+              ),
+              style: const TextStyle(
+                fontSize: 15,
+                color: AppColors.textPrimary,
+              ),
+              icon: const Icon(
+                Icons.arrow_drop_down,
+                color: AppColors.textSecondary,
+              ),
+              dropdownColor: AppColors.surface,
+              isExpanded: true,
+              items: _genderOptions.map((String gender) {
+                return DropdownMenuItem<String>(
+                  value: gender,
+                  child: Text(
+                    gender,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                setState(() {
+                  _selectedGender = newValue;
+                });
+              },
+              validator: (value) {
+                // Optional: Add validation if gender is required
+                // if (value == null || value.isEmpty) {
+                //   return "Please select your gender";
+                // }
+                return null;
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  // Build regular list tile (for date picker) - WITHOUT title and WITHOUT trailing pencil icon
+  Widget _buildProfileListTile({
+    required IconData icon,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: AppColors.primary,
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                subtitle,
+                style: const TextStyle(
+                  fontSize: 15,
+                  color: AppColors.textPrimary,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const Icon(
+              Icons.calendar_today_outlined,
+              color: AppColors.textSecondary,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

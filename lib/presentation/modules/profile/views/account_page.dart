@@ -9,6 +9,7 @@ import '../../../../app/data/constants/app_colors.dart';
 import '../../../routes/app_routes.dart';
 import '../../../services/models/user/user_model.dart';
 import '../widgets/settings_section.dart';
+import '../widgets/custom_bottom_sheet.dart';
 import '../widgets/settings_tile.dart';
 
 class AccountPage extends StatefulWidget {
@@ -21,7 +22,6 @@ class AccountPage extends StatefulWidget {
 class _AccountPageState extends State<AccountPage> with SingleTickerProviderStateMixin {
   // Toggle states
   bool _pushNotifications = true;
-  bool _darkMode = false;
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -137,28 +137,16 @@ class _AccountPageState extends State<AccountPage> with SingleTickerProviderStat
                     },
                   ),
                   SettingsTile(
-                    icon: Icons.dark_mode_outlined,
-                    title: 'Dark Mode',
-                    subtitle: 'Toggle dark theme',
-                    hasToggle: true,
-                    toggleValue: _darkMode,
-                    onToggleChanged: (value) {
-                      setState(() {
-                        _darkMode = value;
-                      });
-                    },
-                  ),
-                  SettingsTile(
                     icon: Icons.language,
                     title: 'Language',
                     subtitle: 'English',
-                    onTap: () => _navigateTo(context, 'Language'),
+                    onTap: () => CustomBottomSheet.showLanguageBottomSheet(context),
                   ),
                   SettingsTile(
                     icon: Icons.attach_money,
                     title: 'Currency',
                     subtitle: 'USD',
-                    onTap: () => _navigateTo(context, 'Currency'),
+                    onTap: () => CustomBottomSheet.showCurrencyBottomSheet(context),
                   ),
                   SettingsTile(
                     icon: Icons.location_on_outlined,
@@ -185,13 +173,13 @@ class _AccountPageState extends State<AccountPage> with SingleTickerProviderStat
                     icon: Icons.chat_bubble_outline,
                     title: 'Contact Support',
                     subtitle: 'Chat with our support team',
-                    onTap: () => _navigateTo(context, 'Contact Support'),
+                    onTap: () => CustomBottomSheet.showContactSupportBottomSheet(context),
                   ),
                   SettingsTile(
                     icon: Icons.question_answer_outlined,
                     title: 'FAQ',
                     subtitle: 'Frequently asked questions',
-                    onTap: () => _navigateTo(context, 'FAQ'),
+                    onTap: () => CustomBottomSheet.showFAQBottomSheet(context),
                   ),
                   SettingsTile(
                     icon: Icons.feedback_outlined,
@@ -212,13 +200,13 @@ class _AccountPageState extends State<AccountPage> with SingleTickerProviderStat
                     icon: Icons.description_outlined,
                     title: 'Terms & Conditions',
                     subtitle: 'Read app usage guidelines',
-                    onTap: () => _navigateTo(context, 'Terms & Conditions'),
+                    onTap: () => CustomBottomSheet.showTermsAndConditionsBottomSheet(context),
                   ),
                   SettingsTile(
                     icon: Icons.privacy_tip_outlined,
                     title: 'Privacy Policy',
                     subtitle: 'Learn how we protect your data',
-                    onTap: () => _navigateTo(context, 'Privacy Policy'),
+                    onTap: () => CustomBottomSheet.showPrivacyPolicyBottomSheet(context),
                   ),
                 ],
               ),
