@@ -28,8 +28,15 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
+
+  // Global Query Params
+  Map<String, dynamic> queryParams = {
+    "page": 1,
+    "limit": 50,
+  };
+
   // State Variables
-  int? _selectedCategoryId;
+  String? _selectedCategoryId;
   String? _currentLocation;
 
   List<CategoryModel> _categories = [];
@@ -45,33 +52,15 @@ class _HomeViewState extends State<HomeView> {
   void initState() {
     super.initState();
     _filterController = FilterController();
-    _filterController.addListener(_onFilterUpdate);
-    _getCategory();
+     _getCategory();
     _getMarketplace();
     _mockGetLocation();
   }
 
   @override
   void dispose() {
-    _filterController.removeListener(_onFilterUpdate);
-    _filterController.dispose();
+     _filterController.dispose();
     super.dispose();
-  }
-
-  /// Listen to filter updates
-  void _onFilterUpdate() {
-    setState(() {
-      // // Get filtered products from controller
-      // _displayedProducts = _filterController.filteredProducts;
-      //
-      // // Apply category filter on top of search/filter results
-      // if (_selectedCategoryId != null) {
-      //   _displayedProducts = _displayedProducts
-      //       .where((product) => product.categoryId == _selectedCategoryId)
-      //       .toList();
-      // }
-    });
-    debugPrint('📊 Products Updated: ${_displayedProducts.length} items');
   }
 
   Future<void> _getCategory() async {
@@ -99,14 +88,13 @@ class _HomeViewState extends State<HomeView> {
     setState(() => _isLoadingProducts = true);
     try {
       var services = await getApiClient();
-
-      Map<String, dynamic> queryParams = {"page": 1, "limit": 50};
-
       var response = await services.getMarketplace(queryParams);
       if (response.data.status) {
-        _displayedProducts = response.data.data ?? [];
-      } else {
-        AppToast.showError(
+        _displayedProducts.clear();
+        _displayedProducts.addAll(response.data.data ?? []);
+      }
+      else {
+         AppToast.showError(
           response.data.message ?? "Something went wrong, Please try again.",
         );
       }
@@ -128,16 +116,18 @@ class _HomeViewState extends State<HomeView> {
   }
 
   /// 🔍 Filter Products by Category
-  void _filterByCategory(int? categoryId) {
+  void _filterByCategory(String? categoryId) {
     setState(() {
       _selectedCategoryId = categoryId;
+      if (categoryId != null && categoryId.isNotEmpty) {
+        queryParams["category"] = categoryId;
+      } else {
+        queryParams.remove("category");
+      }
+      _getMarketplace();
     });
-
-    // Trigger filter update
-    _onFilterUpdate();
-
-    debugPrint('📂 Category Filter: ${categoryId ?? "All"}');
   }
+
 
   /// 🔍 Handle Filter Button Tap
   void _handleFilterTap() {
@@ -196,7 +186,7 @@ class _HomeViewState extends State<HomeView> {
             /// 📜 Scrollable Content
             Expanded(
               child: RefreshIndicator(
-                onRefresh: _getCategory,
+                onRefresh: _getMarketplace,
                 color: AppColors.primary,
                 child: CustomScrollView(
                   slivers: [
@@ -245,9 +235,6 @@ class _HomeViewState extends State<HomeView> {
                         ),
                       ),
                     ),
-
-                    const SliverToBoxAdapter(child: AppSpacing.verticalSpaceMD),
-
                     /// Products Grid
                     SliverToBoxAdapter(
                       child: ProductGridWidget(

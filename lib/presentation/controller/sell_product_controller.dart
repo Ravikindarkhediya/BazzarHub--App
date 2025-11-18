@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../services/api_service.dart';
+import '../services/models/categorie/categorie_model.dart';
+
 /// Image Upload State
 class ProductImage {
   final String id;
@@ -39,10 +42,17 @@ class ProductImage {
 /// Sell Product Controller
 class SellProductController extends ChangeNotifier {
   // Form Controllers
+  final List<TextEditingController> _allControllers = [];
+
   final titleController = TextEditingController();
   final descriptionController = TextEditingController();
   final priceController = TextEditingController();
   final locationController = TextEditingController();
+  final villageController = TextEditingController();
+  final talukoController = TextEditingController();
+  final districtController = TextEditingController();
+  final zipCodeController = TextEditingController();
+  final stateController = TextEditingController();
   final contactController = TextEditingController();
 
   // Image Picker
@@ -50,24 +60,55 @@ class SellProductController extends ChangeNotifier {
 
   // State
   List<ProductImage> _images = [];
-  int? _selectedCategoryId;
+  List<CategoryModel> _categories = [];
+  List<CategoryModel> get categories => _categories;
+  String? _selectedCategoryId;
   String _selectedCondition = 'Good';
   bool _isLoading = false;
   String? _errorMessage;
 
   // Constants
   static const int maxImages = 6;
-  static const List<String> conditions = ['Brand New', 'Like New', 'Good', 'Fair'];
+  static const List<String> conditions = [
+    'Brand New',
+    'Like New',
+    'Good',
+    'Fair',
+    'Used – Excellent',
+    'Used – Good',
+    'Used – Fair',
+    'Refurbished',
+    'Open Box',
+    'Heavily Used',
+  ];
 
   // Getters
   List<ProductImage> get images => _images;
   int get imageCount => _images.length;
   bool get canAddMoreImages => _images.length < maxImages;
-  int? get selectedCategoryId => _selectedCategoryId;
+  String? get selectedCategoryId => _selectedCategoryId;
   String get selectedCondition => _selectedCondition;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get hasImages => _images.isNotEmpty;
+
+
+  SellProductController() {
+    _allControllers.addAll([
+      titleController,
+      descriptionController,
+      priceController,
+      locationController,
+      villageController,
+      talukoController,
+      districtController,
+      zipCodeController,
+      stateController,
+      contactController,
+    ]);
+  }
+
+
 
   /// Pick image from camera
   Future<void> pickFromCamera(BuildContext context) async {
@@ -173,6 +214,23 @@ class SellProductController extends ChangeNotifier {
     }
   }
 
+  Future<void> loadCategories() async {
+    try {
+      var services = await getApiClient();
+      var response = await services.requestAllCategories();
+      if (response.data.status) {
+        _categories = response.data.data?.categories ?? [];
+      } else {
+        debugPrint("❌ Category load failed");
+      }
+    } catch (e) {
+      debugPrint("❌ Error loading categories: $e");
+    }
+
+    notifyListeners();
+  }
+
+
   /// Remove image
   void removeImage(String imageId) {
     HapticFeedback.lightImpact();
@@ -194,7 +252,7 @@ class SellProductController extends ChangeNotifier {
   }
 
   /// Update category
-  void selectCategory(int categoryId) {
+  void selectCategory(String? categoryId) {
     _selectedCategoryId = categoryId;
     notifyListeners();
     debugPrint('📂 Category selected: $categoryId');
@@ -233,6 +291,24 @@ class SellProductController extends ChangeNotifier {
     }
     if (_images.isEmpty) {
       return 'Please add at least one image';
+    }
+    if (villageController.text.trim().isEmpty) {
+      return 'Village is required';
+    }
+    if (talukoController.text.trim().isEmpty) {
+      return 'Taluko is required';
+    }
+    if (districtController.text.trim().isEmpty) {
+      return 'District is required';
+    }
+    if (stateController.text.trim().isEmpty) {
+      return 'State is required';
+    }
+    if (zipCodeController.text.trim().isEmpty) {
+      return 'ZipCode is required';
+    }
+    if (locationController.text.trim().isEmpty) {
+      return 'Country is required';
     }
     if (contactController.text.trim().isEmpty) {
       return 'Contact number is required';
@@ -284,11 +360,9 @@ class SellProductController extends ChangeNotifier {
 
   /// Clear form
   void clearForm() {
-    titleController.clear();
-    descriptionController.clear();
-    priceController.clear();
-    locationController.clear();
-    contactController.clear();
+    for (var c in _allControllers) {
+      c.clear();
+    }
     _images.clear();
     _selectedCategoryId = null;
     _selectedCondition = 'Good';
@@ -320,11 +394,9 @@ class SellProductController extends ChangeNotifier {
 
   @override
   void dispose() {
-    titleController.dispose();
-    descriptionController.dispose();
-    priceController.dispose();
-    locationController.dispose();
-    contactController.dispose();
+    for (var c in _allControllers) {
+      c.dispose();
+    }
     debugPrint('🗑️ SellProductController disposed');
     super.dispose();
   }

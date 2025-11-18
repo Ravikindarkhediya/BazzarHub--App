@@ -3,7 +3,7 @@ import '../../../presentation/services/models/Common/multi_lang_text_model.dart'
 
 class AppLanguage {
   // current selected language
-  static String _currentLang = "gujarati";
+  static String _currentLang = "english";
   // values: english, hindi, gujarati
 
   /// Set selected language

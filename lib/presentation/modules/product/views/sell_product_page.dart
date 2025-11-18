@@ -1,3 +1,4 @@
+import 'package:bazzar_hub_app/app/core/utils/app_language.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -21,6 +22,7 @@ class _SellProductPageState extends State<SellProductPage> {
   void initState() {
     super.initState();
     _controller = SellProductController();
+    _controller.loadCategories();
   }
 
   @override
@@ -45,7 +47,7 @@ class _SellProductPageState extends State<SellProductPage> {
 
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
-        backgroundColor: CupertinoColors.systemBackground.resolveFrom(context),
+        backgroundColor: AppColors.background,
         border: Border(
           bottom: BorderSide(
             color: CupertinoColors.separator.resolveFrom(context),
@@ -163,14 +165,15 @@ class _SellProductPageState extends State<SellProductPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         /// Category Selection
-        _buildSectionTitle('Category *'),
+        _buildSectionTitle('Category'),
         const SizedBox(height: 12),
+
         _buildCategorySelector(),
 
         const SizedBox(height: 24),
 
         /// Title
-        _buildSectionTitle('Product Title *'),
+        _buildSectionTitle('Product Title'),
         const SizedBox(height: 8),
         _buildTextField(
           controller: _controller.titleController,
@@ -181,7 +184,7 @@ class _SellProductPageState extends State<SellProductPage> {
         const SizedBox(height: 24),
 
         /// Description
-        _buildSectionTitle('Description *'),
+        _buildSectionTitle('Description'),
         const SizedBox(height: 8),
         _buildTextArea(
           controller: _controller.descriptionController,
@@ -198,7 +201,7 @@ class _SellProductPageState extends State<SellProductPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionTitle('Price *'),
+                  _buildSectionTitle('Price'),
                   const SizedBox(height: 8),
                   _buildTextField(
                     controller: _controller.priceController,
@@ -216,7 +219,7 @@ class _SellProductPageState extends State<SellProductPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionTitle('Condition *'),
+                  _buildSectionTitle('Condition'),
                   const SizedBox(height: 8),
                   _buildConditionPicker(),
                 ],
@@ -227,19 +230,122 @@ class _SellProductPageState extends State<SellProductPage> {
 
         const SizedBox(height: 24),
 
-        /// Location
-        _buildSectionTitle('Location'),
-        const SizedBox(height: 8),
-        _buildTextField(
-          controller: _controller.locationController,
-          placeholder: 'City, State',
-          prefixIcon: CupertinoIcons.location_solid,
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  /// Location
+                  _buildSectionTitle('Village'),
+                  const SizedBox(height: 8),
+                  _buildTextField(
+                    controller: _controller.villageController,
+                    placeholder: 'Village',
+                    prefixIcon: Icons.home_filled,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  /// Location
+                  _buildSectionTitle('Taluko'),
+                  const SizedBox(height: 8),
+                  _buildTextField(
+                    controller: _controller.talukoController,
+                    placeholder: 'Taluko',
+                    prefixIcon: CupertinoIcons.location_solid,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 24),
+
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  /// Location
+                  _buildSectionTitle('District'),
+                  const SizedBox(height: 8),
+                  _buildTextField(
+                    controller: _controller.districtController,
+                    placeholder: 'District',
+                    prefixIcon: CupertinoIcons.location_solid,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  /// Location
+                  _buildSectionTitle('State'),
+                  const SizedBox(height: 8),
+                  _buildTextField(
+                    controller: _controller.stateController,
+                    placeholder: 'State',
+                    prefixIcon: CupertinoIcons.location_solid,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 24),
+
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  /// Location
+                  _buildSectionTitle('ZipCode'),
+                  const SizedBox(height: 8),
+                  _buildTextField(
+                    controller: _controller.zipCodeController,
+                    placeholder: 'ZipCode',
+                    prefixIcon: CupertinoIcons.location_solid,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  /// Location
+                  _buildSectionTitle('Country'),
+                  const SizedBox(height: 8),
+                  _buildTextField(
+                    controller: _controller.locationController,
+                    placeholder: 'City, State',
+                    prefixIcon: CupertinoIcons.location_solid,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
 
         const SizedBox(height: 24),
 
         /// Contact
-        _buildSectionTitle('Contact Number *'),
+        _buildSectionTitle('Contact Number'),
         const SizedBox(height: 8),
         _buildTextField(
           controller: _controller.contactController,
@@ -350,25 +456,23 @@ class _SellProductPageState extends State<SellProductPage> {
     return ListenableBuilder(
       listenable: _controller,
       builder: (context, _) {
-        final categories = [
-          {'id': 1, 'name': 'Mobiles', 'icon': '📱'},
-          {'id': 2, 'name': 'Cars', 'icon': '🚗'},
-          {'id': 3, 'name': 'Bikes', 'icon': '🏍️'},
-          {'id': 4, 'name': 'Fashion', 'icon': '👕'},
-        ];
-
+        final categories = _controller.categories;
+        if (categories.isEmpty) {
+          return const Center(child: CupertinoActivityIndicator());
+        }
+        
         return Wrap(
           spacing: 8,
           runSpacing: 8,
           children: categories.map((category) {
-            final isSelected = _controller.selectedCategoryId == category['id'];
+            final isSelected = (_controller.selectedCategoryId ?? "") == category.id;
             return GestureDetector(
               onTap: () {
                 HapticFeedback.selectionClick();
-                _controller.selectCategory(category['id'] as int);
+                _controller.selectCategory(category.id);
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? CupertinoColors.activeBlue
@@ -381,26 +485,14 @@ class _SellProductPageState extends State<SellProductPage> {
                     width: isSelected ? 2 : 1,
                   ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      category['icon'] as String,
-                      style: const TextStyle(fontSize: 20,
-                        decoration: TextDecoration.none,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      category['name'] as String,
-                      style: TextStyle(
-                        fontSize: 15,
-                        decoration: TextDecoration.none,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                        color: isSelected ? Colors.white : CupertinoColors.black,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  AppLanguage.getText(category.name),
+                  style: TextStyle(
+                    fontSize: 15,
+                    decoration: TextDecoration.none,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    color: isSelected ? Colors.white : CupertinoColors.black,
+                  ),
                 ),
               ),
             );

@@ -11,8 +11,8 @@ import 'auto_fit_image_widget.dart';
 
 class CategoryListWidget extends StatelessWidget {
   final List<CategoryModel> categories;
-  final int? selectedCategoryId;
-  final Function(int?) onCategorySelected;
+  final String? selectedCategoryId;
+  final Function(String?) onCategorySelected;
 
   const CategoryListWidget({
     super.key,
@@ -97,9 +97,9 @@ class CategoryListWidget extends StatelessWidget {
     final color = categoryColors[index % categoryColors.length];
 
     return InkWell(
-      // onTap: () => onCategorySelected(
-      //   isSelected ? null : category.id,
-      // ),
+      onTap: () => onCategorySelected(
+        isSelected ? null : category.id,
+      ),
       borderRadius: AppSpacing.borderRadiusMD,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
@@ -113,15 +113,6 @@ class CategoryListWidget extends StatelessWidget {
             color: isSelected ? color : AppColors.borderLight,
             width: isSelected ? 2 : 1,
           ),
-          boxShadow: isSelected
-              ? [
-            BoxShadow(
-              color: color.withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ]
-              : AppColors.cardShadow,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
