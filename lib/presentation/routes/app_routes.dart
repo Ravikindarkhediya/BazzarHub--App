@@ -10,6 +10,7 @@ import '../modules/product/views/favorites_page.dart';
 import '../modules/product/views/product_detail_page.dart';
 import '../modules/product/views/sell_product_page.dart';
 import '../modules/profile/views/account_page.dart';
+import '../modules/profile/views/edit_profile_page.dart';
 import '../modules/search/view/search_page.dart';
 import '../modules/splash/views/splash_view.dart';
 import 'package:get/get.dart';
@@ -26,6 +27,7 @@ class AppPages {
     GetPage(name: AppRoutes.notificationPage, page: () => const NotificationPage()),
     GetPage(name: AppRoutes.sellProductPage, page: () => const SellProductPage()),
     GetPage(name: AppRoutes.profilePage, page: () => const AccountPage()),
+    GetPage(name: AppRoutes.editProfilePage, page: () => const EditProfilePage()),
     GetPage(name: AppRoutes.chatPage, page: () => const ChatPage()),
     GetPage(name: AppRoutes.favoritesPage, page: () => const FavoritesPage()),
     GetPage(name: AppRoutes.mainPage, page: () => const MainScreen()),
@@ -55,6 +57,7 @@ class AppRoutes {
   static const notificationPage = '/notificationPage';
   static const sellProductPage = '/sellProductPage';
   static const profilePage = '/profilePage';
+  static const editProfilePage = '/editProfilePage';
   static const chatPage = '/chatPage';
   static const favoritesPage = '/favoritesPage';
   static const mainPage = '/mainPage';

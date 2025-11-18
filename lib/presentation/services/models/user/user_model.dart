@@ -28,6 +28,9 @@ class UserModel {
   @JsonKey(name: 'location', defaultValue: '')
   String location;
 
+  @JsonKey(name: 'bio', defaultValue: '')
+  String bio;
+
   @JsonKey(name: 'provider', defaultValue: '')
   String provider;
 
@@ -58,6 +61,7 @@ class UserModel {
     this.gender = '',
     this.dob = '',
     this.location = '',
+    this.bio = '',
     this.provider = '',
     this.socialId = '',
     this.socialType = '',

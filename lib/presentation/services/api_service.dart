@@ -83,6 +83,9 @@ abstract class ApiServices{
   @POST(Endpoints.GOOGLE_LOGIN_ENDPOINT)
   Future<HttpResponse<BaseModel<UserTokenModel>>> requestGoogleLogin(@Body() Map<String, dynamic> params);
 
+  @POST(Endpoints.USER_UPDATE)
+  Future<HttpResponse<BaseModel<UserModel>>> updateUserProfile(@Body() Map<String, dynamic> params);
+
 
   // Categories
 

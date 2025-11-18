@@ -95,7 +95,13 @@ class _AccountPageState extends State<AccountPage> with SingleTickerProviderStat
                     icon: Icons.person_outline,
                     title: 'Edit Profile',
                     subtitle: 'Update your personal information',
-                    onTap: () => _navigateTo(context, 'Edit Profile'),
+                    onTap: () async {
+                      final result = await Get.toNamed(AppRoutes.editProfilePage);
+                      if (result == true) {
+                        // Refresh the page if profile was updated
+                        setState(() {});
+                      }
+                    },
                   ),
                   SettingsTile(
                     icon: Icons.lock_outline,
