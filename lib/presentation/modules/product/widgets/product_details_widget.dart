@@ -4,7 +4,7 @@ import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
 import '../../../controller/product_controller.dart';
-import '../model/proiduct_model.dart';
+import '../../../services/models/marketplace/marketplace_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Product Details Widget
@@ -40,10 +40,10 @@ class ProductDetailsWidget extends StatelessWidget {
             AppSpacing.verticalSpaceLG,
 
             /// Specifications Section
-            if (product.hasSpecs) ...[
-              _buildSpecificationsSection(product),
-              AppSpacing.verticalSpaceLG,
-            ],
+            // if (product.hasSpecs) ...[
+            //   _buildSpecificationsSection(product),
+            //   AppSpacing.verticalSpaceLG,
+            // ],
 
             /// Seller Information Card
             _buildSellerCard(product, context),
@@ -55,7 +55,7 @@ class ProductDetailsWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildProductHeader(ProductModel product) {
+  Widget _buildProductHeader(MarketplaceModel product) {
     return Padding(
       padding: AppSpacing.horizontalMD,
       child: Column(
@@ -63,7 +63,7 @@ class ProductDetailsWidget extends StatelessWidget {
         children: [
           /// Product Name
           Text(
-            product.productName,
+            product.displayTitle,
             style: AppTextStyles.h4.copyWith(
               fontWeight: FontWeight.bold,
               height: 1.3,
@@ -86,15 +86,14 @@ class ProductDetailsWidget extends StatelessWidget {
 
               const Spacer(),
 
-
               AppSpacing.horizontalSpaceXS,
 
-              /// Condition Badge
-              _buildStatusBadge(
-                label: product.condition,
-                color: AppColors.info,
-                icon: Icons.verified_rounded,
-              ),
+              // /// Condition Badge
+              // _buildStatusBadge(
+              //   label: product.conditionLabel,
+              //   color: AppColors.info,
+              //   icon: Icons.verified_rounded,
+              // ),
             ],
           ),
         ],
@@ -135,7 +134,7 @@ class ProductDetailsWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildProductMeta(ProductModel product) {
+  Widget _buildProductMeta(MarketplaceModel product) {
     return Padding(
       padding: AppSpacing.horizontalMD,
       child: Wrap(
@@ -144,7 +143,7 @@ class ProductDetailsWidget extends StatelessWidget {
         children: [
           _buildMetaItem(
             icon: Icons.location_on_outlined,
-            label: product.address,
+            label: product.locationLabel,
           ),
           _buildMetaItem(
             icon: Icons.access_time_rounded,
@@ -152,7 +151,7 @@ class ProductDetailsWidget extends StatelessWidget {
           ),
           _buildMetaItem(
             icon: Icons.favorite_rounded,
-            label: '${product.likes} likes',
+            label: '${product.likesCount} likes',
             color: AppColors.error,
           ),
         ],
@@ -181,7 +180,7 @@ class ProductDetailsWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildDescriptionSection(ProductModel product) {
+  Widget _buildDescriptionSection(MarketplaceModel product) {
     return Padding(
       padding: AppSpacing.horizontalMD,
       child: Column(
@@ -194,7 +193,7 @@ class ProductDetailsWidget extends StatelessWidget {
           AppSpacing.verticalSpaceSM,
           AnimatedCrossFade(
             firstChild: Text(
-              product.description,
+              product.descriptionText,
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
                 height: 1.6,
@@ -203,7 +202,7 @@ class ProductDetailsWidget extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
             secondChild: Text(
-              product.description,
+              product.descriptionText,
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
                 height: 1.6,
@@ -214,7 +213,7 @@ class ProductDetailsWidget extends StatelessWidget {
                 : CrossFadeState.showFirst,
             duration: const Duration(milliseconds: 300),
           ),
-          if (product.description.length > 150)
+          if (product.descriptionText.length > 150)
             TextButton(
               onPressed: controller.toggleDescription,
               style: TextButton.styleFrom(
@@ -247,41 +246,41 @@ class ProductDetailsWidget extends StatelessWidget {
     ).animate().fadeIn(duration: 600.ms, delay: 400.ms);
   }
 
-  Widget _buildSpecificationsSection(ProductModel product) {
-    return Padding(
-      padding: AppSpacing.horizontalMD,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Specifications',
-            style: AppTextStyles.h6.copyWith(fontWeight: FontWeight.bold),
-          ),
-          AppSpacing.verticalSpaceSM,
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.grey50,
-              borderRadius: AppSpacing.borderRadiusMD,
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(
-              children: product.specs.entries
-                  .map(
-                    (entry) => SpecRow(
-                      label: entry.key,
-                      value: entry.value,
-                      isLast: entry.key == product.specs.keys.last,
-                    ),
-                  )
-                  .toList(),
-            ),
-          ),
-        ],
-      ),
-    ).animate().fadeIn(duration: 600.ms, delay: 600.ms);
-  }
+  // Widget _buildSpecificationsSection(ProductModel product) {
+  //   return Padding(
+  //     padding: AppSpacing.horizontalMD,
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Text(
+  //           'Specifications',
+  //           style: AppTextStyles.h6.copyWith(fontWeight: FontWeight.bold),
+  //         ),
+  //         AppSpacing.verticalSpaceSM,
+  //         Container(
+  //           decoration: BoxDecoration(
+  //             color: AppColors.grey50,
+  //             borderRadius: AppSpacing.borderRadiusMD,
+  //             border: Border.all(color: AppColors.border),
+  //           ),
+  //           child: Column(
+  //             children: product.specs.entries
+  //                 .map(
+  //                   (entry) => SpecRow(
+  //                     label: entry.key,
+  //                     value: entry.value,
+  //                     isLast: entry.key == product.specs.keys.last,
+  //                   ),
+  //                 )
+  //                 .toList(),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   ).animate().fadeIn(duration: 600.ms, delay: 600.ms);
+  // }
 
-  Widget _buildSellerCard(ProductModel product, BuildContext context) {
+  Widget _buildSellerCard(MarketplaceModel product, BuildContext context) {
     return Padding(
       padding: AppSpacing.horizontalMD,
       child: Column(
@@ -312,7 +311,7 @@ class ProductDetailsWidget extends StatelessWidget {
                   ),
                   child: Center(
                     child: Text(
-                      product.ownerName[0].toUpperCase(),
+                      product.sellerInitial,
                       style: AppTextStyles.h4.copyWith(
                         color: AppColors.white,
                         fontWeight: FontWeight.bold,
@@ -329,7 +328,7 @@ class ProductDetailsWidget extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        product.ownerName,
+                        product.sellerName,
                         style: AppTextStyles.h6.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -344,20 +343,18 @@ class ProductDetailsWidget extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            product.formattedRating,
+                            product.sellerBadge,
                             style: AppTextStyles.caption.copyWith(
                               color: AppColors.textSecondary,
                             ),
                           ),
-                          if (product.sellerTotalSales != null) ...[
-                            const SizedBox(width: 8),
-                            Text(
-                              '• ${product.sellerTotalSales} sales',
-                              style: AppTextStyles.caption.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '• ${product.views} views',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.textSecondary,
                             ),
-                          ],
+                          ),
                         ],
                       ),
                     ],
@@ -367,16 +364,21 @@ class ProductDetailsWidget extends StatelessWidget {
                 /// Contact Buttons
                 _buildContactButton(
                   icon: Icons.phone_rounded,
-                  onTap: () async {
-                    final Uri dialUri = Uri(scheme: 'tel', path: product.ownerContact);
+                  onTap: product.sellerPhone == null
+                      ? null
+                      : () async {
+                          final Uri dialUri = Uri(
+                            scheme: 'tel',
+                            path: product.sellerPhone,
+                          );
 
-                    if (!await launchUrl(
-                      dialUri,
-                      mode: LaunchMode.externalApplication,
-                    )) {
-                      throw 'Could not open dialer';
-                    }
-                  },
+                          if (!await launchUrl(
+                            dialUri,
+                            mode: LaunchMode.externalApplication,
+                          )) {
+                            throw 'Could not open dialer';
+                          }
+                        },
                 ),
               ],
             ),
@@ -386,17 +388,16 @@ class ProductDetailsWidget extends StatelessWidget {
     ).animate().fadeIn(duration: 600.ms, delay: 800.ms);
   }
 
-  Widget _buildContactButton({
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildContactButton({required IconData icon, VoidCallback? onTap}) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppSpacing.radiusCircle),
       child: Container(
         padding: AppSpacing.paddingSM,
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
+          color: onTap != null
+              ? AppColors.primary.withOpacity(0.1)
+              : AppColors.grey200,
           shape: BoxShape.circle,
         ),
         child: Icon(icon, size: AppSpacing.iconSM, color: AppColors.primary),
@@ -405,53 +406,133 @@ class ProductDetailsWidget extends StatelessWidget {
   }
 }
 
-/// Reusable Spec Row Widget
-class SpecRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final bool isLast;
+extension MarketplaceViewExtension on MarketplaceModel {
+  String get displayTitle => title.isNotEmpty ? title : 'Product';
 
-  const SpecRow({
-    super.key,
-    required this.label,
-    required this.value,
-    this.isLast = false,
-  });
+  String get formattedPrice => '₹ ${price.toStringAsFixed(0)}';
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: AppSpacing.paddingSM,
-      decoration: BoxDecoration(
-        border: isLast
-            ? null
-            : Border(bottom: BorderSide(color: AppColors.border, width: 1)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              label,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Text(
-              value,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  String get conditionLabel => condition.isNotEmpty ? condition : 'Verified';
+
+  String get descriptionText =>
+      description.isNotEmpty ? description : 'No description provided.';
+
+  String get sellerName {
+    final name = createdBy?.name.trim();
+    return (name == null || name.isEmpty) ? 'Seller' : name;
+  }
+
+  String get sellerInitial =>
+      sellerName.isNotEmpty ? sellerName[0].toUpperCase() : 'S';
+
+  String get sellerBadge => isActive ? 'Verified Seller' : 'Active Seller';
+
+  String get locationLabel {
+    final loc = location;
+    if (loc == null) return 'Location unavailable';
+    final parts = [
+      loc.village,
+      loc.taluko,
+      loc.district,
+      loc.zipCode,
+      loc.country,
+    ].where((part) => part.trim().isNotEmpty).toList();
+    return parts.isEmpty ? 'Location unavailable' : parts.join(', ');
+  }
+
+  String get timeAgo {
+    if (createdAt.isEmpty) return 'Just now';
+    final createdDate = DateTime.tryParse(createdAt);
+    if (createdDate == null) return 'Just now';
+    final difference = DateTime.now().difference(createdDate);
+
+    if (difference.inDays > 30) {
+      final months = (difference.inDays / 30).floor();
+      return '$months month${months > 1 ? 's' : ''} ago';
+    } else if (difference.inDays > 0) {
+      return '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours} hour${difference.inHours > 1 ? 's' : ''} ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes} min${difference.inMinutes > 1 ? 's' : ''} ago';
+    } else {
+      return 'Just now';
+    }
+  }
+
+  int get likesCount => favoritesCount;
+
+  String? get sellerPhone {
+    final phones = contactInfo?.phone ?? [];
+    if (phones.isNotEmpty && phones.first.trim().isNotEmpty) {
+      return phones.first;
+    }
+    final fallback = createdBy?.phone;
+    if (fallback != null && fallback.trim().isNotEmpty) {
+      return fallback;
+    }
+    return null;
+  }
+
+  String? get sellerEmail {
+    final emails = contactInfo?.email ?? [];
+    if (emails.isNotEmpty && emails.first.trim().isNotEmpty) {
+      return emails.first;
+    }
+    final fallback = createdBy?.email;
+    if (fallback != null && fallback.trim().isNotEmpty) {
+      return fallback;
+    }
+    return null;
   }
 }
+
+/// Reusable Spec Row Widget
+// class SpecRow extends StatelessWidget {
+//   final String label;
+//   final String value;
+//   final bool isLast;
+//
+//   const SpecRow({
+//     super.key,
+//     required this.label,
+//     required this.value,
+//     this.isLast = false,
+//   });
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       padding: AppSpacing.paddingSM,
+//       decoration: BoxDecoration(
+//         border: isLast
+//             ? null
+//             : Border(bottom: BorderSide(color: AppColors.border, width: 1)),
+//       ),
+//       child: Row(
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         children: [
+//           Expanded(
+//             flex: 2,
+//             child: Text(
+//               label,
+//               style: AppTextStyles.bodySmall.copyWith(
+//                 color: AppColors.textSecondary,
+//                 fontWeight: FontWeight.w500,
+//               ),
+//             ),
+//           ),
+//           Expanded(
+//             flex: 3,
+//             child: Text(
+//               value,
+//               style: AppTextStyles.bodySmall.copyWith(
+//                 color: AppColors.textPrimary,
+//                 fontWeight: FontWeight.w600,
+//               ),
+//             ),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }

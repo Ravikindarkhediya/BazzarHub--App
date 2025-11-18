@@ -36,10 +36,10 @@ class MarketplaceModel {
   final int views;
 
   @JsonKey(name: 'favoritesCount', defaultValue: 0)
-  final int favoritesCount;
+   int favoritesCount;
 
   @JsonKey(name: 'favorites', defaultValue: 0)
-  final int favorites;
+   int favorites;
 
   @JsonKey(name: 'isActive', defaultValue: false)
   final bool isActive;
@@ -62,7 +62,7 @@ class MarketplaceModel {
   @JsonKey(name: '__v', defaultValue: 0)
   final int version;
 
-  const MarketplaceModel({
+   MarketplaceModel({
     this.id = '',
     this.title = '',
     this.description = '',

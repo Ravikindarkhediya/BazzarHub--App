@@ -1,21 +1,25 @@
 import 'dart:ui';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
 import '../../../controller/product_controller.dart';
-import '../model/proiduct_model.dart';
+import '../../../services/api_service.dart';
+import '../../../services/models/marketplace/marketplace_model.dart';
 import '../widgets/product_image_carousel.dart';
 import '../widgets/product_details_widget.dart';
 
 class ProductDetailPage extends StatefulWidget {
-  final ProductModel product;
+  final String productId;
+  final MarketplaceModel? product;
   final String? currentLocation;
 
   const ProductDetailPage({
     super.key,
-    required this.product,
+    required this.productId,
+    this.product,
     this.currentLocation,
   });
 
@@ -27,6 +31,7 @@ class ProductDetailPage extends StatefulWidget {
     final args = settings.arguments as ProductPageArguments;
     return MaterialPageRoute(
       builder: (_) => ProductDetailPage(
+        productId: args.productId,
         product: args.product,
         currentLocation: args.currentLocation,
       ),
@@ -39,215 +44,283 @@ class ProductDetailPage extends StatefulWidget {
 }
 
 class _ProductDetailPageState extends State<ProductDetailPage> {
-  late ProductController _controller;
+  ProductController? _controller;
   final ScrollController _scrollController = ScrollController();
-  // State Variables
+  bool _isLoading = true;
+  String? _errorMessage;
+
   @override
   void initState() {
     super.initState();
-    _controller = ProductController(product: widget.product);
+    if (widget.product != null) {
+      _attachController(widget.product!);
+      _isLoading = false;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchProductDetail(initialLoad: _controller == null);
+    });
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _controller?.removeListener(_handleControllerUpdate);
+    _controller?.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
-  // Widget _buildActionButtons() {
-  //   return Container(
-  //     padding: const EdgeInsets.all(AppSpacing.md),
-  //     decoration: BoxDecoration(
-  //       color: AppColors.white,
-  //       border: const Border(
-  //         top: BorderSide(
-  //           color: AppColors.border,
-  //           width: 1,
-  //         ),
-  //       ),
-  //       boxShadow: [
-  //         BoxShadow(
-  //           color: AppColors.grey900.withOpacity(0.05),
-  //           blurRadius: 8,
-  //           offset: const Offset(0, -2),
-  //         ),
-  //       ],
-  //     ),
-  //     child: Row(
-  //       children: [
-  //         /// Reset Button
-  //         Expanded(
-  //           child: OutlinedButton(
-  //             onPressed: (){},
-  //             style: OutlinedButton.styleFrom(
-  //               foregroundColor: AppColors.textPrimary,
-  //               side: const BorderSide(color: AppColors.border),
-  //               padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-  //               shape: const RoundedRectangleBorder(
-  //                 borderRadius: AppSpacing.borderRadiusMD,
-  //               ),
-  //             ),
-  //             child: const Row(
-  //               mainAxisAlignment: MainAxisAlignment.center,
-  //               children: [
-  //                 Icon(Icons.refresh_rounded, size: 20),
-  //                 SizedBox(width: 8),
-  //                 Text(
-  //                   'Reset',
-  //                   style: AppTextStyles.button,
-  //                 ),
-  //               ],
-  //             ),
-  //           ),
-  //         ),
-  //
-  //         AppSpacing.horizontalSpaceMD,
-  //
-  //         /// Apply Button
-  //         Expanded(
-  //           flex: 2,
-  //           child: ElevatedButton(
-  //             onPressed: (){},
-  //             style: ElevatedButton.styleFrom(
-  //               backgroundColor: AppColors.primary,
-  //               foregroundColor: AppColors.white,
-  //               padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-  //               shape: const RoundedRectangleBorder(
-  //                 borderRadius: AppSpacing.borderRadiusMD,
-  //               ),
-  //             ),
-  //             child: Row(
-  //               mainAxisAlignment: MainAxisAlignment.center,
-  //               children: [
-  //                 const Icon(Icons.check_rounded, size: 20),
-  //                 const SizedBox(width: 8),
-  //                 Text(
-  //                   'Apply Filters',
-  //                   style: AppTextStyles.button.copyWith(
-  //                     color: AppColors.white,
-  //                   ),
-  //                 ),
-  //               ],
-  //             ),
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
+  Future<void> _fetchProductDetail({bool initialLoad = false}) async {
+    if (!mounted) return;
+    setState(() {
+      if (initialLoad || _controller == null) {
+        _isLoading = true;
+      }
+      _errorMessage = null;
+    });
+
+    try {
+      final services = await getApiClient();
+      final response = await services.getMarketplaceById(widget.productId);
+      final product = response.data.data;
+
+      if (response.data.status && product != null) {
+        if (!mounted) return;
+        setState(() {
+          _attachController(product);
+          _errorMessage = null;
+        });
+      } else {
+        throw Exception(
+          response.data.message ?? 'Unable to load product details.',
+        );
+      }
+    } on DioException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = _mapDioError(error);
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = error.toString();
+      });
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _attachController(MarketplaceModel product) {
+    if (_controller == null) {
+      _controller = ProductController(product: product)
+        ..addListener(_handleControllerUpdate);
+    } else {
+      _controller!.updateProduct(product);
+    }
+  }
+
+  void _handleControllerUpdate() {
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  String _mapDioError(DioException error) {
+    switch (error.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.receiveTimeout:
+      case DioExceptionType.sendTimeout:
+        return 'Connection timed out. Please try again.';
+      case DioExceptionType.connectionError:
+        return 'Network unavailable. Check your internet connection.';
+      case DioExceptionType.badResponse:
+        final statusCode = error.response?.statusCode;
+        return 'Server error${statusCode != null ? ' ($statusCode)' : ''}. Please try again later.';
+      case DioExceptionType.badCertificate:
+      case DioExceptionType.cancel:
+      case DioExceptionType.unknown:
+        return error.message ?? 'Unexpected error occurred.';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final controller = _controller;
+
+    if (_isLoading && controller == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: _buildLoadingState(),
+      );
+    }
+
+    if (_errorMessage != null && controller == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: _buildErrorState(),
+      );
+    }
+
+    if (controller == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: _buildErrorState(message: 'Product not available right now.'),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        controller: _scrollController,
-        slivers: [
-          /// Animated Header with SliverAppBar
-          SliverAppBar(
-            pinned: true,
-            expandedHeight: 340,
-            backgroundColor: AppColors.white,
-            elevation: 4,
-            actions: [
-              Padding(
-                padding: const EdgeInsets.only(left: AppSpacing.md),
-                child: _buildAppbarIcon(
-                  icon: Icons.arrow_back_rounded,
-                  onTap: () => Navigator.pop(context),
-                  background: AppColors.primary,
-                  iconColor: AppColors.white,
-                ),
-              ),
-              const Spacer(),
-              _buildAppbarIcon(
-                icon: _controller.isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                onTap: () {
-                  setState(() {
-                    _controller.toggleFavorite(context);
-                  });
-                },
-                background: AppColors.primary,
-                iconColor: _controller.isFavorite ? AppColors.error : AppColors.white,
-              ),
-              const SizedBox(width: AppSpacing.md),
-              _buildAppbarIcon(
-                icon: Icons.share_rounded,
-                onTap: () => _controller.shareProduct(context),
-                background: AppColors.primary,
-                iconColor: AppColors.white,
-              ),
-              const SizedBox(width: AppSpacing.md),
-            ],
-            flexibleSpace: FlexibleSpaceBar(
-              background: ProductImageCarousel(
-                controller: _controller,
-                height: 340,
+      body: RefreshIndicator(
+        color: AppColors.primary,
+        onRefresh: () => _fetchProductDetail(initialLoad: true),
+        child: CustomScrollView(
+          controller: _scrollController,
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
+          slivers: [
+            _buildSliverAppBar(controller),
+            ..._buildErrorBanner(),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.md),
+                child: ProductDetailsWidget(controller: controller),
               ),
             ),
-          ),
-
-          /// Main Content
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.only(top: AppSpacing.md),
-              child: ProductDetailsWidget(controller: _controller),
-            ),
-          ),
-
-          /// Bottom Padding
-          const SliverToBoxAdapter(
-            child: SizedBox(height: AppSpacing.xl),
-          ),
-        ],
+            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
+          ],
+        ),
       ),
-      // bottomNavigationBar: Container(
-      //   padding: const EdgeInsets.symmetric(
-      //     horizontal: AppSpacing.md,
-      //     vertical: AppSpacing.sm,
-      //   ),
-      //   decoration: const BoxDecoration(
-      //     color: Colors.transparent,
-      //     boxShadow: [
-      //       BoxShadow(
-      //         color: Colors.black26,
-      //         offset: Offset(0, -2),
-      //         blurRadius: 6,
-      //       ),
-      //     ],
-      //   ),
-      //   child: Expanded(
-      //     child: SizedBox(
-      //       height: AppSpacing.buttonHeightLG,
-      //       child: ElevatedButton.icon(
-      //         onPressed: () {
-      //           Get.toNamed(AppRoutes.chatPage);
-      //         },
-      //         style: ElevatedButton.styleFrom(
-      //           backgroundColor: AppColors.white,
-      //           foregroundColor: AppColors.primary,
-      //           shape: RoundedRectangleBorder(
-      //             borderRadius:
-      //             BorderRadius.circular(AppSpacing.radiusMD),
-      //           ),
-      //         ),
-      //         icon: const Icon(Icons.chat_bubble_outline_rounded),
-      //         label: const Text(
-      //           'Chat',
-      //           style: TextStyle(fontWeight: FontWeight.bold),
-      //         ),
-      //       ),
-      //     ),
-      //   ),
-      // ),
     );
+  }
+
+  SliverAppBar _buildSliverAppBar(ProductController controller) {
+    return SliverAppBar(
+      pinned: true,
+      expandedHeight: 340,
+      backgroundColor: AppColors.white,
+      elevation: 4,
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(left: AppSpacing.md),
+          child: _buildAppbarIcon(
+            icon: Icons.arrow_back_rounded,
+            onTap: () => Navigator.pop(context),
+            background: AppColors.primary,
+            iconColor: AppColors.white,
+          ),
+        ),
+        const Spacer(),
+        _buildAppbarIcon(
+          icon: controller.isFavorite
+              ? Icons.favorite_rounded
+              : Icons.favorite_border_rounded,
+          onTap: controller.isFavoriteLoading
+              ? null
+              : () => controller.toggleFavorite(context),
+          background: AppColors.primary,
+          iconColor: controller.isFavorite ? AppColors.error : AppColors.white,
+        ),
+        const SizedBox(width: AppSpacing.md),
+        _buildAppbarIcon(
+          icon: Icons.share_rounded,
+          onTap: () => controller.shareProduct(context),
+          background: AppColors.primary,
+          iconColor: AppColors.white,
+        ),
+        const SizedBox(width: AppSpacing.md),
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+        background: ProductImageCarousel(controller: controller, height: 370),
+      ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return const Center(
+      child: CircularProgressIndicator(color: AppColors.primary),
+    );
+  }
+
+  Widget _buildErrorState({String? message}) {
+    final errorText = message ?? _errorMessage ?? 'Something went wrong.';
+    return Center(
+      child: Padding(
+        padding: AppSpacing.paddingXL,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.error_outline_rounded,
+              size: 64,
+              color: AppColors.error,
+            ),
+            AppSpacing.verticalSpaceMD,
+            Text(
+              errorText,
+              style: AppTextStyles.bodyLarge.copyWith(
+                color: AppColors.textPrimary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            AppSpacing.verticalSpaceMD,
+            ElevatedButton(
+              onPressed: () => _fetchProductDetail(initialLoad: true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.white,
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildErrorBanner() {
+    if (_errorMessage == null) return const [];
+    return [
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: AppSpacing.horizontalMD.copyWith(top: AppSpacing.md),
+          child: Container(
+            padding: AppSpacing.paddingMD,
+            decoration: BoxDecoration(
+              color: AppColors.error.withOpacity(0.08),
+              borderRadius: AppSpacing.borderRadiusMD,
+              border: Border.all(color: AppColors.error.withOpacity(0.2)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.error_outline, color: AppColors.error),
+                AppSpacing.horizontalSpaceSM,
+                Expanded(
+                  child: Text(
+                    _errorMessage!,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.error,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => _fetchProductDetail(initialLoad: true),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ];
   }
 
   /// Helper: AppBar Action Icon Button (rounded, with ripple)
   Widget _buildAppbarIcon({
     required IconData icon,
-    required VoidCallback onTap,
+    VoidCallback? onTap,
     Color? background,
     Color iconColor = Colors.white,
   }) {
@@ -271,11 +344,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             ],
           ),
           padding: const EdgeInsets.all(10),
-          child: Icon(
-            icon,
-            size: 18,
-            color: iconColor,
-          ),
+          child: Icon(icon, size: 18, color: iconColor),
         ),
       ),
     );
@@ -284,11 +353,13 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
 /// Arguments for navigation
 class ProductPageArguments {
-  final ProductModel product;
+  final String productId;
+  final MarketplaceModel? product;
   final String? currentLocation;
 
   ProductPageArguments({
-    required this.product,
+    required this.productId,
+    this.product,
     this.currentLocation,
   });
 }
@@ -296,13 +367,15 @@ class ProductPageArguments {
 /// Extension for easy navigation from HomeView
 extension ProductPageNavigation on BuildContext {
   Future<void> navigateToProductDetail({
-    required ProductModel product,
+    required String productId,
+    MarketplaceModel? product,
     String? currentLocation,
   }) {
     return Navigator.pushNamed(
       this,
       ProductDetailPage.routeName,
       arguments: ProductPageArguments(
+        productId: productId,
         product: product,
         currentLocation: currentLocation,
       ),

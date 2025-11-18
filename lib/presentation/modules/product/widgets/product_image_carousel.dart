@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -26,12 +27,12 @@ class ProductImageCarousel extends StatefulWidget {
 class _ProductImageCarouselState extends State<ProductImageCarousel> {
   int _currentIndex = 0;
   late CarouselSliderController _carouselController;
-  bool _isInitialized = false;  // ✅ Add this
+  bool _isInitialized = false; // ✅ Add this
 
   @override
   void initState() {
     super.initState();
-    _initializeCarousel();  // ✅ Call in initState
+    _initializeCarousel(); // ✅ Call in initState
   }
 
   // ✅ Separate initialization method
@@ -39,7 +40,6 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
     _carouselController = CarouselSliderController();
     _isInitialized = true;
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -95,31 +95,26 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
         enlargeCenterPage: false,
         enlargeStrategy: CenterPageEnlargeStrategy.height,
       ),
-      items: images.map((image) {
-        return _buildImageItem(image);
+      items: images.asMap().entries.map((entry) {
+        return _buildImageItem(entry.value, entry.key);
       }).toList(),
     );
   }
 
-  Widget _buildImageItem(String imagePath) {
+  Widget _buildImageItem(String imageUrl, int index) {
     return GestureDetector(
-      onTap: () => _openFullscreenViewer(
-        widget.controller.images.indexOf(imagePath),
-      ),
+      onTap: () => _openFullscreenViewer(index),
       child: Hero(
-        tag: 'product_image_${widget.controller.images.indexOf(imagePath)}',
+        tag: 'product_image_$index',
         child: Container(
           color: AppColors.white,
-          child: Center(
-            child: Image.asset(
-              imagePath,
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-              errorBuilder: (context, error, stackTrace) {
-                return _buildImageError();
-              },
-            ),
+          child: CachedNetworkImage(
+            imageUrl: imageUrl,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            placeholder: (context, url) => _buildImagePlaceholder(),
+            errorWidget: (context, url, error) => _buildImageError(),
           ),
         ),
       ),
@@ -142,11 +137,7 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.image_outlined,
-              size: 16,
-              color: AppColors.white,
-            ),
+            const Icon(Icons.image_outlined, size: 16, color: AppColors.white),
             const SizedBox(width: 4),
             Text(
               '${_currentIndex + 1}/$totalImages',
@@ -200,37 +191,37 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
 
   Widget _buildFullscreenHint() {
     return Positioned(
-      bottom: AppSpacing.md,
-      left: AppSpacing.md,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
-          vertical: AppSpacing.xs,
-        ),
-        decoration: BoxDecoration(
-          color: AppColors.black.withOpacity(0.7),
-          borderRadius: AppSpacing.borderRadiusSM,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.zoom_out_map_rounded,
-              size: 14,
-              color: AppColors.white,
+          bottom: AppSpacing.md,
+          left: AppSpacing.md,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.xs,
             ),
-            const SizedBox(width: 4),
-            Text(
-              'Tap to view',
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.white,
-                fontSize: 11,
-              ),
+            decoration: BoxDecoration(
+              color: AppColors.black.withOpacity(0.7),
+              borderRadius: AppSpacing.borderRadiusSM,
             ),
-          ],
-        ),
-      ),
-    )
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.zoom_out_map_rounded,
+                  size: 14,
+                  color: AppColors.white,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Tap to view',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.white,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        )
         .animate()
         .fadeIn(duration: 400.ms, delay: 700.ms)
         .then()
@@ -258,6 +249,18 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImagePlaceholder() {
+    return Container(
+      color: AppColors.grey100,
+      child: const Center(
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
         ),
       ),
     );
@@ -299,10 +302,7 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
           );
         },
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
+          return FadeTransition(opacity: animation, child: child);
         },
       ),
     );

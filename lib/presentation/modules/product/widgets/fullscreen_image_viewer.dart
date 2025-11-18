@@ -1,5 +1,6 @@
 // lib/features/product_detail/presentation/widgets/fullscreen_image_viewer.dart
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -139,30 +140,34 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer>
         minScale: 1.0,
         maxScale: 4.0,
         child: Center(
-          child: Image.asset(
-            imagePath,
+          child: CachedNetworkImage(
+            imageUrl: imagePath,
             fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.broken_image_outlined,
-                      size: 64,
+            placeholder: (context, url) => const Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+              ),
+            ),
+            errorWidget: (context, url, error) => Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.broken_image_outlined,
+                    size: 64,
+                    color: AppColors.grey600,
+                  ),
+                  AppSpacing.verticalSpaceSM,
+                  Text(
+                    'Failed to load image',
+                    style: AppTextStyles.bodyMedium.copyWith(
                       color: AppColors.grey600,
                     ),
-                    AppSpacing.verticalSpaceSM,
-                    Text(
-                      'Failed to load image',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.grey600,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -291,10 +296,7 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer>
         decoration: BoxDecoration(
           color: AppColors.white.withOpacity(0.2),
           shape: BoxShape.circle,
-          border: Border.all(
-            color: AppColors.white.withOpacity(0.3),
-            width: 1,
-          ),
+          border: Border.all(color: AppColors.white.withOpacity(0.3), width: 1),
           boxShadow: [
             BoxShadow(
               color: AppColors.black.withOpacity(0.3),
@@ -303,11 +305,7 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer>
             ),
           ],
         ),
-        child: Icon(
-          icon,
-          color: AppColors.white,
-          size: AppSpacing.iconMD,
-        ),
+        child: Icon(icon, color: AppColors.white, size: AppSpacing.iconMD),
       ),
     ).animate().scale(duration: 200.ms);
   }
@@ -337,21 +335,22 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(
                   widget.images.length,
-                      (index) => Container(
-                    margin: EdgeInsets.symmetric(horizontal: AppSpacing.xs / 2),
-                    width: index == _currentIndex ? 24 : 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: index == _currentIndex
-                          ? AppColors.accent
-                          : AppColors.white.withOpacity(0.5),
-                      borderRadius: AppSpacing.borderRadiusXS,
-                    ),
-                  )
-                      .animate(
-                    target: index == _currentIndex ? 1 : 0,
-                  )
-                      .scaleX(duration: 300.ms),
+                  (index) =>
+                      Container(
+                            margin: EdgeInsets.symmetric(
+                              horizontal: AppSpacing.xs / 2,
+                            ),
+                            width: index == _currentIndex ? 24 : 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: index == _currentIndex
+                                  ? AppColors.accent
+                                  : AppColors.white.withOpacity(0.5),
+                              borderRadius: AppSpacing.borderRadiusXS,
+                            ),
+                          )
+                          .animate(target: index == _currentIndex ? 1 : 0)
+                          .scaleX(duration: 300.ms),
                 ),
               ),
             ),

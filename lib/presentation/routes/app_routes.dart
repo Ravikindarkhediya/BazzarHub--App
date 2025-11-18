@@ -1,4 +1,3 @@
-
 import '../modules/auth/views/sign_in.dart';
 import '../modules/auth/views/signup_page.dart';
 import '../modules/chat/views/chat_page.dart';
@@ -23,11 +22,23 @@ class AppPages {
     GetPage(name: AppRoutes.onboarding, page: () => const OnboardingView()),
     GetPage(name: AppRoutes.login, page: () => const SignInPage()),
     GetPage(name: AppRoutes.signup, page: () => const SignupPage()),
-    GetPage(name: AppRoutes.searchPage, page: () => const SearchPage(categoryData: [],)),
-    GetPage(name: AppRoutes.notificationPage, page: () => const NotificationPage()),
-    GetPage(name: AppRoutes.sellProductPage, page: () => const SellProductPage()),
+    GetPage(
+      name: AppRoutes.searchPage,
+      page: () => const SearchPage(categoryData: []),
+    ),
+    GetPage(
+      name: AppRoutes.notificationPage,
+      page: () => const NotificationPage(),
+    ),
+    GetPage(
+      name: AppRoutes.sellProductPage,
+      page: () => const SellProductPage(),
+    ),
     GetPage(name: AppRoutes.profilePage, page: () => const AccountPage()),
-    GetPage(name: AppRoutes.editProfilePage, page: () => const EditProfilePage()),
+    GetPage(
+      name: AppRoutes.editProfilePage,
+      page: () => const EditProfilePage(),
+    ),
     GetPage(name: AppRoutes.chatPage, page: () => const ChatPage()),
     GetPage(name: AppRoutes.favoritesPage, page: () => const FavoritesPage()),
     GetPage(name: AppRoutes.mainPage, page: () => const MainScreen()),
@@ -38,6 +49,7 @@ class AppPages {
       page: () {
         final args = Get.arguments as ProductPageArguments;
         return ProductDetailPage(
+          productId: args.productId,
           product: args.product,
           currentLocation: args.currentLocation,
         );

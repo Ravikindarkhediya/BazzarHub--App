@@ -15,7 +15,7 @@ import '../../../commons/widgets/filter_side_sheet.dart';
 import '../../../commons/widgets/search_bar_widget.dart';
 import '../../../routes/app_routes.dart';
 import '../../../services/models/categorie/categorie_model.dart';
-import '../../product/model/proiduct_model.dart';
+import '../../product/views/product_detail_page.dart';
 import '../widgets/header_widget.dart';
 import '../widgets/category_list_widget.dart';
 import '../widgets/product_grid_widget.dart';
@@ -80,7 +80,7 @@ class _HomeViewState extends State<HomeView> {
       var services = await getApiClient();
       var response = await services.requestAllCategories();
       if (response.data.status) {
-         _categories = response.data.data?.categories ?? [];
+        _categories = response.data.data?.categories ?? [];
       } else {
         AppToast.showError(
           response.data.message ?? "Something went wrong, Please try again.",
@@ -100,14 +100,11 @@ class _HomeViewState extends State<HomeView> {
     try {
       var services = await getApiClient();
 
-      Map<String, dynamic> queryParams = {
-        "page": 1,
-        "limit": 50,
-      };
+      Map<String, dynamic> queryParams = {"page": 1, "limit": 50};
 
       var response = await services.getMarketplace(queryParams);
       if (response.data.status) {
-         _displayedProducts = response.data.data ?? [];
+        _displayedProducts = response.data.data ?? [];
       } else {
         AppToast.showError(
           response.data.message ?? "Something went wrong, Please try again.",
@@ -145,23 +142,25 @@ class _HomeViewState extends State<HomeView> {
   /// 🔍 Handle Filter Button Tap
   void _handleFilterTap() {
     debugPrint('🎯 Filter Button Tapped');
-    FilterSideSheet.show(
-      context,
-      filterController: _filterController,
-    );
+    FilterSideSheet.show(context, filterController: _filterController);
   }
 
   /// 📱 Handle Product Tap
   void _handleProductTap(MarketplaceModel product) {
-    // debugPrint('➡️ Product Tapped: ${product.productName}');
-    //
-    // Get.toNamed(
-    //   ProductDetailPage.routeName,
-    //   arguments: ProductPageArguments(
-    //     product: product,
-    //     currentLocation: _currentLocation,
-    //   ),
-    // );
+    final productId = product.id;
+    if (productId.isEmpty) {
+      AppToast.showError('Product information unavailable.');
+      return;
+    }
+
+    Get.toNamed(
+      ProductDetailPage.routeName,
+      arguments: ProductPageArguments(
+        productId: productId,
+        product: product,
+        currentLocation: _currentLocation,
+      ),
+    );
   }
 
   @override
@@ -192,8 +191,7 @@ class _HomeViewState extends State<HomeView> {
             ),
 
             /// 📊 Filter Summary (if filters applied)
-            if (_filterController.isFilterApplied)
-              _buildFilterSummary(),
+            if (_filterController.isFilterApplied) _buildFilterSummary(),
 
             /// 📜 Scrollable Content
             Expanded(
@@ -248,9 +246,7 @@ class _HomeViewState extends State<HomeView> {
                       ),
                     ),
 
-                    const SliverToBoxAdapter(
-                      child: AppSpacing.verticalSpaceMD,
-                    ),
+                    const SliverToBoxAdapter(child: AppSpacing.verticalSpaceMD),
 
                     /// Products Grid
                     SliverToBoxAdapter(
@@ -262,9 +258,7 @@ class _HomeViewState extends State<HomeView> {
                     ),
 
                     /// Bottom Padding
-                    const SliverToBoxAdapter(
-                      child: SizedBox(height: 100),
-                    ),
+                    const SliverToBoxAdapter(child: SizedBox(height: 100)),
                   ],
                 ),
               ),
@@ -272,7 +266,6 @@ class _HomeViewState extends State<HomeView> {
           ],
         ),
       ),
-
     );
   }
 
@@ -290,9 +283,7 @@ class _HomeViewState extends State<HomeView> {
       decoration: BoxDecoration(
         color: AppColors.primary.withOpacity(0.1),
         borderRadius: AppSpacing.borderRadiusSM,
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.3),
-        ),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
       ),
       child: Row(
         children: [

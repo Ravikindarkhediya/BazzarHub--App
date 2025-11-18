@@ -1,4 +1,34 @@
-import 'package:flutter/material.dart' show BoxFit, TextStyle, StatefulWidget, State, TextEditingController, BuildContext, Widget, Text, EdgeInsets, Icon, Center, Navigator, MaterialPageRoute, AppBar, Icons, IconButton, Colors, BorderRadius, BorderSide, OutlineInputBorder, InputDecoration, TextField, Padding, ListView, Image, ListTile, Expanded, Column, Scaffold;
+import 'package:flutter/material.dart'
+    show
+        BoxFit,
+        TextStyle,
+        StatefulWidget,
+        State,
+        TextEditingController,
+        BuildContext,
+        Widget,
+        Text,
+        EdgeInsets,
+        Icon,
+        Center,
+        Navigator,
+        MaterialPageRoute,
+        AppBar,
+        Icons,
+        IconButton,
+        Colors,
+        BorderRadius,
+        BorderSide,
+        OutlineInputBorder,
+        InputDecoration,
+        TextField,
+        Padding,
+        ListView,
+        Image,
+        ListTile,
+        Expanded,
+        Column,
+        Scaffold;
 import '../../product/model/proiduct_model.dart';
 import '../../product/views/product_detail_page.dart';
 
@@ -33,11 +63,13 @@ class _SearchPageState extends State<SearchPage> {
         _filtered = _allProducts;
       } else {
         _filtered = _allProducts
-            .where((p) =>
-        p.productName.toLowerCase().contains(query.toLowerCase()) ||
-            p.description.toLowerCase().contains(query.toLowerCase()) ||
-            p.detail.toLowerCase().contains(query.toLowerCase()) ||
-            p.address.toLowerCase().contains(query.toLowerCase()))
+            .where(
+              (p) =>
+                  p.productName.toLowerCase().contains(query.toLowerCase()) ||
+                  p.description.toLowerCase().contains(query.toLowerCase()) ||
+                  p.detail.toLowerCase().contains(query.toLowerCase()) ||
+                  p.address.toLowerCase().contains(query.toLowerCase()),
+            )
             .toList();
       }
     });
@@ -47,7 +79,10 @@ class _SearchPageState extends State<SearchPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ProductDetailPage(product: product),
+        builder: (_) => ProductDetailPage(
+          productId: product.productId.toString(),
+          currentLocation: product.address,
+        ),
       ),
     );
   }
@@ -55,10 +90,7 @@ class _SearchPageState extends State<SearchPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Search Products'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Search Products'), centerTitle: true),
       body: Column(
         children: [
           // 🔍 Search Field
@@ -72,12 +104,12 @@ class _SearchPageState extends State<SearchPage> {
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _controller.text.isNotEmpty
                     ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    _controller.clear();
-                    _onSearch('');
-                  },
-                )
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _controller.clear();
+                          _onSearch('');
+                        },
+                      )
                     : null,
                 filled: true,
                 fillColor: Colors.grey.shade100,
@@ -93,30 +125,32 @@ class _SearchPageState extends State<SearchPage> {
           Expanded(
             child: _filtered.isEmpty
                 ? const Center(
-              child: Text(
-                "No matching products found 😕",
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-              ),
-            )
+                    child: Text(
+                      "No matching products found 😕",
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                  )
                 : ListView.builder(
-              itemCount: _filtered.length,
-              itemBuilder: (context, index) {
-                final product = _filtered[index];
-                return ListTile(
-                  leading: Image.asset(
-                    product.images.first,
-                    width: 50,
-                    height: 50,
-                    fit: BoxFit.cover,
+                    itemCount: _filtered.length,
+                    itemBuilder: (context, index) {
+                      final product = _filtered[index];
+                      return ListTile(
+                        leading: Image.asset(
+                          product.images.first,
+                          width: 50,
+                          height: 50,
+                          fit: BoxFit.cover,
+                        ),
+                        title: Text(product.productName),
+                        subtitle: Text(product.formattedPrice),
+                        trailing: const Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 16,
+                        ),
+                        onTap: () => _openProductDetail(product),
+                      );
+                    },
                   ),
-                  title: Text(product.productName),
-                  subtitle: Text(product.formattedPrice),
-                  trailing: const Icon(Icons.arrow_forward_ios_rounded,
-                      size: 16),
-                  onTap: () => _openProductDetail(product),
-                );
-              },
-            ),
           ),
         ],
       ),
