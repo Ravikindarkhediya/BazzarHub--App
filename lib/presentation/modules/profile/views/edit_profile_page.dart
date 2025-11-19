@@ -33,6 +33,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final TextEditingController _locationController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
+  final TextEditingController _villageController = TextEditingController();
+  final TextEditingController _talukaController = TextEditingController();
+  final TextEditingController _districtController = TextEditingController();
+  final TextEditingController _stateController = TextEditingController();
 
   File? _selectedAvatarImage;
   String? _uploadedAvatarUrl;
@@ -357,7 +361,36 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _locationController.dispose();
     _bioController.dispose();
     _dobController.dispose();
+    _villageController.dispose();
+    _talukaController.dispose();
+    _districtController.dispose();
+    _stateController.dispose();
     super.dispose();
+  }
+
+  String _getFieldPlaceholder(String fieldKey) {
+    switch (fieldKey) {
+      case 'name':
+        return 'Name';
+      case 'email':
+        return 'Email';
+      case 'phone':
+        return 'Phone';
+      case 'location':
+        return 'Location';
+      case 'village':
+        return 'Village';
+      case 'taluka':
+        return 'Taluka';
+      case 'district':
+        return 'District';
+      case 'state':
+        return 'State';
+      case 'bio':
+        return 'Bio';
+      default:
+        return 'Enter details';
+    }
   }
 
   @override
@@ -645,6 +678,59 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           maxLines: 3,
                         ),
                       ),
+
+                      const Divider(height: 8),
+
+                      // Village Field - Inline Editable
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        child: _buildInlineEditField(
+                          fieldKey: 'village',
+                          icon: Icons.location_city_outlined,
+                          controller: _villageController,
+                          keyboardType: TextInputType.text,
+                        ),
+                      ),
+
+                      const Divider(height: 8),
+
+                      // Taluka Field - Inline Editable
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        child: _buildInlineEditField(
+                          fieldKey: 'taluka',
+                          icon: Icons.map_outlined,
+                          controller: _talukaController,
+                          keyboardType: TextInputType.text,
+                        ),
+                      ),
+
+                      const Divider(height: 8),
+
+                      // District Field - Inline Editable
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        child: _buildInlineEditField(
+                          fieldKey: 'district',
+                          icon: Icons.apartment_outlined,
+                          controller: _districtController,
+                          keyboardType: TextInputType.text,
+                        ),
+                      ),
+
+                      const Divider(height: 8),
+
+                      // State Field - Inline Editable
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        child: _buildInlineEditField(
+                          fieldKey: 'state',
+                          icon: Icons.public_outlined,
+                          controller: _stateController,
+                          keyboardType: TextInputType.text,
+                        ),
+                      ),
+
                       SizedBox(height: 5,)
                     ],
                   ),
@@ -774,7 +860,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               },
               child: Text(
                 controller.text.isEmpty
-                    ? "Bio"
+                    ? _getFieldPlaceholder(fieldKey)
                     : controller.text,
                 style: TextStyle(
                   fontSize: 15,

@@ -135,12 +135,6 @@ class _AccountPageState extends State<AccountPage> with SingleTickerProviderStat
                               }
                             },
                           ),
-                          SettingsTile(
-                            icon: Icons.delete_outline,
-                            title: 'Delete Account',
-                            subtitle: 'Permanently delete your account',
-                            onTap: () => _showDeleteAccountDialog(context),
-                          ),
                         ],
                       ),
 
@@ -223,7 +217,37 @@ class _AccountPageState extends State<AccountPage> with SingleTickerProviderStat
 
                       _buildLogoutButton(context),
 
+                      AppSpacing.verticalSpaceMD,
+
+                      // Delete Account Link
+                      Center(
+                        child: GestureDetector(
+                          onTap: () => _showDeleteAccountDialog(context),
+                          child: Text(
+                            'Delete Account',
+                            style: TextStyle(
+                              color: Colors.red,
+                              decoration: TextDecoration.underline,
+                              decorationColor: Colors.red,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+
                       AppSpacing.verticalSpaceXL,
+
+                      // App Version
+                      Text(
+                        'Version 1.0.0',
+                        style: TextStyle(
+                          color: AppColors.textSecondary.withOpacity(0.6),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+
                     ],
                   ),
                 ),
