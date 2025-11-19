@@ -1,11 +1,42 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../app/data/constants/app_colors.dart';
-import '../../../../app/data/constants/app_text_style.dart';
 
-class CommonWidget{
+import '../../widgets/common_text_field.dart';
 
-  // 🧠 Text Field with primary glow on focus
+class CommonWidget {
+
+  Widget buildPlainTextField({
+    required String label,
+    required TextEditingController controller,
+    required IconData icon,
+    TextInputType? keyboardType,
+    bool obscureText = false,
+    Widget? suffixIcon,
+    String? hintText,
+    String? Function(String?)? validator, required int maxLength,
+  }) {
+    return CommonTextField(
+      controller: controller,
+      labelText: label,
+      hintText: null,
+      validator: validator,
+      keyboardType: keyboardType,
+      obscureText: obscureText,
+      prefixIconData: icon,
+      suffixIcon: suffixIcon,
+      showFocusEffect: false,
+      borderRadius: 0.0,
+      border: InputBorder.none,
+      enabledBorder: InputBorder.none,
+      focusedBorder: InputBorder.none,
+      errorBorder: InputBorder.none,
+      focusedErrorBorder: InputBorder.none,
+      filled: false,
+      contentPadding: const EdgeInsets.symmetric(vertical: 8),
+      floatingLabelBehavior: FloatingLabelBehavior.never,
+    );
+  }
+
   Widget buildTextField({
     required String label,
     required TextEditingController controller,
@@ -14,54 +45,37 @@ class CommonWidget{
     bool obscureText = false,
     Widget? suffixIcon,
     String? Function(String?)? validator,
+    String? hintText,
+    int? maxLines,
+    void Function(String)? onChanged,
+    TextInputAction? textInputAction,
+    FocusNode? focusNode,
+    bool enabled = true,
+    EdgeInsetsGeometry? contentPadding,
+    TextStyle? labelStyle,
+    TextStyle? hintStyle,
+    TextStyle? textStyle,
   }) {
-    return Focus(
-      child: Builder(builder: (context) {
-        final hasFocus = Focus.of(context).hasFocus;
-        return AnimatedContainer(
-          duration: 300.ms,
-          // decoration: BoxDecoration(
-          //   boxShadow: hasFocus
-          //       ? [
-          //     BoxShadow(
-          //       color: AppColors.primary.withOpacity(0.1),
-          //       // blurRadius: 18,
-          //       // spreadRadius: 2,
-          //     ),
-          //   ]
-          //       : [],
-          // ),
-          child: TextFormField(
-            controller: controller,
-            keyboardType: keyboardType,
-            obscureText: obscureText,
-            cursorColor: AppColors.primary,
-            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.primary),
-            decoration: InputDecoration(
-              labelText: label,
-              labelStyle:
-              AppTextStyles.bodyLarge.copyWith(color: AppColors.primary),
-              prefixIcon: Icon(icon, color: AppColors.primary),
-              suffixIcon: suffixIcon,
-              filled: true,
-              fillColor: AppColors.white.withOpacity(0.1),
-              contentPadding:
-              const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide:
-                BorderSide(color: AppColors.white.withOpacity(0.4)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide(
-                    color: AppColors.primary.withOpacity(0.8), width: 1.5),
-              ),
-            ),
-            validator: validator,
-          ),
-        );
-      }),
+    return CommonTextField(
+      controller: controller,
+      labelText: label,
+      hintText: hintText,
+      validator: validator,
+      keyboardType: keyboardType,
+      obscureText: obscureText,
+      prefixIconData: icon,
+      suffixIcon: suffixIcon,
+      maxLines: maxLines,
+      onChanged: onChanged,
+      textInputAction: textInputAction,
+      focusNode: focusNode,
+      enabled: enabled,
+      contentPadding: contentPadding,
+      labelStyle: labelStyle,
+      hintStyle: hintStyle,
+      textStyle: textStyle,
+      showFocusEffect: true,
+      borderRadius: 14.0,
     );
   }
 

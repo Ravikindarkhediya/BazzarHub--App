@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:bazzar_hub_app/presentation/modules/auth/views/social_tab.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -18,6 +19,7 @@ import 'package:get/get.dart' hide Response;
 import '../../../services/api_service.dart';
 import '../../../services/auth_service.dart';
 import '../widget/common_widget.dart';
+import '../../widgets/common_text_field.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -113,10 +115,10 @@ class _SignupPageState extends State<SignupPage> {
     double cardPadding = AppResponsiveSize.isMobile(context) ? 24 : 32;
 
     return Scaffold(
-      body: Container(
+      backgroundColor:AppColors.background,
+      body: SizedBox(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(gradient: AppColors.shimmerGradient),
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -125,234 +127,264 @@ class _SignupPageState extends State<SignupPage> {
                 vertical: 16,
               ),
               child:
-                  Form(
-                    key: _formKey,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                              Icons.store_rounded,
-                              color: AppColors.primary,
-                              size: AppResponsiveSize.widthPercent(
-                                context,
-                                AppResponsiveSize.isMobile(context)
-                                    ? 16
-                                    : 8,
+              Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.store_rounded,
+                      color: AppColors.primary,
+                      size: AppResponsiveSize.widthPercent(
+                        context,
+                        AppResponsiveSize.isMobile(context)
+                            ? 16
+                            : 8,
+                      ),
+                    )
+                        .animate()
+                        .fadeIn(duration: 800.ms)
+                        .scale(delay: 200.ms),
+
+                    const SizedBox(height: 8),
+
+                    Text(
+                      AppConstants.appName,
+                      style: AppTextStyles.h2.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                        shadows: [
+                          Shadow(
+                            color: AppColors.primary.withOpacity(0.3),
+                            blurRadius: 5,
+                          ),
+                        ],
+                      ),
+                    ).animate().fadeIn(duration: 800.ms),
+
+                    const SizedBox(height: 30),
+
+                    // Card container for text fields only
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 20,
+                            spreadRadius: 0,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.all(0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            child: CommonWidget().buildPlainTextField(
+                              label: "Full Name",
+                              controller: _nameController,
+                              icon: Icons.person_2_outlined,
+                              keyboardType: TextInputType.text,
+                              hintText: "Tap to add your full name",
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return "Please enter your full name";
+                                }
+                                if (value.length < 2) {
+                                  return "Name must be at least 2 characters";
+                                }
+                                return null;
+                              }, maxLength: 0,
+                            ),
+                          ),
+                          const Divider(
+                            color: Colors.grey,
+                            thickness: 1,
+                            height: 1,
+                            indent: 0,
+                            endIndent: 0,
+                          ),
+
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            child: CommonWidget().buildPlainTextField(
+                              label: "Email Address",
+                              controller: _emailController,
+                              icon: Icons.email_outlined,
+                              keyboardType: TextInputType.emailAddress,
+                              validator: CommonTextField.emailValidator, maxLength: 0,
+                            ).animate().fadeIn(duration: 800.ms, delay: 400.ms),
+                          ),
+                          const Divider(
+                            color: Colors.grey,
+                            thickness: 1,
+                            height: 1,
+                            indent: 0,
+                            endIndent: 0,
+                          ),
+
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            child: CommonWidget().buildPlainTextField(
+                              label: "Password",
+                              controller: _passwordController,
+                              icon: Icons.lock_outline,
+                              obscureText: _obscurePassword,
+                              hintText: "Tap to add password",
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility_off_rounded
+                                      : Icons.visibility_rounded,
+                                  color: AppColors.primary.withOpacity(
+                                    0.8,
+                                  ),
+                                ),
+                                onPressed: () {
+                                  setState(
+                                        () =>
+                                    _obscurePassword = !_obscurePassword,
+                                  );
+                                },
                               ),
-                            )
-                            .animate()
-                            .fadeIn(duration: 800.ms)
-                            .scale(delay: 200.ms),
+                              validator: CommonTextField.passwordValidator, maxLength: 0,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
 
-                        const SizedBox(height: 8),
+                    const SizedBox(height: 24),
 
-                        Text(
-                          AppConstants.appName,
-                          style: AppTextStyles.h2.copyWith(
-                            color: AppColors.primary,
+                    SizedBox(
+                      width: double.infinity,
+                      height: AppResponsiveSize.isMobile(context) ? 55 : 65,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          requestSignup();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          elevation: 12,
+                          shadowColor: AppColors.primary.withOpacity(0.7),
+                        ),
+                        child: _isLoading
+                            ? const CircularProgressIndicator(
+                          color: AppColors.textOnAccent,
+                          strokeWidth: 2,
+                        )
+                            : Text(
+                          "SignUp",
+                          style: AppTextStyles.button.copyWith(
+                            color: AppColors.textOnPrimary,
                             fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
                             shadows: [
                               Shadow(
-                                color: AppColors.primary.withOpacity(0.3),
-                                blurRadius: 5,
+                                color: AppColors.accent.withOpacity(0.8),
+                                blurRadius: 10,
                               ),
                             ],
                           ),
-                        ).animate().fadeIn(duration: 800.ms),
-
-                        const SizedBox(height: 30),
-
-                        CommonWidget().buildTextField(
-                          label: "Full Name",
-                          controller: _nameController,
-                          icon: Icons.person_2_outlined,
-                          keyboardType: TextInputType.text,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return "Please enter your full name";
-                            }
-                            if (value.length < 2) {
-                              return "Name must be at least 2 characters";
-                            }
-                            return null;
-                          },
                         ),
+                      ),
+                    ).animate().fadeIn(
+                      duration: 900.ms,
+                      delay: 300.ms,
+                    ),
 
-                        const SizedBox(height: 16),
+                    const SizedBox(height: 20),
 
-                        CommonWidget().buildTextField(
-                          label: "Email Address",
-                          controller: _emailController,
-                          icon: Icons.email_outlined,
-                          keyboardType: TextInputType.emailAddress,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return "Please enter your email";
-                            } else if (!GetUtils.isEmail(value)) {
-                              return "Enter a valid email";
-                            }
-                            return null;
-                          },
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        CommonWidget().buildTextField(
-                          label: "Password",
-                          controller: _passwordController,
-                          icon: Icons.lock_outline,
-                          obscureText: _obscurePassword,
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_off_rounded
-                                  : Icons.visibility_rounded,
-                              color: AppColors.primary.withOpacity(
-                                0.8,
-                              ),
-                            ),
-                            onPressed: () {
-                              setState(
-                                () =>
-                                    _obscurePassword = !_obscurePassword,
-                              );
-                            },
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CommonWidget().buildDivider(),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8.0,
                           ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return "Please enter your password";
-                            } else if (value.length <
-                                AppConstants.minPasswordLength) {
-                              return "Password must be at least ${AppConstants.minPasswordLength} characters";
-                            }
-                            return null;
-                          },
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        SizedBox(
-                          width: double.infinity,
-                          height: AppResponsiveSize.isMobile(context) ? 55 : 65,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              requestSignup();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              elevation: 12,
-                              shadowColor: AppColors.primary.withOpacity(0.7),
-                            ),
-                            child: _isLoading
-                                ? const CircularProgressIndicator(
-                              color: AppColors.textOnAccent,
-                              strokeWidth: 2,
-                            )
-                                : Text(
-                                  "SignUp",
-                                  style: AppTextStyles.button.copyWith(
-                                    color: AppColors.textOnPrimary,
-                                    fontWeight: FontWeight.bold,
-                                    shadows: [
-                                      Shadow(
-                                        color: AppColors.accent.withOpacity(0.8),
-                                        blurRadius: 10,
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                          child: Text(
+                            'or',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyLarge!
+                                .copyWith(color: AppColors.primary),
                           ),
-                        ).animate().fadeIn(
-                          duration: 900.ms,
-                          delay: 300.ms,
                         ),
+                        CommonWidget().buildDivider(),
 
-                        const SizedBox(height: 20),
-
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            CommonWidget().buildDivider(),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8.0,
-                              ),
-                              child: Text(
-                                'or',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyLarge!
-                                    .copyWith(color: AppColors.primary),
-                              ),
-                            ),
-                            CommonWidget().buildDivider(),
-                          ],
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        SocialButton(
-                          label: "Continue with Google",
-                          iconPath: "assets/icons/google.png",
-                          onPressed: () => AuthService().handleGoogleSignIn(), // ✅ Correct
-                          animationDelay: 400.ms,
-                        ),
-
-                        const SizedBox(height: AppSpacing.md),
-
-                        SocialButton(
-                          label: "Continue with Apple",
-                          iconData: Icons.apple,
-                          onPressed: () {},
-                          animationDelay: 500.ms,
-                        ),
-
-
-                        const SizedBox(height: 50),
-
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              "Already have an account?",
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.textOnAccent,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            TextButton(
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: Size(0, 0),
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              onPressed: () {
-                                Get.back();
-                              },
-                              child: Text(
-                                "Sign In",
-                                style: AppTextStyles.label.copyWith(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.bold,
-                                  decoration: TextDecoration.underline,
-                                  decorationThickness: 1.5,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-
-
+                        SizedBox(height: 12),
                       ],
                     ),
-                  )
-                      .animate()
-                      .fadeIn(duration: 800.ms)
-                      .scale(begin: const Offset(0.95, 0.95)),
+
+                    const SizedBox(height: 20),
+
+                    SocialButton(
+                      label: "Continue with Google",
+                      iconPath: "assets/icons/google.png",
+                      onPressed: () => AuthService().handleGoogleSignIn(),
+                      animationDelay: 400.ms,
+                    ),
+
+                    if (defaultTargetPlatform == TargetPlatform.iOS) ...[
+                      const SizedBox(height: AppSpacing.md),
+                      SocialButton(
+                        label: "Continue with Apple",
+                        iconData: Icons.apple,
+                        onPressed: () {},
+                        animationDelay: 500.ms,
+                      ),
+                    ],
+
+
+                    const SizedBox(height: 50),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Already have an account?",
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.textOnAccent,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: Size(0, 0),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          onPressed: () {
+                            Get.back();
+                          },
+                          child: Text(
+                            "Sign In",
+                            style: AppTextStyles.label.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                              decoration: TextDecoration.underline,
+                              decorationThickness: 1.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+
+                  ],
+                ),
+              )
+                  .animate()
+                  .fadeIn(duration: 800.ms)
+                  .scale(begin: const Offset(0.95, 0.95)),
             ),
           ),
         ),

@@ -89,6 +89,12 @@ abstract class ApiServices{
   @POST(Endpoints.USER_DELETE)
   Future<HttpResponse<BaseModel<dynamic>>> deleteAccount();
 
+  @POST(Endpoints.USER_CHANGE_PASSWORD)
+  Future<HttpResponse<BaseModel<UserModel>>> updateChangePassword(@Body() Map<String, dynamic> params);
+
+  @POST(Endpoints.USER_FORGOT_PASSWORD)
+  Future<HttpResponse<BaseModel<dynamic>>> sendForgotPasswordOtp(@Body() Map<String, dynamic> params);
+
 
   // Categories
 

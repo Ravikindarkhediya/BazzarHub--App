@@ -187,25 +187,92 @@ class _ApiServices implements ApiServices {
   }
 
   @override
+  Future<HttpResponse<BaseModel<UserModel>>> updateChangePassword(
+    Map<String, dynamic> params,
+  ) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    final _data = <String, dynamic>{};
+    _data.addAll(params);
+    final _options = _setStreamType<HttpResponse<BaseModel<UserModel>>>(
+      Options(method: 'POST', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/user/change-password',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
+    late BaseModel<UserModel> _value;
+    try {
+      _value = BaseModel<UserModel>.fromJson(
+        _result.data!,
+        (json) => UserModel.fromJson(json as Map<String, dynamic>),
+      );
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options);
+      rethrow;
+    }
+    final httpResponse = HttpResponse(_value, _result);
+    return httpResponse;
+  }
+
+  @override
+  Future<HttpResponse<BaseModel<dynamic>>> sendForgotPasswordOtp(
+    Map<String, dynamic> params,
+  ) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    final _data = <String, dynamic>{};
+    _data.addAll(params);
+    final _options = _setStreamType<HttpResponse<BaseModel<dynamic>>>(
+      Options(method: 'POST', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/user/forgot-password',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
+    late BaseModel<dynamic> _value;
+    try {
+      _value = BaseModel<dynamic>.fromJson(
+        _result.data!,
+        (json) => json as dynamic,
+      );
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options);
+      rethrow;
+    }
+    final httpResponse = HttpResponse(_value, _result);
+    return httpResponse;
+  }
+
+  @override
   Future<HttpResponse<BaseModel<CategoryListResponseModel>>>
   requestAllCategories() async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
-    final _options =
-        _setStreamType<HttpResponse<BaseModel<CategoryListResponseModel>>>(
-          Options(method: 'GET', headers: _headers, extra: _extra)
-              .compose(
-                _dio.options,
-                '/api/categories',
-                queryParameters: queryParameters,
-                data: _data,
-              )
-              .copyWith(
-                baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl),
-              ),
-        );
+    final _options = _setStreamType<
+      HttpResponse<BaseModel<CategoryListResponseModel>>
+    >(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/api/categories',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
     final _result = await _dio.fetch<Map<String, dynamic>>(_options);
     late BaseModel<CategoryListResponseModel> _value;
     try {
@@ -264,19 +331,18 @@ class _ApiServices implements ApiServices {
     queryParameters.addAll(queryParams);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
-    final _options =
-        _setStreamType<HttpResponse<BaseListModel<MarketplaceModel>>>(
-          Options(method: 'GET', headers: _headers, extra: _extra)
-              .compose(
-                _dio.options,
-                '/api/marketplace',
-                queryParameters: queryParameters,
-                data: _data,
-              )
-              .copyWith(
-                baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl),
-              ),
-        );
+    final _options = _setStreamType<
+      HttpResponse<BaseListModel<MarketplaceModel>>
+    >(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/api/marketplace',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
     final _result = await _dio.fetch<Map<String, dynamic>>(_options);
     late BaseListModel<MarketplaceModel> _value;
     try {

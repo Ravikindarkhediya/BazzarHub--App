@@ -15,7 +15,8 @@ class Endpoints {
   static const String USER_UPDATE = "/user/update";
   static const String USER_DELETE = "/user/delete";
   // static const String APPLE_LOGIN_ENDPOINT = "/user/auth/apple";
-
+  static const String USER_CHANGE_PASSWORD = "/user/change-password";
+  static const String USER_FORGOT_PASSWORD = "/user/forgot-password";
 
   // Categories
 
