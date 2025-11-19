@@ -33,6 +33,7 @@ class _SellProductPageState extends State<SellProductPage> {
   }
 
   Future<void> _handleSubmit() async {
+    print("Api calll");
     final success = await _controller.submitProduct(context);
     if (success && mounted) {
       // Navigate back or show success page
@@ -207,9 +208,10 @@ class _SellProductPageState extends State<SellProductPage> {
                     controller: _controller.priceController,
                     placeholder: '0',
                     keyboardType: TextInputType.number,
-                    prefix: const Text('₹ ', style: TextStyle(
-                      decoration: TextDecoration.none,
-                    ),),
+                    prefixIcon: Icons.currency_rupee,
+                    // prefix: const Text('₹ ', style: TextStyle(
+                    //   decoration: TextDecoration.none,
+                    // ),),
                   ),
                 ],
               ),
@@ -317,6 +319,7 @@ class _SellProductPageState extends State<SellProductPage> {
                   const SizedBox(height: 8),
                   _buildTextField(
                     controller: _controller.zipCodeController,
+                    keyboardType: TextInputType.number,
                     placeholder: 'ZipCode',
                     prefixIcon: CupertinoIcons.location_solid,
                   ),
@@ -353,6 +356,18 @@ class _SellProductPageState extends State<SellProductPage> {
           keyboardType: TextInputType.phone,
           maxLength: 15,
           prefixIcon: CupertinoIcons.phone_fill,
+        ),
+
+        const SizedBox(height: 24),
+
+        /// Email
+        _buildSectionTitle('Email'),
+        const SizedBox(height: 8),
+        _buildTextField(
+          controller: _controller.emailController,
+          placeholder: 'xyz@gmail.com',
+          keyboardType: TextInputType.emailAddress,
+          prefixIcon: CupertinoIcons.envelope,
         ),
       ],
     );

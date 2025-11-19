@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../app/core/utils/utils.dart';
+import '../commons/dialogs/app_toasts.dart';
 import '../services/api_service.dart';
 import '../services/models/categorie/categorie_model.dart';
 
@@ -54,6 +56,7 @@ class SellProductController extends ChangeNotifier {
   final zipCodeController = TextEditingController();
   final stateController = TextEditingController();
   final contactController = TextEditingController();
+  final emailController = TextEditingController();
 
   // Image Picker
   final ImagePicker _picker = ImagePicker();
@@ -105,10 +108,9 @@ class SellProductController extends ChangeNotifier {
       zipCodeController,
       stateController,
       contactController,
+      emailController,
     ]);
   }
-
-
 
   /// Pick image from camera
   Future<void> pickFromCamera(BuildContext context) async {
@@ -267,54 +269,76 @@ class SellProductController extends ChangeNotifier {
 
   /// Validate form
   String? validateForm() {
-    if (titleController.text.trim().isEmpty) {
+    if (_images.isEmpty) {
+      return 'Please add at least one image';
+    }
+    if (_selectedCategoryId == null) {
+      return 'Please select a category';
+    }
+    if (titleController.text
+        .trim()
+        .isEmpty) {
       return 'Product title is required';
     }
-    if (titleController.text.trim().length < 5) {
-      return 'Title must be at least 5 characters';
-    }
-    if (descriptionController.text.trim().isEmpty) {
+    if (descriptionController.text
+        .trim()
+        .isEmpty) {
       return 'Description is required';
     }
-    if (descriptionController.text.trim().length < 20) {
-      return 'Description must be at least 20 characters';
-    }
-    if (priceController.text.trim().isEmpty) {
+    if (priceController.text
+        .trim()
+        .isEmpty) {
       return 'Price is required';
     }
     final price = double.tryParse(priceController.text.trim());
     if (price == null || price <= 0) {
       return 'Enter a valid price';
     }
-    if (_selectedCategoryId == null) {
-      return 'Please select a category';
-    }
-    if (_images.isEmpty) {
-      return 'Please add at least one image';
-    }
-    if (villageController.text.trim().isEmpty) {
+    if (villageController.text
+        .trim()
+        .isEmpty) {
       return 'Village is required';
     }
-    if (talukoController.text.trim().isEmpty) {
+    if (talukoController.text
+        .trim()
+        .isEmpty) {
       return 'Taluko is required';
     }
-    if (districtController.text.trim().isEmpty) {
+    if (districtController.text
+        .trim()
+        .isEmpty) {
       return 'District is required';
     }
-    if (stateController.text.trim().isEmpty) {
+    if (stateController.text
+        .trim()
+        .isEmpty) {
       return 'State is required';
     }
-    if (zipCodeController.text.trim().isEmpty) {
+    if (zipCodeController.text
+        .trim()
+        .isEmpty) {
       return 'ZipCode is required';
     }
-    if (locationController.text.trim().isEmpty) {
+    if (locationController.text
+        .trim()
+        .isEmpty) {
       return 'Country is required';
     }
-    if (contactController.text.trim().isEmpty) {
+    if (contactController.text
+        .trim()
+        .isEmpty) {
       return 'Contact number is required';
     }
-    if (contactController.text.trim().length < 10) {
+    if (contactController.text
+        .trim()
+        .length < 10) {
       return 'Enter a valid contact number';
+    }
+    if (Utils.isEmpty(emailController.text.trim())) {
+      return 'Please enter email';
+    }
+    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(emailController.text.trim())) {
+      return 'Please enter a valid email';
     }
     return null;
   }
@@ -326,12 +350,38 @@ class SellProductController extends ChangeNotifier {
       _showError(context, error);
       return false;
     }
-
     _isLoading = true;
     notifyListeners();
-
     try {
-      // Simulate API call
+
+      Map<String, dynamic> queryParams = {
+        "title": titleController.text,
+        "description": descriptionController.text,
+        "price": double.parse(priceController.text),
+        "category": _selectedCategoryId,
+        "images": _images.map((img) => img.file).toList(),
+        "condition": _selectedCondition.toLowerCase(),
+        "type": "sell",
+        "location": {
+          "village": villageController.text,
+          "taluko": talukoController.text,
+          "district": districtController.text,
+          "state": stateController.text,
+          "zipCode": zipCodeController.text,
+          "country": locationController.text,
+        },
+        "contactInfo": {
+          "phone": [
+            contactController.text
+          ],
+          "email": [
+            emailController.text
+          ],
+        }
+      };
+
+      debugPrint(queryParams.toString());
+
       await Future.delayed(const Duration(seconds: 2));
 
       debugPrint('✅ Product submitted successfully');
@@ -373,13 +423,7 @@ class SellProductController extends ChangeNotifier {
 
   void _showError(BuildContext context, String message) {
     HapticFeedback.heavyImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    AppToast.showError(message);
   }
 
   void _showSuccess(BuildContext context, String message) {
