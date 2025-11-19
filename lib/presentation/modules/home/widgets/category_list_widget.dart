@@ -1,5 +1,4 @@
 import 'package:bazzar_hub_app/app/core/utils/app_language.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../app/core/utils/responsive_size.dart';
@@ -8,18 +7,33 @@ import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
 import '../../../services/models/categorie/categorie_model.dart';
 import 'auto_fit_image_widget.dart';
+import 'category_selection_bottom_sheet.dart';
 
 class CategoryListWidget extends StatelessWidget {
   final List<CategoryModel> categories;
   final String? selectedCategoryId;
   final Function(String?) onCategorySelected;
+  final List<String> selectedCategoryIds;
+  final Function(List<String>) onApplyFilter;
 
   const CategoryListWidget({
     super.key,
     required this.categories,
     this.selectedCategoryId,
-    required this.onCategorySelected,
+    required this.onCategorySelected, required this.selectedCategoryIds, required this.onApplyFilter,
   });
+
+  void _openCategoryBottomSheet(BuildContext context) {
+    CategorySelectionBottomSheet.show(
+      context: context,
+      categories: categories,
+      selectedCategoryIds: selectedCategoryIds,
+      onApply: (selectedIds) {
+        // यहाँ अब multiple IDs को directly pass करो
+        onApplyFilter(selectedIds); // ✅ All selected category IDs
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,16 +51,16 @@ class CategoryListWidget extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              if (selectedCategoryId != null)
-                TextButton(
-                  onPressed: () => onCategorySelected(null),
-                  child: Text(
-                    'View All',
-                    style: AppTextStyles.button.copyWith(
-                      color: AppColors.primary,
-                    ),
+              // if (selectedCategoryId != null)
+              TextButton(
+                onPressed: () => _openCategoryBottomSheet(context),
+                child: Text(
+                  'View All',
+                  style: AppTextStyles.button.copyWith(
+                    color: AppColors.primary,
                   ),
                 ),
+              ),
             ],
           ),
         ),

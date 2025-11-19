@@ -28,12 +28,8 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-
   // Global Query Params
-  Map<String, dynamic> queryParams = {
-    "page": 1,
-    "limit": 50,
-  };
+  Map<String, dynamic> queryParams = {"page": 1, "limit": 50};
 
   // State Variables
   String? _selectedCategoryId;
@@ -52,14 +48,14 @@ class _HomeViewState extends State<HomeView> {
   void initState() {
     super.initState();
     _filterController = FilterController();
-     _getCategory();
+    _getCategory();
     _getMarketplace();
     _mockGetLocation();
   }
 
   @override
   void dispose() {
-     _filterController.dispose();
+    _filterController.dispose();
     super.dispose();
   }
 
@@ -92,9 +88,8 @@ class _HomeViewState extends State<HomeView> {
       if (response.data.status) {
         _displayedProducts.clear();
         _displayedProducts.addAll(response.data.data ?? []);
-      }
-      else {
-         AppToast.showError(
+      } else {
+        AppToast.showError(
           response.data.message ?? "Something went wrong, Please try again.",
         );
       }
@@ -127,7 +122,6 @@ class _HomeViewState extends State<HomeView> {
       _getMarketplace();
     });
   }
-
 
   /// 🔍 Handle Filter Button Tap
   void _handleFilterTap() {
@@ -201,6 +195,8 @@ class _HomeViewState extends State<HomeView> {
                               categories: _categories,
                               selectedCategoryId: _selectedCategoryId,
                               onCategorySelected: _filterByCategory,
+                              selectedCategoryIds: [],
+                              onApplyFilter: (List<String> p1) {},
                             ),
 
                           AppSpacing.verticalSpaceMD,
@@ -235,6 +231,7 @@ class _HomeViewState extends State<HomeView> {
                         ),
                       ),
                     ),
+
                     /// Products Grid
                     SliverToBoxAdapter(
                       child: ProductGridWidget(
