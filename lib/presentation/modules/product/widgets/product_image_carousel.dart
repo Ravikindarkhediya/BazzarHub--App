@@ -62,9 +62,6 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
               /// Image Counter Badge (Top Right)
               _buildImageCounter(images.length),
 
-              /// Page Indicator (Bottom Center)
-              if (images.length > 1) _buildPageIndicator(images.length),
-
               /// Tap to View Fullscreen Hint
               _buildFullscreenHint(),
             ],
@@ -131,7 +128,7 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
           vertical: AppSpacing.xs,
         ),
         decoration: BoxDecoration(
-          color: AppColors.black.withOpacity(0.7),
+          color: AppColors.black.withOpacity(0.5),
           borderRadius: AppSpacing.borderRadiusSM,
         ),
         child: Row(
@@ -152,43 +149,6 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
     ).animate().fadeIn(duration: 400.ms, delay: 300.ms);
   }
 
-  Widget _buildPageIndicator(int count) {
-    return Positioned(
-      bottom: AppSpacing.md,
-      left: 0,
-      right: 0,
-      child: Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm,
-            vertical: AppSpacing.xs,
-          ),
-          decoration: BoxDecoration(
-            color: AppColors.black.withOpacity(0.5),
-            borderRadius: AppSpacing.borderRadiusSM,
-          ),
-          child: SmoothPageIndicator(
-            controller: PageController(initialPage: _currentIndex),
-            count: count,
-            onDotClicked: (index) {
-              if (_isInitialized) {
-                _carouselController.animateToPage(index);
-              }
-            },
-            effect: ExpandingDotsEffect(
-              activeDotColor: AppColors.accent,
-              dotColor: AppColors.white.withOpacity(0.5),
-              dotHeight: 6,
-              dotWidth: 6,
-              spacing: 4,
-              expansionFactor: 3,
-            ),
-          ),
-        ),
-      ),
-    ).animate().fadeIn(duration: 400.ms, delay: 500.ms);
-  }
-
   Widget _buildFullscreenHint() {
     return Positioned(
           bottom: AppSpacing.md,
@@ -199,7 +159,7 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
               vertical: AppSpacing.xs,
             ),
             decoration: BoxDecoration(
-              color: AppColors.black.withOpacity(0.7),
+              color: AppColors.black.withOpacity(0.5),
               borderRadius: AppSpacing.borderRadiusSM,
             ),
             child: Row(

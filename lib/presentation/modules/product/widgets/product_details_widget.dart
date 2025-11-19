@@ -86,7 +86,13 @@ class ProductDetailsWidget extends StatelessWidget {
 
               const Spacer(),
 
-              AppSpacing.horizontalSpaceXS,
+              // AppSpacing.horizontalSpaceXS,
+
+              _buildMetaItem(
+                icon: Icons.favorite_rounded,
+                label: '${product.likesCount} likes',
+                color: AppColors.error,
+              ),
 
               // /// Condition Badge
               // _buildStatusBadge(
@@ -148,12 +154,7 @@ class ProductDetailsWidget extends StatelessWidget {
           _buildMetaItem(
             icon: Icons.access_time_rounded,
             label: product.timeAgo,
-          ),
-          _buildMetaItem(
-            icon: Icons.favorite_rounded,
-            label: '${product.likesCount} likes',
-            color: AppColors.error,
-          ),
+          )
         ],
       ),
     ).animate().fadeIn(duration: 600.ms, delay: 200.ms);
@@ -364,9 +365,7 @@ class ProductDetailsWidget extends StatelessWidget {
                 /// Contact Buttons
                 _buildContactButton(
                   icon: Icons.phone_rounded,
-                  onTap: product.sellerPhone == null
-                      ? null
-                      : () async {
+                  onTap: product.sellerPhone == null ? null : () async {
                           final Uri dialUri = Uri(
                             scheme: 'tel',
                             path: product.sellerPhone,
@@ -380,6 +379,24 @@ class ProductDetailsWidget extends StatelessWidget {
                           }
                         },
                 ),
+
+                // /// Email Buttons
+                // _buildContactButton(
+                //   icon: Icons.phone_rounded,
+                //   onTap: product.sellerPhone == null ? null : () async {
+                //           final Uri dialUri = Uri(
+                //             scheme: 'tel',
+                //             path: product.sellerPhone,
+                //           );
+                //
+                //           if (!await launchUrl(
+                //             dialUri,
+                //             mode: LaunchMode.externalApplication,
+                //           )) {
+                //             throw 'Could not open dialer';
+                //           }
+                //         },
+                // ),
               ],
             ),
           ),

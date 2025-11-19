@@ -1,7 +1,9 @@
+import 'package:bazzar_hub_app/app/core/manager/location_manager.dart';
 import 'package:bazzar_hub_app/presentation/modules/marketplace/view/marketplace_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:get/get.dart';
+import '../../../../app/core/manager/log_manager.dart';
 import '../../chat/views/chat_page.dart';
 import '../../product/views/sell_product_page.dart';
 import '../../profile/views/account_page.dart';
@@ -30,6 +32,10 @@ class _HomeWrapperState extends State<HomeWrapper> {
   @override
   void initState() {
     super.initState();
+
+    LocationManager().requestLocation();
+
+    LogManager.initialize();
 
     _scrollController.addListener(() {
       if (_scrollController.position.userScrollDirection ==

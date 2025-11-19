@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:bazzar_hub_app/app/core/manager/log_manager.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import '../../../../app/core/utils/app_spacing.dart';
@@ -201,12 +202,17 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       expandedHeight: 340,
       backgroundColor: AppColors.white,
       elevation: 4,
+      automaticallyImplyLeading: false,
       actions: [
         Padding(
           padding: const EdgeInsets.only(left: AppSpacing.md),
           child: _buildAppbarIcon(
             icon: Icons.arrow_back_rounded,
-            onTap: () => Navigator.pop(context),
+            onTap: () =>
+            {
+              LogManager.trackMarketplaceView(widget.productId),
+              Navigator.pop(context)
+            },
             background: AppColors.primary,
             iconColor: AppColors.white,
           ),
@@ -333,7 +339,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         onTap: onTap,
         child: Container(
           decoration: BoxDecoration(
-            color: bg, // ✅ solid background
+            color: AppColors.black.withOpacity(0.5),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(

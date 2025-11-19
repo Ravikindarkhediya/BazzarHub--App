@@ -110,16 +110,7 @@ class CategoryListWidget extends StatelessWidget {
       bool isSelected,
       int index,
       ) {
-    final categoryColors = [
-      AppColors.categoryMobiles,
-      AppColors.categoryVehicles,
-      AppColors.categoryProperty,
-      AppColors.categoryFashion,
-      AppColors.categoryElectronics,
-      AppColors.categoryFurniture,
-    ];
 
-    final color = categoryColors[index % categoryColors.length];
     final cardWidth = _getCategoryCardWidth(context);
     final imageSize = _getCategoryImageSize(context);
 
@@ -135,17 +126,17 @@ class CategoryListWidget extends StatelessWidget {
           vertical: AppSpacing.sm,
         ),
         decoration: BoxDecoration(
-          color: isSelected ? color : AppColors.white,
+          color: AppColors.white,
           borderRadius: AppSpacing.borderRadiusMD,
           border: Border.all(
-            color: isSelected ? color : AppColors.borderLight,
-            width: isSelected ? 2 : 1,
+            color: isSelected ? AppColors.primary : AppColors.borderLight,
+            width: 1,
           ),
           boxShadow: isSelected
               ? [
             BoxShadow(
-              color: color.withOpacity(0.3),
-              blurRadius: 8,
+              color: AppColors.primary.withOpacity(0.3),
+              blurRadius: 4,
               offset: const Offset(0, 2),
             )
           ]
@@ -159,9 +150,10 @@ class CategoryListWidget extends StatelessWidget {
               width: imageSize,
               height: imageSize,
               decoration: BoxDecoration(
-                color: isSelected
-                    ? AppColors.white.withOpacity(0.9)
-                    : color.withOpacity(0.1),
+                // color: isSelected
+                //     ? AppColors.white.withOpacity(0.9)
+                //     : color.withOpacity(0.1),
+                color: AppColors.white.withOpacity(0.9),
                 borderRadius: AppSpacing.borderRadiusSM,
               ),
               child: ClipRRect(
@@ -211,20 +203,20 @@ class CategoryListWidget extends StatelessWidget {
   /// Get Category Image Size based on screen size
   double _getCategoryImageSize(BuildContext context) {
     if (AppResponsiveSize.isMobile(context)) {
-      return 50; // Mobile: Fixed 50x50
+      return 60; // Mobile: Fixed 50x50
     } else if (AppResponsiveSize.isTablet(context)) {
-      return 60; // Tablet: Fixed 60x60
+      return 70; // Tablet: Fixed 60x60
     } else {
-      return 70; // Desktop: Fixed 70x70
+      return 80; // Desktop: Fixed 70x70
     }
   }
 
   /// Get Category Text Style based on screen size and selection
   TextStyle _getCategoryTextStyle(BuildContext context, bool isSelected) {
     final baseStyle = AppTextStyles.caption.copyWith(
-      color: isSelected ? AppColors.white : AppColors.textPrimary,
-      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-      height: 1.3, // Line height for better 2-line readability
+      color: AppColors.textPrimary,
+      fontWeight: FontWeight.w500,
+      height: 1.3,
     );
 
     if (AppResponsiveSize.isMobile(context)) {
