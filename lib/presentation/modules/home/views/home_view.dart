@@ -19,6 +19,7 @@ import '../../product/views/product_detail_page.dart';
 import '../widgets/header_widget.dart';
 import '../widgets/category_list_widget.dart';
 import '../widgets/product_grid_widget.dart';
+import '../widgets/category_selection_bottom_sheet.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -29,13 +30,17 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView> {
   // Global Query Params
-  Map<String, dynamic> queryParams = {"page": 1, "limit": 50};
+  Map<String, dynamic> queryParams = {
+    "page": 1,
+    "limit": 50,
+  };
 
   // State Variables
-  String? _selectedCategoryId;
+  List<String> _selectedCategoryIds = [];
   String? _currentLocation;
 
   List<CategoryModel> _categories = [];
+  List<CategoryModel> _displayedCategories = [];
   List<MarketplaceModel> _displayedProducts = [];
 
   bool _isLoading = true;
@@ -66,15 +71,16 @@ class _HomeViewState extends State<HomeView> {
       var response = await services.requestAllCategories();
       if (response.data.status) {
         _categories = response.data.data?.categories ?? [];
+        _displayedCategories = List.from(_categories);
       } else {
         AppToast.showError(
           response.data.message ?? "Something went wrong, Please try again.",
         );
       }
     } on DioException catch (e) {
-      AppToast.showError('$e');
+      AppToast.showError('Network error: ${e.message}');
     } catch (error) {
-      AppToast.showError('$error');
+      AppToast.showError('Error loading categories: $error');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -94,9 +100,9 @@ class _HomeViewState extends State<HomeView> {
         );
       }
     } on DioException catch (e) {
-      AppToast.showError('$e');
+      AppToast.showError('Network error: ${e.message}');
     } catch (error) {
-      AppToast.showError('$error');
+      AppToast.showError('Error loading products: $error');
     } finally {
       if (mounted) setState(() => _isLoadingProducts = false);
     }
@@ -104,23 +110,80 @@ class _HomeViewState extends State<HomeView> {
 
   /// 📍 Mock Location Fetch
   Future<void> _mockGetLocation() async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        setState(() {
+          _currentLocation = 'Rajkot, Gujarat';
+        });
+      }
+    } catch (error) {
+      debugPrint('Error fetching location: $error');
+    }
+  }
+
+  /// 🔍 Filter Products by Single Category (tap on category card)
+  void _filterByCategory(String categoryId) {
     setState(() {
-      _currentLocation = 'Rajkot, Gujarat';
+      if (_selectedCategoryIds.contains(categoryId)) {
+        // Deselect category
+        _selectedCategoryIds.remove(categoryId);
+        _reorderCategories();
+      } else {
+        // Select single category
+        _selectedCategoryIds = [categoryId];
+        _reorderCategories();
+      }
+
+      _updateQueryParamsAndFetch();
     });
   }
 
-  /// 🔍 Filter Products by Category
-  void _filterByCategory(String? categoryId) {
-    setState(() {
-      _selectedCategoryId = categoryId;
-      if (categoryId != null && categoryId.isNotEmpty) {
-        queryParams["category"] = categoryId;
+  /// 🔄 Reorder categories - move selected to front
+  void _reorderCategories() {
+    if (_selectedCategoryIds.isEmpty) {
+      _displayedCategories = List.from(_categories);
+      return;
+    }
+
+    final selectedCategories = <CategoryModel>[];
+    final unselectedCategories = <CategoryModel>[];
+
+    for (var category in _categories) {
+      if (_selectedCategoryIds.contains(category.id)) {
+        selectedCategories.add(category);
       } else {
-        queryParams.remove("category");
+        unselectedCategories.add(category);
       }
-      _getMarketplace();
-    });
+    }
+
+    _displayedCategories = [...selectedCategories, ...unselectedCategories];
+  }
+
+  /// 📊 Update query params and fetch products
+  void _updateQueryParamsAndFetch() {
+    if (_selectedCategoryIds.isNotEmpty) {
+      queryParams["category"] = _selectedCategoryIds.join(',');
+    } else {
+      queryParams.remove("category");
+    }
+    _getMarketplace();
+  }
+
+  /// 🎯 Handle View All Button - Show bottom sheet
+  void _handleViewAllCategories() {
+    CategorySelectionBottomSheet.show(
+      context: context,
+      categories: _categories,
+      selectedCategoryIds: _selectedCategoryIds,
+      onApply: (selectedIds) {
+        setState(() {
+          _selectedCategoryIds = selectedIds;
+          _reorderCategories();
+          _updateQueryParamsAndFetch();
+        });
+      },
+    );
   }
 
   /// 🔍 Handle Filter Button Tap
@@ -131,20 +194,24 @@ class _HomeViewState extends State<HomeView> {
 
   /// 📱 Handle Product Tap
   void _handleProductTap(MarketplaceModel product) {
-    final productId = product.id;
-    if (productId.isEmpty) {
-      AppToast.showError('Product information unavailable.');
-      return;
-    }
+    try {
+      final productId = product.id;
+      if (productId.isEmpty) {
+        AppToast.showError('Product information unavailable.');
+        return;
+      }
 
-    Get.toNamed(
-      ProductDetailPage.routeName,
-      arguments: ProductPageArguments(
-        productId: productId,
-        product: product,
-        currentLocation: _currentLocation,
-      ),
-    );
+      Get.toNamed(
+        ProductDetailPage.routeName,
+        arguments: ProductPageArguments(
+          productId: productId,
+          product: product,
+          currentLocation: _currentLocation,
+        ),
+      );
+    } catch (error) {
+      AppToast.showError('Error opening product: $error');
+    }
   }
 
   @override
@@ -163,7 +230,6 @@ class _HomeViewState extends State<HomeView> {
               onLocationTap: () => LocationService().getCurrentAddress(context),
               onNotificationTap: () => Get.toNamed(AppRoutes.notificationPage),
               onSearchTap: () {
-                // Could navigate to full search page if needed
                 debugPrint('🔍 Search Tapped');
               },
             ),
@@ -180,7 +246,10 @@ class _HomeViewState extends State<HomeView> {
             /// 📜 Scrollable Content
             Expanded(
               child: RefreshIndicator(
-                onRefresh: _getMarketplace,
+                onRefresh: () async {
+                  await _getCategory();
+                  await _getMarketplace();
+                },
                 color: AppColors.primary,
                 child: CustomScrollView(
                   slivers: [
@@ -192,11 +261,10 @@ class _HomeViewState extends State<HomeView> {
 
                           if (!_isLoading)
                             CategoryListWidget(
-                              categories: _categories,
-                              selectedCategoryId: _selectedCategoryId,
+                              categories: _displayedCategories,
+                              selectedCategoryIds: _selectedCategoryIds,
                               onCategorySelected: _filterByCategory,
-                              selectedCategoryIds: [],
-                              onApplyFilter: (List<String> p1) {},
+                              onViewAllTap: _handleViewAllCategories,
                             ),
 
                           AppSpacing.verticalSpaceMD,
@@ -212,7 +280,7 @@ class _HomeViewState extends State<HomeView> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              _selectedCategoryId == null
+                              _selectedCategoryIds.isEmpty
                                   ? 'All Products'
                                   : 'Filtered Products',
                               style: const TextStyle(
