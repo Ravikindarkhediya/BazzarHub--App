@@ -86,6 +86,9 @@ abstract class ApiServices{
   @POST(Endpoints.USER_UPDATE)
   Future<HttpResponse<BaseModel<UserModel>>> updateUserProfile(@Body() Map<String, dynamic> params);
 
+  @POST(Endpoints.USER_DELETE)
+  Future<HttpResponse<BaseModel<dynamic>>> deleteAccount();
+
 
   // Categories
 

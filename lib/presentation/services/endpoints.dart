@@ -13,6 +13,7 @@ class Endpoints {
   static const String USER_REGISTER = "/user/signup";
   static const String GOOGLE_LOGIN_ENDPOINT = "/user/auth/google";
   static const String USER_UPDATE = "/user/update";
+  static const String USER_DELETE = "/user/delete";
   // static const String APPLE_LOGIN_ENDPOINT = "/user/auth/apple";
 
 
