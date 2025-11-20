@@ -1,13 +1,20 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import '../../data/constants/app_colors.dart';
+import 'dart:async';
+import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
+
+import '../../data/constants/app_colors.dart';
+import 'app_spacing.dart';
 
 class Utils {
+  Utils(this.context);
 
   final BuildContext context;
-
-  Utils(this.context);
 
   // Get the width of the screen
   double get screenWidth => MediaQuery.of(context).size.width;
@@ -28,19 +35,20 @@ class Utils {
   double widthPercentage(double percentage) => screenWidth * (percentage / 100);
 
   // Example: Get a percentage of screen height
-  double heightPercentage(double percentage) => screenHeight * (percentage / 100);
+  double heightPercentage(double percentage) =>
+      screenHeight * (percentage / 100);
 
   static const int childAge = 12;
 
   static bool isEmpty(String? value) {
-    if(value == null) {
+    if (value == null) {
       return true;
     }
     return value.isEmpty;
   }
 
   static bool isEmptyList(List<dynamic>? value) {
-    if(value == null) {
+    if (value == null) {
       return true;
     }
     return value.isEmpty;
@@ -51,9 +59,14 @@ class Utils {
   }
 
   static Widget getButtonLoader() {
-    return  SizedBox(height: 22, width: 22,child:CircularProgressIndicator(
+    return SizedBox(
+      height: 22,
+      width: 22,
+      child: CircularProgressIndicator(
         valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-        strokeWidth: 1));
+        strokeWidth: 1,
+      ),
+    );
   }
 
   static void showLoadingDialog(BuildContext context, {String? message}) {
@@ -66,7 +79,7 @@ class Utils {
     );
   }
 
-// Function to hide the loading dialog
+  // Function to hide the loading dialog
   static void hideLoadingDialog(BuildContext context) {
     if (Navigator.canPop(context)) {
       Navigator.pop(context);
@@ -224,11 +237,11 @@ class Utils {
   // }
   //
   static bool isValidEmail(String email) {
-    String pattern =
-        r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
+    String pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
     RegExp regex = RegExp(pattern);
     return regex.hasMatch(email);
   }
+
   //
   // static bool isValidPhoneNumber(String? countryCode, String phone) {
   //   if (countryCode == null || countryCode.isEmpty) {
@@ -571,5 +584,182 @@ class Utils {
   //   }
   //   return Colors.white;
   // }
+  static bool isVideo(String url) {
+    final videoExtensions = ['.mp4', '.mov', '.avi', '.mkv'];
+    return videoExtensions.any((ext) => url.toLowerCase().endsWith(ext));
+  }
 
+  /// Cache for generated video thumbnails to avoid duplicate work.
+  static final Map<String, String?> _videoThumbnailCache = {};
+  static final Map<String, Future<String?>> _videoThumbnailInFlight = {};
+
+  /// Generates (and caches) a thumbnail for the provided [videoUrl].
+  /// Falls back to downloading the video to a temp file if the direct
+  /// remote generation fails.
+  static Future<String?> generateVideoThumbnail({
+    required String videoUrl,
+    int maxHeight = 0,
+    int maxWidth = 0,
+    int quality = 90,
+  }) {
+    final cacheKey = _thumbnailCacheKey(
+      videoUrl: videoUrl,
+      height: maxHeight,
+      width: maxWidth,
+      quality: quality,
+    );
+
+    if (_videoThumbnailCache.containsKey(cacheKey)) {
+      return Future.value(_videoThumbnailCache[cacheKey]);
+    }
+
+    if (_videoThumbnailInFlight.containsKey(cacheKey)) {
+      return _videoThumbnailInFlight[cacheKey]!;
+    }
+
+    final future = _createVideoThumbnail(
+      cacheKey: cacheKey,
+      videoUrl: videoUrl,
+      maxHeight: maxHeight,
+      maxWidth: maxWidth,
+      quality: quality,
+    );
+
+    _videoThumbnailInFlight[cacheKey] = future;
+    future.whenComplete(() => _videoThumbnailInFlight.remove(cacheKey));
+    return future;
+  }
+
+  static Future<String?> _createVideoThumbnail({
+    required String cacheKey,
+    required String videoUrl,
+    required int maxHeight,
+    required int maxWidth,
+    required int quality,
+  }) async {
+    try {
+      final thumbnailPath = await _getThumbnailPath(cacheKey);
+      final existingFile = File(thumbnailPath);
+      if (await existingFile.exists() && await existingFile.length() > 0) {
+        _videoThumbnailCache[cacheKey] = thumbnailPath;
+        return thumbnailPath;
+      }
+
+      /// Attempt to let `video_thumbnail` handle the remote URL directly first.
+      final generated = await _generateWithVideoThumbnail(
+        source: videoUrl,
+        destinationPath: thumbnailPath,
+        maxHeight: maxHeight,
+        maxWidth: maxWidth,
+        quality: quality,
+      );
+
+      if (generated != null) {
+        _videoThumbnailCache[cacheKey] = generated;
+        return generated;
+      }
+
+      /// Fallback: Download to a local temp file and retry.
+      final localVideoPath = await _downloadVideoToTemp(videoUrl);
+      if (localVideoPath == null) {
+        return null;
+      }
+
+      final localGenerated = await _generateWithVideoThumbnail(
+        source: localVideoPath,
+        destinationPath: thumbnailPath,
+        maxHeight: maxHeight,
+        maxWidth: maxWidth,
+        quality: quality,
+      );
+
+      if (localGenerated != null) {
+        _videoThumbnailCache[cacheKey] = localGenerated;
+      }
+
+      return localGenerated;
+    } catch (error) {
+      debugPrint('Utils.generateVideoThumbnail error: $error');
+      return null;
+    }
+  }
+
+  static Future<String?> _generateWithVideoThumbnail({
+    required String source,
+    required String destinationPath,
+    required int maxHeight,
+    required int maxWidth,
+    required int quality,
+  }) async {
+    try {
+      final path = await VideoThumbnail.thumbnailFile(
+        video: source,
+        thumbnailPath: destinationPath,
+        imageFormat: ImageFormat.PNG,
+        quality: quality.clamp(0, 100),
+        maxHeight: AppSpacing.md.toInt(),
+        maxWidth: AppSpacing.md.toInt(),
+      );
+      if (path != null) {
+        return path;
+      }
+    } catch (error) {
+      debugPrint('Utils._generateWithVideoThumbnail error: $error');
+    }
+    return null;
+  }
+
+
+  static Future<String?> _downloadVideoToTemp(String videoUrl) async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final filePath =
+          '${tempDir.path}/video_cache_${_stableHash(videoUrl)}.mp4';
+      final file = File(filePath);
+      if (await file.exists() && await file.length() > 0) {
+        return filePath;
+      }
+
+      final uri = Uri.tryParse(videoUrl);
+      if (uri == null) return null;
+
+      final client = http.Client();
+      try {
+        final request = http.Request('GET', uri);
+        final response = await client.send(request);
+        if (response.statusCode >= 400) {
+          return null;
+        }
+
+        final sink = file.openWrite();
+        await response.stream.pipe(sink);
+        await sink.close();
+        return filePath;
+      } finally {
+        client.close();
+      }
+    } catch (error) {
+      debugPrint('Utils._downloadVideoToTemp error: $error');
+      return null;
+    }
+  }
+
+  static Future<String> _getThumbnailPath(String cacheKey) async {
+    final tempDir = await getTemporaryDirectory();
+    final safeHash = _stableHash(cacheKey);
+    return '${tempDir.path}/video_thumb_$safeHash.png';
+  }
+
+  static int _stableHash(String input) {
+    return input.hashCode.abs();
+  }
+
+  static String _thumbnailCacheKey({
+    required String videoUrl,
+    required int height,
+    required int width,
+    required int quality,
+  }) {
+    return '$videoUrl|h:${height.clamp(0, 4000)}|w:${width.clamp(0, 4000)}|q:${quality.clamp(0, 100)}';
+  }
 }

@@ -1,5 +1,6 @@
 // lib/features/home/presentation/widgets/product_grid_widget.dart
 
+import 'package:bazzar_hub_app/presentation/modules/product/widgets/custom_image_widget.dart';
 import 'package:bazzar_hub_app/presentation/services/models/Common/location_model.dart';
 import 'package:bazzar_hub_app/presentation/services/models/marketplace/marketplace_model.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -139,6 +140,12 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
   }
 
   Widget _buildProductImage(MarketplaceModel product) {
+    final imageWidth =
+        (MediaQuery.of(context).size.width - (AppSpacing.md * 2) - 12) /
+        _getCrossAxisCount(context);
+
+    final imageHeight = imageWidth / 1.2;
+
     return Stack(
       children: [
         /// Main Image
@@ -151,26 +158,27 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
             child: Container(
               color: AppColors.grey100,
               child: product.images.isNotEmpty
-                  ? CachedNetworkImage(
-                imageUrl: product.images[0],
-                fit: BoxFit.cover,
-                placeholder: (context, url) => _buildImagePlaceholder(),
-                errorWidget: (context, url, error) => _buildImagePlaceholder(),
-              )
+                  ? CustomImageWidget(
+                      imageUrl: product.images[0],
+                      height: imageHeight,
+                      width: imageWidth,
+                      fit: BoxFit.cover,
+                      cornerRadius: AppSpacing.radiusMD,
+                    )
                   : _buildImagePlaceholder(),
             ),
           ),
         ),
 
         /// Favorite Button
-        if(product.favoritesCount != 0)
+        if (product.favoritesCount != 0)
           Positioned(
             top: 8,
             right: 8,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.white,  // Pure white for better contrast
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
@@ -200,11 +208,7 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
                 ],
               ),
             ),
-          )
-
-
-
-
+          ),
       ],
     );
   }

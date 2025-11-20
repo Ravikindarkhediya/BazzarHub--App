@@ -14,11 +14,14 @@ import 'package:flutter/widgets.dart';
 class $AssetsDataGen {
   const $AssetsDataGen();
 
+  /// File path: assets/data/india_locations.json
+  String get indiaLocations => 'assets/data/india_locations.json';
+
   /// File path: assets/data/products.json
   String get products => 'assets/data/products.json';
 
   /// List of all assets
-  List<String> get values => [products];
+  List<String> get values => [indiaLocations, products];
 }
 
 class $AssetsFontsGen {

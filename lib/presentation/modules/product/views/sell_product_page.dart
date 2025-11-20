@@ -1,5 +1,4 @@
-// lib/features/sell/presentation/pages/sell_product_page.dart
-
+import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -28,6 +27,7 @@ class _SellProductPageState extends State<SellProductPage> {
   int _currentStep = 0;
   late SellProductController _controller;
   final _formKey = GlobalKey<FormState>();
+  bool _isSubmitted = false;
 
   @override
   void initState() {
@@ -61,6 +61,16 @@ class _SellProductPageState extends State<SellProductPage> {
     if (_currentStep > 0) {
       HapticFeedback.lightImpact();
       setState(() => _currentStep--);
+    }
+  }
+
+  Future<void> submitForm() async {
+    final success = await _controller.submitProduct(context);
+    if (success && mounted) {
+      setState(() {
+        _isSubmitted = true;
+      });
+      Navigator.pushNamed(context, AppRoutes.homeWrapper);
     }
   }
 
@@ -98,12 +108,13 @@ class _SellProductPageState extends State<SellProductPage> {
         if (_controller.selectedDistrict == null) {
           return 'Please select a district';
         }
-        if (_controller.showSubDistrict && _controller.selectedSubDistrict == null) {
+        if (_controller.showSubDistrict &&
+            _controller.selectedSubDistrict == null) {
           return 'Please select a sub-district';
         }
-        if (_controller.selectedVillage == null || _controller.selectedVillage!.isEmpty) {
-          return 'Please select or enter a village';
-        }
+        // if (_controller.selectedVillage == null || _controller.selectedVillage!.isEmpty) {
+        //   return 'Please select or enter a village';
+        // }
         if (_controller.zipCodeController.text.trim().isEmpty) {
           return 'Zip Code is required';
         }
@@ -124,12 +135,6 @@ class _SellProductPageState extends State<SellProductPage> {
     );
   }
 
-  Future<void> _submitForm() async {
-    final success = await _controller.submitProduct(context);
-    if (success && mounted) {
-      Navigator.pop(context);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -164,10 +169,7 @@ class _SellProductPageState extends State<SellProductPage> {
             Expanded(
               child: SingleChildScrollView(
                 padding: AppSpacing.paddingMD,
-                child: Form(
-                  key: _formKey,
-                  child: _buildStepContent(),
-                ),
+                child: Form(key: _formKey, child: _buildStepContent()),
               ),
             ),
 
@@ -242,9 +244,7 @@ class _SellProductPageState extends State<SellProductPage> {
           children: [
             Text(
               'Choose Category',
-              style: AppTextStyles.h5.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
@@ -256,9 +256,7 @@ class _SellProductPageState extends State<SellProductPage> {
             const SizedBox(height: 24),
             if (controller.categories.isEmpty)
               const Center(
-                child: CircularProgressIndicator(
-                  color: AppColors.primary,
-                ),
+                child: CircularProgressIndicator(color: AppColors.primary),
               )
             else
               GridView.builder(
@@ -273,69 +271,74 @@ class _SellProductPageState extends State<SellProductPage> {
                 itemCount: controller.categories.length,
                 itemBuilder: (context, index) {
                   final category = controller.categories[index];
-                  final isSelected = controller.selectedCategoryId == category.id;
+                  final isSelected =
+                      controller.selectedCategoryId == category.id;
 
                   return InkWell(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      controller.selectCategory(category.id);
-                    },
-                    borderRadius: AppSpacing.borderRadiusMD,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeInOut,
-                      padding: const EdgeInsets.all(AppSpacing.xs),
-                      decoration: BoxDecoration(
-                        color: AppColors.white,
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          controller.selectCategory(category.id);
+                        },
                         borderRadius: AppSpacing.borderRadiusMD,
-                        border: Border.all(
-                          color: isSelected ? AppColors.primary : AppColors.borderLight,
-                          width: isSelected ? 2.5 : 1,
-                        ),
-                        boxShadow: null,
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Expanded(
-                            child: Container(
-                              margin: EdgeInsets.only(
-                                top: 8,
-                                bottom: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.1),
-                                borderRadius: AppSpacing.borderRadiusSM,
-                              ),
-                              child: ClipRRect(
-                                borderRadius: AppSpacing.borderRadiusSM,
-                                child: AspectRatioImage(
-                                  imageUrl: category.icon ?? "",
-                                  aspectRatio: 1 / 1,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.easeInOut,
+                          padding: const EdgeInsets.all(AppSpacing.xs),
+                          decoration: BoxDecoration(
+                            color: AppColors.white,
+                            borderRadius: AppSpacing.borderRadiusMD,
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : AppColors.borderLight,
+                              width: isSelected ? 2.5 : 1,
+                            ),
+                            boxShadow: null,
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  margin: EdgeInsets.only(top: 8, bottom: 8),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary.withOpacity(0.1),
+                                    borderRadius: AppSpacing.borderRadiusSM,
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: AppSpacing.borderRadiusSM,
+                                    child: AspectRatioImage(
+                                      imageUrl: category.icon ?? "",
+                                      aspectRatio: 1 / 1,
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
+                              Text(
+                                AppLanguage.getText(category.name),
+                                style: AppTextStyles.caption.copyWith(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.w500,
+                                  height: 1.3,
+                                  fontSize: 11,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
-                          Text(
-                            AppLanguage.getText(category.name),
-                            style: AppTextStyles.caption.copyWith(
-                              color: AppColors.textPrimary,
-                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                              height: 1.3,
-                              fontSize: 11,
-                            ),
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
+                        ),
+                      )
                       .animate()
                       .fadeIn(duration: 400.ms, delay: (50 * index).ms)
-                      .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1));
+                      .scale(
+                        begin: const Offset(0.8, 0.8),
+                        end: const Offset(1, 1),
+                      );
                 },
               ),
           ],
@@ -358,64 +361,62 @@ class _SellProductPageState extends State<SellProductPage> {
     final color = categoryColors[index % categoryColors.length];
 
     return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        _controller.selectCategory(category.id);
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        padding: AppSpacing.paddingMD,
-        decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.1) : AppColors.white,
-          borderRadius: AppSpacing.borderRadiusMD,
-          border: Border.all(
-            color: isSelected ? color : AppColors.borderLight,
-            width: isSelected ? 2 : 1,
-          ),
-          boxShadow: isSelected
-              ? [
-            BoxShadow(
-              color: color.withOpacity(0.2),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            )
-          ]
-              : null,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (isSelected)
-              Align(
-                alignment: Alignment.topRight,
-                child: Icon(
-                  Icons.check_circle,
-                  color: color,
-                  size: 24,
+          onTap: () {
+            HapticFeedback.selectionClick();
+            _controller.selectCategory(category.id);
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            padding: AppSpacing.paddingMD,
+            decoration: BoxDecoration(
+              color: isSelected ? color.withOpacity(0.1) : AppColors.white,
+              borderRadius: AppSpacing.borderRadiusMD,
+              border: Border.all(
+                color: isSelected ? color : AppColors.borderLight,
+                width: isSelected ? 2 : 1,
+              ),
+              boxShadow: isSelected
+                  ? [
+                      BoxShadow(
+                        color: color.withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (isSelected)
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: Icon(Icons.check_circle, color: color, size: 24),
+                  ),
+                const Spacer(),
+                Icon(
+                  _getCategoryIcon(category.name?.english ?? ''),
+                  size: 40,
+                  color: isSelected ? color : AppColors.textSecondary,
                 ),
-              ),
-            const Spacer(),
-            Icon(
-              _getCategoryIcon(category.name?.english ?? ''),
-              size: 40,
-              color: isSelected ? color : AppColors.textSecondary,
+                const SizedBox(height: 8),
+                Text(
+                  category.name?.english ?? '',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.normal,
+                    color: isSelected ? color : AppColors.textPrimary,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const Spacer(),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              category.name?.english ?? '',
-              style: AppTextStyles.bodyMedium.copyWith(
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected ? color : AppColors.textPrimary,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const Spacer(),
-          ],
-        ),
-      ),
-    )
+          ),
+        )
         .animate()
         .fadeIn(duration: 400.ms, delay: (50 * index).ms)
         .scale(begin: const Offset(0.8, 0.8));
@@ -444,9 +445,7 @@ class _SellProductPageState extends State<SellProductPage> {
   Widget _buildImageStep() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ImageUploadSection(controller: _controller),
-      ],
+      children: [ImageUploadSection(controller: _controller)],
     ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
   }
 
@@ -612,9 +611,7 @@ class _SellProductPageState extends State<SellProductPage> {
       children: [
         const SizedBox(height: 32),
         const Center(
-          child: CircularProgressIndicator(
-            color: AppColors.primary,
-          ),
+          child: CircularProgressIndicator(color: AppColors.primary),
         ),
         const SizedBox(height: 16),
         Text(
@@ -644,10 +641,7 @@ class _SellProductPageState extends State<SellProductPage> {
         ),
         const SizedBox(height: 8),
         Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 16,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           decoration: BoxDecoration(
             color: AppColors.grey100,
             borderRadius: AppSpacing.borderRadiusMD,
@@ -791,7 +785,10 @@ class _SellProductPageState extends State<SellProductPage> {
                 );
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.white,
                   borderRadius: AppSpacing.borderRadiusMD,
@@ -814,7 +811,7 @@ class _SellProductPageState extends State<SellProductPage> {
                         ),
                       ],
                     ),
-                    const Icon(Icons.arrow_drop_down, size: 26)
+                    const Icon(Icons.arrow_drop_down, size: 26),
                   ],
                 ),
               ),
@@ -853,7 +850,10 @@ class _SellProductPageState extends State<SellProductPage> {
                 );
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.white,
                   borderRadius: AppSpacing.borderRadiusMD,
@@ -876,7 +876,7 @@ class _SellProductPageState extends State<SellProductPage> {
                         ),
                       ],
                     ),
-                    const Icon(Icons.arrow_drop_down, size: 26)
+                    const Icon(Icons.arrow_drop_down, size: 26),
                   ],
                 ),
               ),
@@ -886,16 +886,16 @@ class _SellProductPageState extends State<SellProductPage> {
       },
     );
   }
+
   void _showIOSPicker(
-      BuildContext context,
-      SellProductController controller, {
-        required String title,
-        required List<String> items,
-        required String? selectedValue,
-        required Function(String) onSelect,
-      }) {
-    int initialIndex =
-    selectedValue != null && items.contains(selectedValue)
+    BuildContext context,
+    SellProductController controller, {
+    required String title,
+    required List<String> items,
+    required String? selectedValue,
+    required Function(String) onSelect,
+  }) {
+    int initialIndex = selectedValue != null && items.contains(selectedValue)
         ? items.indexOf(selectedValue)
         : 0;
 
@@ -910,9 +910,7 @@ class _SellProductPageState extends State<SellProductPage> {
           height: 330,
           decoration: const BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(18),
-            ),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
           ),
           child: Column(
             children: [
@@ -977,8 +975,9 @@ class _SellProductPageState extends State<SellProductPage> {
               // --- Cupertino Picker ---
               Expanded(
                 child: CupertinoPicker(
-                  scrollController:
-                  FixedExtentScrollController(initialItem: initialIndex),
+                  scrollController: FixedExtentScrollController(
+                    initialItem: initialIndex,
+                  ),
                   itemExtent: 44,
                   magnification: 1.2,
                   squeeze: 1.1,
@@ -989,15 +988,15 @@ class _SellProductPageState extends State<SellProductPage> {
                   children: items
                       .map(
                         (value) => Center(
-                      child: Text(
-                        value,
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w500,
+                          child: Text(
+                            value,
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  )
+                      )
                       .toList(),
                 ),
               ),
@@ -1007,7 +1006,6 @@ class _SellProductPageState extends State<SellProductPage> {
       },
     );
   }
-
 
   Widget _buildBottomButtons() {
     return Container(
@@ -1022,7 +1020,7 @@ class _SellProductPageState extends State<SellProductPage> {
         boxShadow: [
           BoxShadow(
             color: AppColors.grey900.withOpacity(0.1),
-            offset: const Offset(0, -2),
+            offset: Offset(0, -2),
             blurRadius: 8,
           ),
         ],
@@ -1030,7 +1028,7 @@ class _SellProductPageState extends State<SellProductPage> {
       child: Consumer<SellProductController>(
         builder: (context, controller, _) {
           if (_currentStep == 0) {
-            // First step: Only Next button
+            // First step: show only Next button full width
             return SizedBox(
               width: double.infinity,
               height: AppSpacing.buttonHeightMD,
@@ -1054,107 +1052,141 @@ class _SellProductPageState extends State<SellProductPage> {
                         fontSize: 16,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.arrow_forward, size: 20),
+                    SizedBox(width: 8),
+                    Icon(Icons.arrow_forward, size: 20),
                   ],
                 ),
               ),
             );
           } else {
-            // Other steps: Previous + Next/Submit buttons
+            // For other steps
             return Row(
               children: [
-                // Previous Button
-                Expanded(
-                  flex: 1,
-                  child: SizedBox(
-                    height: AppSpacing.buttonHeightMD,
-                    child: OutlinedButton(
-                      onPressed: _previousStep,
-                      style: OutlinedButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        side: const BorderSide(
-                          color: AppColors.primary,
-                          width: 1.5,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: AppSpacing.borderRadiusMD,
-                        ),
-                        foregroundColor: AppColors.primary,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.arrow_back, size: 18),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Previous',
-                            style: AppTextStyles.button.copyWith(
-                              color: AppColors.primary,
-                              fontSize: 14,
-                            ),
+                if (_currentStep != 4)
+                  Expanded(
+                    flex: 1,
+                    child: SizedBox(
+                      height: AppSpacing.buttonHeightMD,
+                      child: OutlinedButton(
+                        onPressed: _previousStep,
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          side: BorderSide(color: AppColors.primary, width: 1.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppSpacing.borderRadiusMD,
                           ),
-                        ],
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.arrow_back, size: 18),
+                            SizedBox(width: 4),
+                            Text(
+                              'Previous',
+                              style: AppTextStyles.button.copyWith(
+                                color: AppColors.primary,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
 
-                const SizedBox(width: AppSpacing.sm),
+                if (_currentStep != 4) SizedBox(width: AppSpacing.sm),
 
-                // Next/Submit Button
-                Expanded(
-                  flex: 2,
-                  child: SizedBox(
-                    height: AppSpacing.buttonHeightMD,
-                    child: ElevatedButton(
-                      onPressed: controller.isLoading
-                          ? null
-                          : (_currentStep == 4 ? _submitForm : _nextStep),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: AppColors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: AppSpacing.borderRadiusMD,
+                if (_currentStep == 4)
+                  Expanded(
+                    flex: 2,
+                    child: SizedBox(
+                      height: AppSpacing.buttonHeightMD,
+                      child: ElevatedButton(
+                        onPressed: controller.isLoading || controller.isUploading
+                            ? null
+                            : submitForm,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppSpacing.borderRadiusMD,
+                          ),
+                        ),
+                        child: controller.isLoading || controller.isUploading
+                            ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: AppColors.white,
+                                strokeWidth: 2,
+                              ),
+                            ),
+                            SizedBox(width: 12),
+                            Text(
+                              controller.isUploading
+                                  ? 'Uploading...'
+                                  : 'Submitting...',
+                              style: AppTextStyles.button.copyWith(
+                                color: AppColors.white,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        )
+                            : Text(
+                          'Submit',
+                          style: AppTextStyles.button.copyWith(
+                            color: AppColors.white,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
-                      child: controller.isLoading
-                          ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          color: AppColors.white,
-                          strokeWidth: 2,
+                    ),
+                  )
+                else
+                  Expanded(
+                    flex: 2,
+                    child: SizedBox(
+                      height: AppSpacing.buttonHeightMD,
+                      child: ElevatedButton(
+                        onPressed:
+                        controller.isLoading || controller.isUploading
+                            ? null
+                            : _nextStep,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: AppSpacing.borderRadiusMD,
+                          ),
                         ),
-                      )
-                          : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            _currentStep == 4 ? 'Submit' : 'Next',
-                            style: AppTextStyles.button.copyWith(
-                              color: AppColors.white,
-                              fontSize: 16,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Next',
+                              style: AppTextStyles.button.copyWith(
+                                color: AppColors.white,
+                                fontSize: 16,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Icon(
-                            _currentStep == 4
-                                ? Icons.check_circle
-                                : Icons.arrow_forward,
-                            size: 20,
-                          ),
-                        ],
+                            SizedBox(width: 8),
+                            Icon(Icons.arrow_forward, size: 20),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
               ],
             );
           }
         },
       ),
-    ).animate().fadeIn(duration: 300.ms).slideY(begin: 1, end: 0);
+    );
   }
 }

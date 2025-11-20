@@ -150,7 +150,7 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
             padding: AppSpacing.horizontalMD,
             child: TextField(
               controller: _searchController,
-              autofocus: true,
+              autofocus: false,
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
                 hintText: 'Search ${widget.label.toLowerCase()}...',

@@ -33,7 +33,7 @@ class ProductModel {
     required this.categoryId,
     this.isFavorite = false,
     this.specs = const {},
-    this.condition = 'Good',
+    this.condition = 'Used',
     this.sellerRating,
     this.sellerTotalSales,
   });
@@ -56,7 +56,7 @@ class ProductModel {
       specs: json['specs'] != null
           ? Map<String, String>.from(json['specs'] as Map)
           : {},
-      condition: json['condition'] as String? ?? 'Good',
+      condition: json['condition'] as String? ?? 'Used',
       sellerRating: json['sellerRating'] != null
           ? (json['sellerRating'] as num).toDouble()
           : null,

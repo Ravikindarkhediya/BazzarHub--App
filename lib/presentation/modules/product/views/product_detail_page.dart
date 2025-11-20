@@ -208,10 +208,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           padding: const EdgeInsets.only(left: AppSpacing.md),
           child: _buildAppbarIcon(
             icon: Icons.arrow_back_rounded,
-            onTap: () =>
-            {
+            onTap: () => {
               LogManager.trackMarketplaceView(widget.productId),
-              Navigator.pop(context)
+              Navigator.pop(context),
             },
             background: AppColors.primary,
             iconColor: AppColors.white,

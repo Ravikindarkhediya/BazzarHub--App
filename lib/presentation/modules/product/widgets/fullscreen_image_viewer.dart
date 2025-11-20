@@ -1,23 +1,29 @@
-// lib/features/product_detail/presentation/widgets/fullscreen_image_viewer.dart
+import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:video_player/video_player.dart';
+
 import '../../../../app/core/utils/app_spacing.dart';
+import '../../../../app/core/utils/utils.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
 
-/// Fullscreen Image Viewer
-/// Displays images in fullscreen with swipe navigation, zoom, and controls
+/// Fullscreen viewer capable of rendering both images and videos.
 class FullscreenImageViewer extends StatefulWidget {
   final List<String> images;
   final int initialIndex;
+  final VideoPlayerController? inlineVideoController;
+  final int? inlineVideoIndex;
 
   const FullscreenImageViewer({
     super.key,
     required this.images,
     this.initialIndex = 0,
+    this.inlineVideoController,
+    this.inlineVideoIndex,
   });
 
   @override
@@ -30,6 +36,14 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer>
   late int _currentIndex;
   bool _showControls = true;
   late AnimationController _controlsAnimationController;
+  Timer? _autoHideTimer;
+
+  final Map<int, VideoPlayerController> _videoControllers = {};
+  final Map<int, Future<VideoPlayerController?>> _videoInitFutures = {};
+  final Set<int> _videoLoading = {};
+  final Map<int, String?> _videoErrors = {};
+  final Set<int> _externalControllerIndices = {};
+  bool _wasPlayingBeforeSeek = false;
 
   @override
   void initState() {
@@ -39,29 +53,50 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer>
     _controlsAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
-    );
-    _controlsAnimationController.forward();
+    )..forward();
 
-    // Set fullscreen
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
-
-    // Auto-hide controls after 3 seconds
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     _startAutoHideTimer();
+
+    if (_isVideoIndex(_currentIndex)) {
+      _playVideo(_currentIndex);
+    }
   }
 
   @override
   void dispose() {
+    _autoHideTimer?.cancel();
     _pageController.dispose();
     _controlsAnimationController.dispose();
+    _disposeVideoControllers();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
 
+  bool _isVideoIndex(int index) => Utils.isVideo(widget.images[index]);
+
+  bool _usesExternalController(int index) =>
+      widget.inlineVideoController != null &&
+      widget.inlineVideoIndex != null &&
+      widget.inlineVideoIndex == index;
+
+  void _disposeVideoControllers() {
+    for (final entry in _videoControllers.entries) {
+      if (_externalControllerIndices.contains(entry.key)) continue;
+      entry.value.dispose();
+    }
+    _videoControllers.clear();
+    _externalControllerIndices.clear();
+  }
+
   void _startAutoHideTimer() {
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted && _showControls) {
-        _toggleControls();
-      }
+    _autoHideTimer?.cancel();
+    _autoHideTimer = Timer(const Duration(seconds: 3), () {
+      if (!mounted || !_showControls) return;
+      setState(() {
+        _showControls = false;
+        _controlsAnimationController.reverse();
+      });
     });
   }
 
@@ -95,45 +130,129 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer>
     }
   }
 
+  void _handlePageChanged(int index) {
+    if (_currentIndex == index) return;
+
+    if (_isVideoIndex(_currentIndex)) {
+      _pauseVideo(_currentIndex);
+    }
+
+    setState(() => _currentIndex = index);
+
+    if (_isVideoIndex(index)) {
+      _playVideo(index);
+    }
+  }
+
+  Future<VideoPlayerController?> _initializeVideoController(int index) {
+    if (_usesExternalController(index)) {
+      final controller = widget.inlineVideoController;
+      if (controller != null) {
+        _videoControllers[index] = controller;
+        _externalControllerIndices.add(index);
+        return Future.value(controller);
+      }
+    }
+
+    if (_videoControllers.containsKey(index)) {
+      return Future.value(_videoControllers[index]);
+    }
+    if (_videoInitFutures.containsKey(index)) {
+      return _videoInitFutures[index]!;
+    }
+
+    final url = widget.images[index];
+    _videoErrors.remove(index);
+    _videoLoading.add(index);
+    setState(() {});
+
+    final future = _createVideoController(url, index);
+    _videoInitFutures[index] = future;
+    return future;
+  }
+
+  Future<VideoPlayerController?> _createVideoController(
+    String url,
+    int index,
+  ) async {
+    try {
+      final controller = VideoPlayerController.networkUrl(Uri.parse(url));
+      await controller.initialize();
+      controller.setLooping(true);
+      _videoControllers[index] = controller;
+      return controller;
+    } catch (error) {
+      _videoErrors[index] = 'Unable to load video';
+      return null;
+    } finally {
+      _videoLoading.remove(index);
+      _videoInitFutures.remove(index);
+      if (mounted) setState(() {});
+    }
+  }
+
+  Future<void> _playVideo(int index) async {
+    final controller = await _initializeVideoController(index);
+    if (!mounted) return;
+    if (controller != null) {
+      controller.play();
+      setState(() {});
+    }
+  }
+
+  void _pauseVideo(int index) {
+    final controller = _videoControllers[index];
+    controller?.pause();
+  }
+
+  void _toggleVideoPlayback(VideoPlayerController controller) {
+    if (controller.value.isPlaying) {
+      controller.pause();
+    } else {
+      controller.play();
+      _startAutoHideTimer();
+    }
+    setState(() {});
+  }
+
+  void _toggleMute(VideoPlayerController controller, bool currentlyMuted) {
+    controller.setVolume(currentlyMuted ? 1.0 : 0.0);
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
+    final bottomOverlay = _buildBottomOverlay();
+
     return Scaffold(
       backgroundColor: AppColors.black,
       body: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: _toggleControls,
         child: Stack(
           children: [
-            /// Image PageView with InteractiveViewer for pinch-to-zoom
             PageView.builder(
               controller: _pageController,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentIndex = index;
-                });
-              },
+              onPageChanged: _handlePageChanged,
               itemCount: widget.images.length,
               itemBuilder: (context, index) {
-                return _buildZoomableImage(widget.images[index], index);
+                final mediaUrl = widget.images[index];
+                return Utils.isVideo(mediaUrl)
+                    ? _buildVideoPage(mediaUrl, index)
+                    : _buildImagePage(mediaUrl, index);
               },
             ),
-
-            /// Top Controls (Close button, Index)
             if (_showControls) _buildTopControls(),
-
-            /// Navigation Arrows (Left/Right)
             if (_showControls && widget.images.length > 1)
               _buildNavigationArrows(),
-
-            /// Bottom Controls (Page indicator)
-            if (_showControls && widget.images.length > 1)
-              _buildBottomControls(),
+            if (bottomOverlay != null) bottomOverlay,
           ],
         ),
       ),
     );
   }
 
-  Widget _buildZoomableImage(String imagePath, int index) {
+  Widget _buildImagePage(String imagePath, int index) {
     return Hero(
       tag: 'product_image_$index',
       child: InteractiveViewer(
@@ -164,6 +283,7 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer>
                     style: AppTextStyles.bodyMedium.copyWith(
                       color: AppColors.grey600,
                     ),
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),
@@ -172,6 +292,106 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer>
         ),
       ),
     );
+  }
+
+  Widget _buildVideoPage(String videoUrl, int index) {
+    _initializeVideoController(index);
+    final isLoading = _videoLoading.contains(index);
+    final error = _videoErrors[index];
+    final controller = _videoControllers[index];
+
+    Widget content;
+    if (error != null) {
+      content = _buildVideoError(error);
+    } else if (isLoading ||
+        controller == null ||
+        !controller.value.isInitialized) {
+      content = const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
+    } else {
+      content = ValueListenableBuilder<VideoPlayerValue>(
+        valueListenable: controller,
+        builder: (context, value, child) {
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              FittedBox(
+                fit: BoxFit.contain,
+                child: SizedBox(
+                  width: value.size.width,
+                  height: value.size.height,
+                  child: VideoPlayer(controller),
+                ),
+              ),
+              if (value.isBuffering)
+                const CircularProgressIndicator(
+                  color: AppColors.primary,
+                  strokeWidth: 2.5,
+                ),
+              if (!value.isPlaying)
+                _buildCenterPlayButton(() => _toggleVideoPlayback(controller)),
+            ],
+          );
+        },
+      );
+    }
+
+    return Hero(
+      tag: 'product_image_$index',
+      child: Center(child: content),
+    );
+  }
+
+  Widget _buildVideoError(String message) {
+    return Padding(
+      padding: AppSpacing.paddingMD,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.videocam_off_rounded,
+            color: AppColors.white,
+            size: 48,
+          ),
+          AppSpacing.verticalSpaceSM,
+          Text(
+            message,
+            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.white),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCenterPlayButton(VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.5),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          Icons.play_arrow_rounded,
+          color: Colors.white,
+          size: 48,
+        ),
+      ),
+    );
+  }
+
+  Widget? _buildBottomOverlay() {
+    if (!_showControls) return null;
+    if (_isVideoIndex(_currentIndex)) {
+      return _buildVideoControls();
+    }
+    if (widget.images.length > 1) {
+      return _buildImageIndicators();
+    }
+    return null;
   }
 
   Widget _buildTopControls() {
@@ -197,7 +417,6 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                /// Image Counter
                 Container(
                   padding: EdgeInsets.symmetric(
                     horizontal: AppSpacing.sm,
@@ -219,8 +438,6 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer>
                     ),
                   ),
                 ),
-
-                /// Close Button
                 IconButton(
                   onPressed: () => Navigator.pop(context),
                   icon: Container(
@@ -255,7 +472,6 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            /// Left Arrow
             if (_currentIndex > 0)
               Padding(
                 padding: EdgeInsets.only(left: AppSpacing.md),
@@ -266,8 +482,6 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer>
               )
             else
               const SizedBox(width: 48),
-
-            /// Right Arrow
             if (_currentIndex < widget.images.length - 1)
               Padding(
                 padding: EdgeInsets.only(right: AppSpacing.md),
@@ -310,7 +524,7 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer>
     ).animate().scale(duration: 200.ms);
   }
 
-  Widget _buildBottomControls() {
+  Widget _buildImageIndicators() {
     return Positioned(
       bottom: 0,
       left: 0,
@@ -358,5 +572,150 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer>
         ),
       ),
     );
+  }
+
+  Widget _buildVideoControls() {
+    final isLoading = _videoLoading.contains(_currentIndex);
+    final error = _videoErrors[_currentIndex];
+    final controller = _videoControllers[_currentIndex];
+
+    Widget child;
+    if (error != null) {
+      child = Text(
+        error,
+        style: AppTextStyles.bodyMedium.copyWith(color: AppColors.white),
+        textAlign: TextAlign.center,
+      );
+    } else if (isLoading ||
+        controller == null ||
+        !controller.value.isInitialized) {
+
+      // 🔥 Only this part changed — Spinner removed
+      child = const SizedBox.shrink();
+
+    } else {
+      child = ValueListenableBuilder<VideoPlayerValue>(
+        valueListenable: controller,
+        builder: (context, value, _) {
+          final duration = value.duration;
+          final position = value.position;
+          final totalMs = duration.inMilliseconds;
+          final progress = totalMs == 0
+              ? 0.0
+              : (position.inMilliseconds / totalMs).clamp(0.0, 1.0);
+          final isMuted = value.volume == 0;
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  inactiveTrackColor: Colors.white24,
+                  activeTrackColor: AppColors.primary,
+                  thumbColor: AppColors.white,
+                  trackHeight: 3,
+                ),
+                child: Slider(
+                  value: progress.isFinite ? progress : 0.0,
+                  onChanged: duration == Duration.zero
+                      ? null
+                      : (value) {
+                    final target = Duration(
+                      milliseconds: (totalMs * value).round(),
+                    );
+                    controller.seekTo(target);
+                  },
+                  onChangeStart: duration == Duration.zero
+                      ? null
+                      : (_) {
+                    _wasPlayingBeforeSeek = controller.value.isPlaying;
+                    if (_wasPlayingBeforeSeek) {
+                      controller.pause();
+                    }
+                  },
+                  onChangeEnd: duration == Duration.zero
+                      ? null
+                      : (_) {
+                    if (_wasPlayingBeforeSeek) {
+                      controller.play();
+                      _startAutoHideTimer();
+                    }
+                  },
+                ),
+              ),
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () => _toggleVideoPlayback(controller),
+                    icon: Icon(
+                      value.isPlaying
+                          ? Icons.pause_rounded
+                          : Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: 30,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => _toggleMute(controller, isMuted),
+                    icon: Icon(
+                      isMuted
+                          ? Icons.volume_off_rounded
+                          : Icons.volume_up_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  Text(
+                    _formatDuration(position),
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: Colors.white,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    _formatDuration(duration),
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
+      );
+    }
+
+    return Positioned(
+      bottom: 0,
+      left: 0,
+      right: 0,
+      child: SafeArea(
+        child: FadeTransition(
+          opacity: _controlsAnimationController,
+          child: Container(
+            padding: AppSpacing.paddingMD,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [
+                  AppColors.black.withOpacity(0.8),
+                  AppColors.black.withOpacity(0),
+                ],
+              ),
+            ),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatDuration(Duration duration) {
+    final totalSeconds = duration.inSeconds;
+    final minutes = (totalSeconds ~/ 60).toString().padLeft(2, '0');
+    final seconds = (totalSeconds % 60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
   }
 }

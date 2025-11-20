@@ -2,6 +2,7 @@
 import 'package:bazzar_hub_app/presentation/services/endpoints.dart';
 import 'package:bazzar_hub_app/presentation/services/models/categorie/category_list_response_model.dart';
 import 'package:bazzar_hub_app/presentation/services/models/news/news_model.dart';
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 import '../../app/core/utils/session_manager.dart';
@@ -10,6 +11,7 @@ import '../modules/home/model/category_model.dart';
 import 'models/base/base_list_model.dart';
 import 'models/base/base_model.dart';
 import 'models/marketplace/marketplace_model.dart';
+import 'models/upload/upload_response_model.dart';
 import 'models/user/user_model.dart';
 import 'models/user/user_token_model.dart';
 
@@ -177,5 +179,13 @@ abstract class ApiServices{
   Future<HttpResponse<BaseModel<dynamic>>> trackNewsView(
       @Body() Map<String, dynamic> body,
       );
+
+  // Upload
+  @POST(Endpoints.UPLOAD_FILE)
+  @MultiPart()
+  Future<HttpResponse<BaseModel<UploadResponseModel>>> uploadFile(
+      @Part(name: 'myfile') MultipartFile myfile,
+      );
+
 
 }

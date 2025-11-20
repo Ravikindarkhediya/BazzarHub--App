@@ -42,4 +42,7 @@ class Endpoints {
 
   static const String NEWS_VIEW_LOG = "/api/news/view/log";
 
+  // Common/Upload
+  static const String UPLOAD_FILE = "/common/upload";
+
 }

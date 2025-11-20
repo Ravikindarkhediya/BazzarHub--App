@@ -1,5 +1,3 @@
-// lib/features/sell/presentation/controllers/sell_product_controller.dart (UPDATED)
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,10 +5,14 @@ import 'package:image_picker/image_picker.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:path_provider/path_provider.dart';
 
+import 'package:dio/dio.dart';
+import 'package:geolocator/geolocator.dart';
+
 import '../commons/dialogs/app_toasts.dart';
 import '../services/api_service.dart';
 import '../services/location_service.dart';
 import '../services/models/categorie/categorie_model.dart';
+import '../services/models/Common/coordinates_model.dart';
 
 /// Image/Video Upload State
 class ProductImage {
@@ -21,6 +23,8 @@ class ProductImage {
   double uploadProgress;
   bool isCompressing;
   bool isUploaded;
+  String? uploadedUrl; // Store the uploaded URL from API
+  String? uploadError; // Store upload error if any
 
   ProductImage({
     required this.id,
@@ -30,6 +34,8 @@ class ProductImage {
     this.uploadProgress = 0.0,
     this.isCompressing = false,
     this.isUploaded = false,
+    this.uploadedUrl,
+    this.uploadError,
   });
 
   ProductImage copyWith({
@@ -37,6 +43,8 @@ class ProductImage {
     bool? isCompressing,
     bool? isUploaded,
     File? thumbnailFile,
+    String? uploadedUrl,
+    String? uploadError,
   }) {
     return ProductImage(
       id: id,
@@ -46,6 +54,8 @@ class ProductImage {
       uploadProgress: uploadProgress ?? this.uploadProgress,
       isCompressing: isCompressing ?? this.isCompressing,
       isUploaded: isUploaded ?? this.isUploaded,
+      uploadedUrl: uploadedUrl ?? this.uploadedUrl,
+      uploadError: uploadError ?? this.uploadError,
     );
   }
 }
@@ -72,10 +82,12 @@ class SellProductController extends ChangeNotifier {
   List<ProductImage> _images = [];
   List<CategoryModel> _categories = [];
   String? _selectedCategoryId;
-  String _selectedCondition = 'Good';
+  String _selectedCondition = 'Used';
   String _selectedType = "Sell";
   bool _isLoading = false;
+  bool _isUploading = false; // Track if files are being uploaded
   String? _errorMessage;
+  CoordinatesModel? _currentCoordinates; // Store current GPS coordinates
 
   // Location State
   String? _selectedState;
@@ -93,24 +105,19 @@ class SellProductController extends ChangeNotifier {
   // Constants
   static const int maxImages = 6;
   static const List<String> conditions = [
-    'Brand New',
-    'Like New',
-    'Good',
-    'Fair',
-    'Used – Excellent',
-    'Used – Good',
-    'Used – Fair',
-    'Refurbished',
-    'Open Box',
-    'Heavily Used',
+    'Used',
+    'New',
+    // 'Good',
+    // 'Fair',
+    // 'Used – Excellent',
+    // 'Used – Good',
+    // 'Used – Fair',
+    // 'Refurbished',
+    // 'Open Box',
+    // 'Heavily Used',
   ];
 
-  static const List<String> productTypes = [
-    "Sell",
-    "Buy",
-    "Rent",
-    "Exchange",
-  ];
+  static const List<String> productTypes = ["new", "used"];
 
   // Getters
   List<ProductImage> get images => _images;
@@ -121,8 +128,10 @@ class SellProductController extends ChangeNotifier {
   String get selectedCondition => _selectedCondition;
   String get selectedType => _selectedType;
   bool get isLoading => _isLoading;
+  bool get isUploading => _isUploading;
   String? get errorMessage => _errorMessage;
   bool get hasImages => _images.isNotEmpty;
+  CoordinatesModel? get currentCoordinates => _currentCoordinates;
 
   // Location Getters
   String? get selectedState => _selectedState;
@@ -354,31 +363,158 @@ class SellProductController extends ChangeNotifier {
     _images.add(productImage);
     notifyListeners();
 
-    await Future.delayed(const Duration(milliseconds: 800));
+      await Future.delayed(const Duration(milliseconds: 800));
 
     final index = _images.indexWhere((img) => img.id == imageId);
     if (index != -1) {
       _images[index] = _images[index].copyWith(isCompressing: false);
       notifyListeners();
-      await _simulateUpload(imageId);
+      // Note: Actual upload happens when submitting the form
     }
   }
 
-  /// Simulate Upload Progress
-  Future<void> _simulateUpload(String imageId) async {
-    final index = _images.indexWhere((img) => img.id == imageId);
-    if (index == -1) return;
+  /// Upload Image/Video to Server
+  Future<bool> _uploadImage(ProductImage productImage, {int maxRetries = 3}) async {
+    final index = _images.indexWhere((img) => img.id == productImage.id);
+    if (index == -1) return false;
 
-    for (int i = 0; i <= 100; i += 10) {
-      await Future.delayed(const Duration(milliseconds: 100));
-      if (index < _images.length) {
-        _images[index] = _images[index].copyWith(uploadProgress: i / 100);
+    // Skip if already uploaded
+    if (productImage.isUploaded && productImage.uploadedUrl != null) {
+      return true;
+    }
+
+    int retryCount = 0;
+    while (retryCount < maxRetries) {
+      try {
+        // Update progress
+        _images[index] = _images[index].copyWith(
+          uploadProgress: 0.1,
+          uploadError: null,
+        );
         notifyListeners();
+
+        // Get API client
+        final apiClient = await getApiClient();
+
+        // Create MultipartFile from File
+        final fileName = productImage.file.path.split('/').last;
+        final multipartFile = await MultipartFile.fromFile(
+          productImage.file.path,
+          filename: fileName,
+        );
+
+        // Update progress
+        _images[index] = _images[index].copyWith(uploadProgress: 0.3);
+        notifyListeners();
+
+        // Upload file
+        final response = await apiClient.uploadFile(multipartFile);
+
+        if (response.data.status && response.data.data != null) {
+          final uploadedUrl = response.data.data!.url;
+          
+          // Update with success
+          _images[index] = _images[index].copyWith(
+            uploadProgress: 1.0,
+            isUploaded: true,
+            uploadedUrl: uploadedUrl,
+            uploadError: null,
+          );
+          notifyListeners();
+          return true;
+        } else {
+          throw Exception(response.data.message ?? 'Upload failed');
+        }
+      } catch (e) {
+        retryCount++;
+        debugPrint('❌ Upload error (attempt $retryCount/$maxRetries): $e');
+        
+        if (retryCount >= maxRetries) {
+          // Final failure
+          _images[index] = _images[index].copyWith(
+            uploadProgress: 0.0,
+            isUploaded: false,
+            uploadError: e.toString(),
+          );
+          notifyListeners();
+          return false;
+        }
+        
+        // Wait before retry
+        await Future.delayed(Duration(seconds: retryCount));
       }
     }
-    if (index < _images.length) {
-      _images[index] = _images[index].copyWith(isUploaded: true);
+    return false;
+  }
+
+  /// Upload All Images/Videos
+  Future<bool> uploadAllImages() async {
+    if (_images.isEmpty) return true;
+
+    _isUploading = true;
+    notifyListeners();
+
+    try {
+      for (var image in _images) {
+        if (!image.isUploaded || image.uploadedUrl == null) {
+          final success = await _uploadImage(image);
+          if (!success) {
+            _isUploading = false;
+            notifyListeners();
+            return false;
+          }
+        }
+      }
+      
+      _isUploading = false;
       notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('❌ Error uploading images: $e');
+      _isUploading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Get Current GPS Coordinates
+  Future<void> getCurrentCoordinates() async {
+    try {
+      // Check if location service is enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        debugPrint('⚠️ Location service is disabled');
+        return;
+      }
+
+      // Check and request permission
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          debugPrint('⚠️ Location permission denied');
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        debugPrint('⚠️ Location permission permanently denied');
+        return;
+      }
+
+      // Get current position
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      _currentCoordinates = CoordinatesModel(
+        latitude: position.latitude,
+        longitude: position.longitude,
+      );
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ Error getting coordinates: $e');
+      // Don't throw, just log - coordinates are optional
     }
   }
 
@@ -410,6 +546,22 @@ class SellProductController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Map user-friendly condition to API value (new or used)
+  String _mapConditionToApiValue(String condition) {
+    // Conditions that map to "new"
+    const newConditions = [
+      'Brand New',
+      'Like New',
+      'Open Box',
+    ];
+    
+    // All other conditions map to "used"
+    if (newConditions.contains(condition)) {
+      return 'new';
+    }
+    return 'used';
+  }
+
   /// Select Type
   void selectType(String value) {
     _selectedType = value;
@@ -430,7 +582,7 @@ class SellProductController extends ChangeNotifier {
     if (_selectedState == null) return 'Please select a state';
     if (_selectedDistrict == null) return 'Please select a district';
     if (_showSubDistrict && _selectedSubDistrict == null) return 'Please select a sub-district';
-    if (_selectedVillage == null || _selectedVillage!.isEmpty) return 'Please select or enter a village';
+    // if (_selectedVillage == null || _selectedVillage!.isEmpty) return 'Please select or enter a village';
     if (zipCodeController.text.trim().isEmpty) return 'Zip Code is required';
     if (contactController.text.trim().isEmpty) return 'Contact number is required';
     if (contactController.text.trim().length < 10) return 'Enter a valid contact number';
@@ -453,46 +605,93 @@ class SellProductController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      Map<String, dynamic> queryParams = {
-        "title": titleController.text,
-        "description": descriptionController.text,
-        "price": double.parse(priceController.text),
-        "category": _selectedCategoryId,
-        "images": _images.map((img) => img.file).toList(),
-        "condition": _selectedCondition.toLowerCase(),
-        "type": _selectedType.toLowerCase(),
-        "location": {
-          "country": "India",
-          "state": _selectedState,
-          "district": _selectedDistrict,
-          "subDistrict": _selectedSubDistrict,
-          "village": _selectedVillage,
-          "zipCode": zipCodeController.text,
-        },
-        "contactInfo": {
-          "phone": [contactController.text],
-          "email": [emailController.text],
-        }
-      };
+      // Step 1: Get current coordinates (optional, won't fail if unavailable)
+      await getCurrentCoordinates();
 
-      debugPrint(queryParams.toString());
-      await Future.delayed(const Duration(seconds: 2));
-
-      HapticFeedback.heavyImpact();
-      if (context.mounted) {
-        _showSuccess(context, 'Product listed successfully!');
+      // Step 2: Upload all images/videos first
+      if (!await uploadAllImages()) {
+        _showError(context, 'Failed to upload some images. Please try again.');
+        _isLoading = false;
+        notifyListeners();
+        return false;
       }
 
-      return true;
+      // Step 3: Collect all uploaded URLs
+      final uploadedUrls = _images
+          .where((img) => img.uploadedUrl != null && img.uploadedUrl!.isNotEmpty)
+          .map((img) => img.uploadedUrl!)
+          .toList();
+
+      if (uploadedUrls.isEmpty) {
+        _showError(context, 'No images were uploaded successfully.');
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      // Step 4: Build location object
+      final locationData = <String, dynamic>{
+        "village": _selectedVillage ?? "",
+        "taluko": _selectedSubDistrict ?? "",
+        "district": _selectedDistrict ?? "",
+        "state": _selectedState ?? "",
+        "zipCode": zipCodeController.text.trim(),
+        "country": "India",
+      };
+
+      // Add coordinates if available
+      if (_currentCoordinates != null) {
+        locationData["coordinates"] = {
+          "latitude": _currentCoordinates!.latitude,
+          "longitude": _currentCoordinates!.longitude,
+        };
+      }
+
+      // Step 5: Build the final payload
+      final payload = <String, dynamic>{
+        "title": titleController.text.trim(),
+        "description": descriptionController.text.trim(),
+        "price": double.parse(priceController.text.trim()),
+        "category": _selectedCategoryId!,
+        "images": uploadedUrls,
+        "condition": _mapConditionToApiValue(_selectedCondition), // Map to "new" or "used"
+        "type": _selectedType.toLowerCase(),
+        "location": locationData,
+        "contactInfo": {
+          "phone": [contactController.text.trim()],
+          "email": [emailController.text.trim()],
+        },
+      };
+
+      debugPrint('📤 Submitting product with payload: $payload');
+
+      // Step 6: Submit to API
+      final apiClient = await getApiClient();
+      final response = await apiClient.createMarketplace(payload);
+
+      if (response.data.status && response.data.data != null) {
+        HapticFeedback.heavyImpact();
+        if (context.mounted) {
+          _showSuccess(context, 'Product listed successfully!');
+        }
+        
+        // Clear form on success
+        clearForm();
+        
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        throw Exception(response.data.message ?? 'Failed to create product');
+      }
     } catch (e) {
       debugPrint('❌ Error submitting product: $e');
       if (context.mounted) {
-        _showError(context, 'Failed to submit product');
+        _showError(context, 'Failed to submit product: ${e.toString()}');
       }
-      return false;
-    } finally {
       _isLoading = false;
       notifyListeners();
+      return false;
     }
   }
 
@@ -503,7 +702,7 @@ class SellProductController extends ChangeNotifier {
     }
     _images.clear();
     _selectedCategoryId = null;
-    _selectedCondition = 'Good';
+    _selectedCondition = 'Used';
     _selectedType = "Sell";
     _selectedState = null;
     _selectedDistrict = null;
