@@ -1,21 +1,32 @@
-import 'package:bazzar_hub_app/app/core/utils/app_language.dart';
+// lib/features/sell/presentation/pages/sell_product_page.dart
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:provider/provider.dart';
+import '../../../../app/core/utils/app_language.dart';
+import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
+import '../../../../app/data/constants/app_text_style.dart';
 import '../../../controller/sell_product_controller.dart';
+import '../../../services/models/categorie/categorie_model.dart';
+import '../../home/widgets/auto_fit_image_widget.dart';
 import '../widgets/image_upload_section.dart';
+import '../widgets/searchable_dropdown.dart';
 
 class SellProductPage extends StatefulWidget {
   const SellProductPage({super.key});
+
+  static const String routeName = '/sell-product';
 
   @override
   State<SellProductPage> createState() => _SellProductPageState();
 }
 
 class _SellProductPageState extends State<SellProductPage> {
+  int _currentStep = 0;
   late SellProductController _controller;
-  final _scrollController = ScrollController();
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -23,650 +34,1127 @@ class _SellProductPageState extends State<SellProductPage> {
     super.initState();
     _controller = SellProductController();
     _controller.loadCategories();
+    _controller.loadLocationData(); // Load location data
   }
 
   @override
   void dispose() {
     _controller.dispose();
-    _scrollController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleSubmit() async {
-    print("Api calll");
+  void _nextStep() {
+    // Validate current step before moving forward
+    String? error = _validateCurrentStep();
+    if (error != null) {
+      _showError(error);
+      return;
+    }
+
+    if (_currentStep < 4) {
+      HapticFeedback.mediumImpact();
+      setState(() => _currentStep++);
+    }
+  }
+
+  void _previousStep() {
+    if (_currentStep > 0) {
+      HapticFeedback.lightImpact();
+      setState(() => _currentStep--);
+    }
+  }
+
+  String? _validateCurrentStep() {
+    switch (_currentStep) {
+      case 0: // Category
+        if (_controller.selectedCategoryId == null) {
+          return 'Please select a category';
+        }
+        break;
+      case 1: // Images
+        if (_controller.images.isEmpty) {
+          return 'Please add at least one image';
+        }
+        break;
+      case 2: // Product Details
+        if (_controller.titleController.text.trim().isEmpty) {
+          return 'Product title is required';
+        }
+        if (_controller.descriptionController.text.trim().isEmpty) {
+          return 'Description is required';
+        }
+        if (_controller.priceController.text.trim().isEmpty) {
+          return 'Price is required';
+        }
+        final price = double.tryParse(_controller.priceController.text.trim());
+        if (price == null || price <= 0) {
+          return 'Enter a valid price';
+        }
+        break;
+      case 3: // Address
+        if (_controller.selectedState == null) {
+          return 'Please select a state';
+        }
+        if (_controller.selectedDistrict == null) {
+          return 'Please select a district';
+        }
+        if (_controller.showSubDistrict && _controller.selectedSubDistrict == null) {
+          return 'Please select a sub-district';
+        }
+        if (_controller.selectedVillage == null || _controller.selectedVillage!.isEmpty) {
+          return 'Please select or enter a village';
+        }
+        if (_controller.zipCodeController.text.trim().isEmpty) {
+          return 'Zip Code is required';
+        }
+        break;
+    }
+    return null;
+  }
+
+  void _showError(String message) {
+    HapticFeedback.heavyImpact();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<void> _submitForm() async {
     final success = await _controller.submitProduct(context);
     if (success && mounted) {
-      // Navigate back or show success page
       Navigator.pop(context);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
-    final isTablet = MediaQuery.of(context).size.shortestSide >= 600;
-
-    return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
+    return ChangeNotifierProvider.value(
+      value: _controller,
+      child: Scaffold(
         backgroundColor: AppColors.background,
-        border: Border(
-          bottom: BorderSide(
-            color: CupertinoColors.separator.resolveFrom(context),
-            width: 0.5,
+        appBar: AppBar(
+          backgroundColor: AppColors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+            onPressed: () => Navigator.pop(context),
           ),
-        ),
-        leading: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: () => Navigator.pop(context),
-          child: Icon(CupertinoIcons.back, size: 28, color: AppColors.black,),
-        ),
-        middle: const Text(
-          'Sell Product',
-          style: TextStyle(
-            decoration: TextDecoration.none,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
+          title: Text(
+            'Sell Product',
+            style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
           ),
-        ),
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: _controller.clearForm,
-          child: const Text(
-            'Clear',
-            style: TextStyle(
-              decoration: TextDecoration.none,
-              fontSize: 16,
-              color: CupertinoColors.destructiveRed,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.close, color: AppColors.textPrimary),
+              onPressed: () => Navigator.pop(context),
             ),
-          ),
+          ],
+        ),
+        body: Column(
+          children: [
+            /// Progress Indicator
+            _buildProgressIndicator(),
+
+            /// Step Content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: AppSpacing.paddingMD,
+                child: Form(
+                  key: _formKey,
+                  child: _buildStepContent(),
+                ),
+              ),
+            ),
+
+            /// Bottom Buttons
+            _buildBottomButtons(),
+          ],
         ),
       ),
-      child: SafeArea(
-        child: (isLandscape || isTablet)
-            ? _buildLandscapeLayout()
-            : _buildPortraitLayout(),
+    );
+  }
+
+  Widget _buildProgressIndicator() {
+    return Container(
+      padding: AppSpacing.paddingMD,
+      color: AppColors.background,
+      child: Column(
+        children: [
+          Row(
+            children: List.generate(5, (index) {
+              final isActive = index <= _currentStep;
+              final isCompleted = index < _currentStep;
+
+              return Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: isActive
+                              ? AppColors.primary
+                              : AppColors.grey300,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    if (index < 4) const SizedBox(width: 4),
+                  ],
+                ),
+              );
+            }),
+          ),
+        ],
       ),
-    );
+    ).animate().fadeIn(duration: 300.ms);
   }
 
-  /// Portrait Layout (Stacked)
-  Widget _buildPortraitLayout() {
-    return CustomScrollView(
-      controller: _scrollController,
-      physics: const BouncingScrollPhysics(),
-      slivers: [
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                /// Image Upload Section
-                ImageUploadSection(controller: _controller),
+  Widget _buildStepContent() {
+    switch (_currentStep) {
+      case 0:
+        return _buildCategoryStep();
+      case 1:
+        return _buildImageStep();
+      case 2:
+        return _buildProductDetailsStep();
+      case 3:
+        return _buildAddressStep();
+      case 4:
+        return _buildContactStep();
+      default:
+        return const SizedBox();
+    }
+  }
 
-                const SizedBox(height: 32),
-
-                /// Form Fields
-                _buildFormSection(),
-
-                const SizedBox(height: 32),
-
-                /// Submit Button
-                _buildSubmitButton(),
-
-                const SizedBox(height: 40),
-              ],
+  /// Step 1: Category Selection
+  Widget _buildCategoryStep() {
+    return Consumer<SellProductController>(
+      builder: (context, controller, _) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Choose Category',
+              style: AppTextStyles.h5.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Landscape Layout (Side by Side)
-  Widget _buildLandscapeLayout() {
-    return Row(
-      children: [
-        /// Left: Image Section
-        Expanded(
-          flex: 4,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: ImageUploadSection(controller: _controller),
-          ),
-        ),
-
-        /// Divider
-        Container(
-          width: 1,
-          color: CupertinoColors.separator,
-        ),
-
-        /// Right: Form Section
-        Expanded(
-          flex: 6,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                _buildFormSection(),
-                const SizedBox(height: 24),
-                _buildSubmitButton(),
-              ],
+            const SizedBox(height: 8),
+            Text(
+              'Select the category that best describes your product',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
             ),
-          ),
-        ),
-      ],
+            const SizedBox(height: 24),
+            if (controller.categories.isEmpty)
+              const Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.primary,
+                ),
+              )
+            else
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  mainAxisSpacing: AppSpacing.sm,
+                  crossAxisSpacing: AppSpacing.sm,
+                  childAspectRatio: 0.82,
+                ),
+                itemCount: controller.categories.length,
+                itemBuilder: (context, index) {
+                  final category = controller.categories[index];
+                  final isSelected = controller.selectedCategoryId == category.id;
+
+                  return InkWell(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      controller.selectCategory(category.id);
+                    },
+                    borderRadius: AppSpacing.borderRadiusMD,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                      padding: const EdgeInsets.all(AppSpacing.xs),
+                      decoration: BoxDecoration(
+                        color: AppColors.white,
+                        borderRadius: AppSpacing.borderRadiusMD,
+                        border: Border.all(
+                          color: isSelected ? AppColors.primary : AppColors.borderLight,
+                          width: isSelected ? 2.5 : 1,
+                        ),
+                        boxShadow: null,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Container(
+                              margin: EdgeInsets.only(
+                                top: 8,
+                                bottom: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.1),
+                                borderRadius: AppSpacing.borderRadiusSM,
+                              ),
+                              child: ClipRRect(
+                                borderRadius: AppSpacing.borderRadiusSM,
+                                child: AspectRatioImage(
+                                  imageUrl: category.icon ?? "",
+                                  aspectRatio: 1 / 1,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Text(
+                            AppLanguage.getText(category.name),
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.textPrimary,
+                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                              height: 1.3,
+                              fontSize: 11,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                      .animate()
+                      .fadeIn(duration: 400.ms, delay: (50 * index).ms)
+                      .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1));
+                },
+              ),
+          ],
+        ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
+      },
     );
   }
 
-  /// Form Section
-  Widget _buildFormSection() {
+  Widget _buildCategoryCard(CategoryModel category, bool isSelected) {
+    final categoryColors = [
+      AppColors.categoryMobiles,
+      AppColors.categoryVehicles,
+      AppColors.categoryProperty,
+      AppColors.categoryFashion,
+      AppColors.categoryElectronics,
+      AppColors.categoryFurniture,
+    ];
+
+    final index = _controller.categories.indexOf(category);
+    final color = categoryColors[index % categoryColors.length];
+
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        _controller.selectCategory(category.id);
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: AppSpacing.paddingMD,
+        decoration: BoxDecoration(
+          color: isSelected ? color.withOpacity(0.1) : AppColors.white,
+          borderRadius: AppSpacing.borderRadiusMD,
+          border: Border.all(
+            color: isSelected ? color : AppColors.borderLight,
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: isSelected
+              ? [
+            BoxShadow(
+              color: color.withOpacity(0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            )
+          ]
+              : null,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isSelected)
+              Align(
+                alignment: Alignment.topRight,
+                child: Icon(
+                  Icons.check_circle,
+                  color: color,
+                  size: 24,
+                ),
+              ),
+            const Spacer(),
+            Icon(
+              _getCategoryIcon(category.name?.english ?? ''),
+              size: 40,
+              color: isSelected ? color : AppColors.textSecondary,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              category.name?.english ?? '',
+              style: AppTextStyles.bodyMedium.copyWith(
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                color: isSelected ? color : AppColors.textPrimary,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const Spacer(),
+          ],
+        ),
+      ),
+    )
+        .animate()
+        .fadeIn(duration: 400.ms, delay: (50 * index).ms)
+        .scale(begin: const Offset(0.8, 0.8));
+  }
+
+  IconData _getCategoryIcon(String categoryName) {
+    switch (categoryName.toLowerCase()) {
+      case 'mobiles':
+        return Icons.phone_android;
+      case 'vehicles':
+        return Icons.directions_car;
+      case 'property':
+        return Icons.home;
+      case 'electronics':
+        return Icons.devices;
+      case 'furniture':
+        return Icons.weekend;
+      case 'fashion':
+        return Icons.checkroom;
+      default:
+        return Icons.category;
+    }
+  }
+
+  /// Step 2: Image Upload
+  Widget _buildImageStep() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        /// Category Selection
-        _buildSectionTitle('Category'),
-        const SizedBox(height: 12),
+        ImageUploadSection(controller: _controller),
+      ],
+    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
+  }
 
-        _buildCategorySelector(),
-
+  /// Step 3: Product Details
+  Widget _buildProductDetailsStep() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Product Details',
+          style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 24),
-
-        /// Title
-        _buildSectionTitle('Product Title'),
-        const SizedBox(height: 8),
         _buildTextField(
           controller: _controller.titleController,
-          placeholder: 'e.g., iPhone 14 Pro 256GB',
-          maxLength: 100,
+          label: 'Product Title',
+          hint: 'e.g., iPhone 13 Pro Max 256GB',
+          icon: Icons.title,
         ),
-
-        const SizedBox(height: 24),
-
-        /// Description
-        _buildSectionTitle('Description'),
-        const SizedBox(height: 8),
-        _buildTextArea(
+        const SizedBox(height: 16),
+        _buildTextField(
           controller: _controller.descriptionController,
-          placeholder: 'Describe your product in detail...',
-          maxLength: 1000,
+          label: 'Description',
+          hint: 'Describe your product in detail...',
+          icon: Icons.description,
+          maxLines: 5,
         ),
-
-        const SizedBox(height: 24),
-
-        /// Price & Condition Row
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionTitle('Price'),
-                  const SizedBox(height: 8),
-                  _buildTextField(
-                    controller: _controller.priceController,
-                    placeholder: '0',
-                    keyboardType: TextInputType.number,
-                    prefixIcon: Icons.currency_rupee,
-                    // prefix: const Text('₹ ', style: TextStyle(
-                    //   decoration: TextDecoration.none,
-                    // ),),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionTitle('Condition'),
-                  const SizedBox(height: 8),
-                  _buildConditionPicker(),
-                ],
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 24),
-
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  /// Location
-                  _buildSectionTitle('Village'),
-                  const SizedBox(height: 8),
-                  _buildTextField(
-                    controller: _controller.villageController,
-                    placeholder: 'Village',
-                    prefixIcon: Icons.home_filled,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  /// Location
-                  _buildSectionTitle('Taluko'),
-                  const SizedBox(height: 8),
-                  _buildTextField(
-                    controller: _controller.talukoController,
-                    placeholder: 'Taluko',
-                    prefixIcon: CupertinoIcons.location_solid,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 24),
-
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  /// Location
-                  _buildSectionTitle('District'),
-                  const SizedBox(height: 8),
-                  _buildTextField(
-                    controller: _controller.districtController,
-                    placeholder: 'District',
-                    prefixIcon: CupertinoIcons.location_solid,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  /// Location
-                  _buildSectionTitle('State'),
-                  const SizedBox(height: 8),
-                  _buildTextField(
-                    controller: _controller.stateController,
-                    placeholder: 'State',
-                    prefixIcon: CupertinoIcons.location_solid,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 24),
-
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  /// Location
-                  _buildSectionTitle('ZipCode'),
-                  const SizedBox(height: 8),
-                  _buildTextField(
-                    controller: _controller.zipCodeController,
-                    keyboardType: TextInputType.number,
-                    placeholder: 'ZipCode',
-                    prefixIcon: CupertinoIcons.location_solid,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  /// Location
-                  _buildSectionTitle('Country'),
-                  const SizedBox(height: 8),
-                  _buildTextField(
-                    controller: _controller.locationController,
-                    placeholder: 'City, State',
-                    prefixIcon: CupertinoIcons.location_solid,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 24),
-
-        /// Contact
-        _buildSectionTitle('Contact Number'),
-        const SizedBox(height: 8),
+        const SizedBox(height: 16),
         _buildTextField(
-          controller: _controller.contactController,
-          placeholder: '+91 9876543210',
-          keyboardType: TextInputType.phone,
-          maxLength: 15,
-          prefixIcon: CupertinoIcons.phone_fill,
+          controller: _controller.priceController,
+          label: 'Price',
+          hint: 'Enter price in ₹',
+          icon: Icons.currency_rupee,
+          keyboardType: TextInputType.number,
         ),
+        const SizedBox(height: 16),
+        _buildConditionDropdown(),
+        const SizedBox(height: 16),
+        _buildTypeDropdown(),
+      ],
+    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
+  }
 
-        const SizedBox(height: 24),
+  /// Step 4: Address (Dynamic Location Selection)
+  Widget _buildAddressStep() {
+    return Consumer<SellProductController>(
+      builder: (context, controller, _) {
+        if (!controller.isLocationDataReady) {
+          return _buildLocationLoadingState();
+        }
 
-        /// Email
-        _buildSectionTitle('Email'),
-        const SizedBox(height: 8),
-        _buildTextField(
-          controller: _controller.emailController,
-          placeholder: 'xyz@gmail.com',
-          keyboardType: TextInputType.emailAddress,
-          prefixIcon: CupertinoIcons.envelope,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Address Details',
+              style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Select your location from the dropdowns below',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Country (Read-only, pre-filled)
+            _buildReadOnlyField(
+              label: 'Country',
+              value: 'India',
+              icon: Icons.public,
+            ),
+
+            const SizedBox(height: 16),
+
+            // State Dropdown
+            SearchableDropdown(
+              label: 'State',
+              hint: controller.isLocationDataReady
+                  ? 'Select state'
+                  : 'Loading states...',
+              items: controller.statesList,
+              selectedValue: controller.selectedState,
+              onChanged: (value) => controller.selectState(value),
+              enabled: controller.isLocationDataReady,
+              icon: Icons.location_city,
+            ),
+
+            const SizedBox(height: 16),
+
+            // District Dropdown
+            SearchableDropdown(
+              label: 'District',
+              hint: 'Select district',
+              items: controller.districtsList,
+              selectedValue: controller.selectedDistrict,
+              onChanged: (value) => controller.selectDistrict(value),
+              enabled: controller.canSelectDistrict,
+              icon: Icons.location_on,
+            ),
+
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              switchInCurve: Curves.easeOut,
+              switchOutCurve: Curves.easeIn,
+              child: controller.showSubDistrict
+                  ? Column(
+                      key: const ValueKey('sub-district'),
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 16),
+                        SearchableDropdown(
+                          label: 'Sub-District (Taluko)',
+                          hint: 'Select sub-district',
+                          items: controller.subDistrictsList,
+                          selectedValue: controller.selectedSubDistrict,
+                          onChanged: (value) =>
+                              controller.selectSubDistrict(value),
+                          enabled: controller.canSelectSubDistrict,
+                          icon: Icons.map,
+                        ),
+                      ],
+                    )
+                  : const SizedBox(key: ValueKey('sub-district-empty')),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Village Dropdown
+            SearchableDropdown(
+              label: 'Village',
+              hint: controller.allowManualVillageEntry
+                  ? 'Type village name'
+                  : 'Select village',
+              items: controller.villagesList,
+              selectedValue: controller.selectedVillage,
+              onChanged: (value) => controller.selectVillage(value),
+              enabled: controller.canSelectVillage,
+              icon: Icons.home_work,
+              allowManualEntry: controller.allowManualVillageEntry,
+            ),
+
+            const SizedBox(height: 16),
+
+            // Zip Code
+            _buildTextField(
+              controller: _controller.zipCodeController,
+              label: 'Zip Code',
+              hint: 'e.g., 360311',
+              icon: Icons.pin_drop,
+              keyboardType: TextInputType.number,
+            ),
+          ],
+        ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
+      },
+    );
+  }
+
+  Widget _buildLocationLoadingState() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        const SizedBox(height: 32),
+        const Center(
+          child: CircularProgressIndicator(
+            color: AppColors.primary,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Fetching latest address data…',
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        decoration: TextDecoration.none,
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        color: CupertinoColors.black,
-      ),
+  Widget _buildReadOnlyField({
+    required String label,
+    required String value,
+    required IconData icon,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTextStyles.bodyMedium.copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 16,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.grey100,
+            borderRadius: AppSpacing.borderRadiusMD,
+            border: Border.all(color: AppColors.grey300),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: AppColors.primary),
+              const SizedBox(width: 12),
+              Text(
+                value,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
+  }
+
+  /// Step 5: Contact Information
+  Widget _buildContactStep() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Contact Information',
+          style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Buyers will use this information to contact you',
+          style: AppTextStyles.bodySmall.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 24),
+        _buildTextField(
+          controller: _controller.contactController,
+          label: 'Contact Number',
+          hint: 'e.g., 9876543210',
+          icon: Icons.phone,
+          keyboardType: TextInputType.phone,
+        ),
+        const SizedBox(height: 16),
+        _buildTextField(
+          controller: _controller.emailController,
+          label: 'Email Address',
+          hint: 'e.g., john@example.com',
+          icon: Icons.email,
+          keyboardType: TextInputType.emailAddress,
+        ),
+      ],
+    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
   }
 
   Widget _buildTextField({
     required TextEditingController controller,
-    required String placeholder,
-    int? maxLength,
+    required String label,
+    required String hint,
+    required IconData icon,
+    int maxLines = 1,
     TextInputType? keyboardType,
     Widget? prefix,
-    IconData? prefixIcon,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: CupertinoColors.systemGrey6,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTextStyles.bodyMedium.copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
           ),
-        ],
-      ),
-      child: CupertinoTextField(
-        controller: controller,
-        placeholder: placeholder,
-        maxLength: maxLength,
-        keyboardType: keyboardType,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: CupertinoColors.systemGrey6,
-          borderRadius: BorderRadius.circular(10),
         ),
-        prefix: prefix != null
-            ? Padding(
-          padding: const EdgeInsets.only(left: 16),
-          child: prefix,
-        )
-            : prefixIcon != null
-            ? Padding(
-          padding: const EdgeInsets.only(left: 16),
-          child: Icon(prefixIcon, size: 20, color: CupertinoColors.systemGrey),
-        )
-            : null,
-        style: const TextStyle(fontSize: 16,
-          decoration: TextDecoration.none,
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          maxLines: maxLines,
+          keyboardType: keyboardType,
+          style: AppTextStyles.bodyMedium,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textHint,
+            ),
+            prefixIcon: Icon(icon, color: AppColors.primary),
+            prefix: prefix,
+            filled: true,
+            fillColor: AppColors.white,
+            border: OutlineInputBorder(
+              borderRadius: AppSpacing.borderRadiusMD,
+              borderSide: const BorderSide(color: AppColors.borderLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: AppSpacing.borderRadiusMD,
+              borderSide: const BorderSide(color: AppColors.borderLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: AppSpacing.borderRadiusMD,
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 
-  Widget _buildTextArea({
-    required TextEditingController controller,
-    required String placeholder,
-    int? maxLength,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: CupertinoColors.systemGrey6,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: CupertinoTextField(
-        controller: controller,
-        placeholder: placeholder,
-        maxLength: maxLength,
-        maxLines: 5,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: CupertinoColors.systemGrey6,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        style: const TextStyle(fontSize: 16,
-          decoration: TextDecoration.none,
-        ),
-      ),
-    );
-  }
+  Widget _buildTypeDropdown() {
+    return Consumer<SellProductController>(
+      builder: (context, controller, _) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Type',
+              style: AppTextStyles.bodyMedium.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
 
-  Widget _buildCategorySelector() {
-    return ListenableBuilder(
-      listenable: _controller,
-      builder: (context, _) {
-        final categories = _controller.categories;
-        if (categories.isEmpty) {
-          return const Center(child: CupertinoActivityIndicator());
-        }
-        
-        return Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: categories.map((category) {
-            final isSelected = (_controller.selectedCategoryId ?? "") == category.id;
-            return GestureDetector(
+            /// iOS Style Tap Container (Same as Condition)
+            GestureDetector(
               onTap: () {
-                HapticFeedback.selectionClick();
-                _controller.selectCategory(category.id);
+                _showIOSPicker(
+                  context,
+                  controller,
+                  title: "Select Type",
+                  items: const ["Sell", "Buy", "Rent", "Exchange"],
+                  selectedValue: controller.selectedType,
+                  onSelect: (value) => controller.selectType(value),
+                );
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? CupertinoColors.activeBlue
-                      : CupertinoColors.systemGrey6,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: isSelected
-                        ? CupertinoColors.activeBlue
-                        : CupertinoColors.systemGrey4,
-                    width: isSelected ? 2 : 1,
-                  ),
+                  color: AppColors.white,
+                  borderRadius: AppSpacing.borderRadiusMD,
+                  border: Border.all(color: AppColors.borderLight),
                 ),
-                child: Text(
-                  AppLanguage.getText(category.name),
-                  style: TextStyle(
-                    fontSize: 15,
-                    decoration: TextDecoration.none,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    color: isSelected ? Colors.white : CupertinoColors.black,
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        );
-      },
-    );
-  }
-
-  Widget _buildConditionPicker() {
-    return ListenableBuilder(
-      listenable: _controller,
-      builder: (context, _) {
-        return GestureDetector(
-          onTap: () => _showConditionPicker(),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: CupertinoColors.systemGrey6,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  _controller.selectedCondition,
-                  style: const TextStyle(
-                    decoration: TextDecoration.none,
-                    fontSize: 16,
-                    color: CupertinoColors.black,
-                  ),
-                ),
-                const Icon(
-                  CupertinoIcons.chevron_down,
-                  size: 18,
-                  color: CupertinoColors.systemGrey,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _showConditionPicker() {
-    showCupertinoModalPopup(
-      context: context,
-      builder: (BuildContext context) => Container(
-        height: 250,
-        color: CupertinoColors.systemBackground.resolveFrom(context),
-        child: Column(
-          children: [
-            Container(
-              height: 50,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: CupertinoColors.separator.resolveFrom(context),
-                    width: 0.5,
-                  ),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
-                  ),
-                  const Text(
-                    'Condition',
-                    style: TextStyle(
-                      decoration: TextDecoration.none,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.swap_horiz, color: AppColors.primary),
+                        const SizedBox(width: 10),
+                        Text(
+                          controller.selectedType ?? "Select Type",
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: controller.selectedType == null
+                                ? AppColors.textHint
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    onPressed: () {
-                      Navigator.pop(context);
-                      HapticFeedback.mediumImpact();
-                    },
-                    child: const Text('Done'),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: CupertinoPicker(
-                itemExtent: 44,
-                onSelectedItemChanged: (index) {
-                  _controller.selectCondition(
-                    SellProductController.conditions[index],
-                  );
-                },
-                children: SellProductController.conditions
-                    .map((condition) => Center(child: Text(condition)))
-                    .toList(),
+                    const Icon(Icons.arrow_drop_down, size: 26)
+                  ],
+                ),
               ),
             ),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildSubmitButton() {
-    return ListenableBuilder(
-      listenable: _controller,
-      builder: (context, _) {
-        return Container(
-          width: double.infinity,
-          height: 52,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [
-                CupertinoColors.activeBlue,
-                Color(0xFF007AFF),
-              ],
+  Widget _buildConditionDropdown() {
+    return Consumer<SellProductController>(
+      builder: (context, controller, _) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Condition',
+              style: AppTextStyles.bodyMedium.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
             ),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: CupertinoColors.activeBlue.withOpacity(0.3),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+            const SizedBox(height: 8),
+
+            /// iOS Style Tap Container (replacing DropdownButtonFormField)
+            GestureDetector(
+              onTap: () {
+                _showIOSPicker(
+                  context,
+                  controller,
+                  title: "Select Condition",
+                  items: SellProductController.conditions,
+                  selectedValue: controller.selectedCondition,
+                  onSelect: (value) => controller.selectCondition(value),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: AppSpacing.borderRadiusMD,
+                  border: Border.all(color: AppColors.borderLight),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.stars, color: AppColors.primary),
+                        const SizedBox(width: 10),
+                        Text(
+                          controller.selectedCondition ?? "Select Condition",
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: controller.selectedCondition == null
+                                ? AppColors.textHint
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const Icon(Icons.arrow_drop_down, size: 26)
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+  void _showIOSPicker(
+      BuildContext context,
+      SellProductController controller, {
+        required String title,
+        required List<String> items,
+        required String? selectedValue,
+        required Function(String) onSelect,
+      }) {
+    int initialIndex =
+    selectedValue != null && items.contains(selectedValue)
+        ? items.indexOf(selectedValue)
+        : 0;
+
+    String tempSelected = items[initialIndex];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          height: 330,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(18),
+            ),
+          ),
+          child: Column(
+            children: [
+              // --- Top Bar ---
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(18),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Cancel
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: const Text(
+                        "Cancel",
+                        style: TextStyle(
+                          color: Colors.redAccent,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+
+                    // Title
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+
+                    // Done
+                    GestureDetector(
+                      onTap: () {
+                        onSelect(tempSelected);
+                        Navigator.pop(context);
+                      },
+                      child: const Text(
+                        "Done",
+                        style: TextStyle(
+                          color: Colors.blue,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // --- Cupertino Picker ---
+              Expanded(
+                child: CupertinoPicker(
+                  scrollController:
+                  FixedExtentScrollController(initialItem: initialIndex),
+                  itemExtent: 44,
+                  magnification: 1.2,
+                  squeeze: 1.1,
+                  useMagnifier: true,
+                  onSelectedItemChanged: (index) {
+                    tempSelected = items[index];
+                  },
+                  children: items
+                      .map(
+                        (value) => Center(
+                      child: Text(
+                        value,
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  )
+                      .toList(),
+                ),
               ),
             ],
-          ),
-          child: CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: _controller.isLoading ? null : _handleSubmit,
-            child: _controller.isLoading
-                ? const CupertinoActivityIndicator(
-              color: Colors.white,
-            )
-                : const Text(
-              'List Product',
-              style: TextStyle(
-                color: Colors.white,
-                decoration: TextDecoration.none,
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
           ),
         );
       },
     );
+  }
+
+
+  Widget _buildBottomButtons() {
+    return Container(
+      padding: EdgeInsets.only(
+        left: AppSpacing.md,
+        right: AppSpacing.md,
+        top: AppSpacing.sm,
+        bottom: MediaQuery.of(context).padding.bottom + AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.grey900.withOpacity(0.1),
+            offset: const Offset(0, -2),
+            blurRadius: 8,
+          ),
+        ],
+      ),
+      child: Consumer<SellProductController>(
+        builder: (context, controller, _) {
+          if (_currentStep == 0) {
+            // First step: Only Next button
+            return SizedBox(
+              width: double.infinity,
+              height: AppSpacing.buttonHeightMD,
+              child: ElevatedButton(
+                onPressed: _nextStep,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: AppSpacing.borderRadiusMD,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Next',
+                      style: AppTextStyles.button.copyWith(
+                        color: AppColors.white,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.arrow_forward, size: 20),
+                  ],
+                ),
+              ),
+            );
+          } else {
+            // Other steps: Previous + Next/Submit buttons
+            return Row(
+              children: [
+                // Previous Button
+                Expanded(
+                  flex: 1,
+                  child: SizedBox(
+                    height: AppSpacing.buttonHeightMD,
+                    child: OutlinedButton(
+                      onPressed: _previousStep,
+                      style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        side: const BorderSide(
+                          color: AppColors.primary,
+                          width: 1.5,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppSpacing.borderRadiusMD,
+                        ),
+                        foregroundColor: AppColors.primary,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.arrow_back, size: 18),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Previous',
+                            style: AppTextStyles.button.copyWith(
+                              color: AppColors.primary,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: AppSpacing.sm),
+
+                // Next/Submit Button
+                Expanded(
+                  flex: 2,
+                  child: SizedBox(
+                    height: AppSpacing.buttonHeightMD,
+                    child: ElevatedButton(
+                      onPressed: controller.isLoading
+                          ? null
+                          : (_currentStep == 4 ? _submitForm : _nextStep),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: AppSpacing.borderRadiusMD,
+                        ),
+                      ),
+                      child: controller.isLoading
+                          ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: AppColors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                          : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            _currentStep == 4 ? 'Submit' : 'Next',
+                            style: AppTextStyles.button.copyWith(
+                              color: AppColors.white,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            _currentStep == 4
+                                ? Icons.check_circle
+                                : Icons.arrow_forward,
+                            size: 20,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }
+        },
+      ),
+    ).animate().fadeIn(duration: 300.ms).slideY(begin: 1, end: 0);
   }
 }

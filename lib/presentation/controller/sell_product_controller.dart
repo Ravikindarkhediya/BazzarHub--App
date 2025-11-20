@@ -1,19 +1,23 @@
-// lib/features/sell/presentation/controllers/sell_product_controller.dart
+// lib/features/sell/presentation/controllers/sell_product_controller.dart (UPDATED)
 
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
+import 'package:path_provider/path_provider.dart';
 
-import '../../app/core/utils/utils.dart';
 import '../commons/dialogs/app_toasts.dart';
 import '../services/api_service.dart';
+import '../services/location_service.dart';
 import '../services/models/categorie/categorie_model.dart';
 
-/// Image Upload State
+/// Image/Video Upload State
 class ProductImage {
   final String id;
   final File file;
+  final bool isVideo;
+  final File? thumbnailFile;
   double uploadProgress;
   bool isCompressing;
   bool isUploaded;
@@ -21,6 +25,8 @@ class ProductImage {
   ProductImage({
     required this.id,
     required this.file,
+    this.isVideo = false,
+    this.thumbnailFile,
     this.uploadProgress = 0.0,
     this.isCompressing = false,
     this.isUploaded = false,
@@ -30,10 +36,13 @@ class ProductImage {
     double? uploadProgress,
     bool? isCompressing,
     bool? isUploaded,
+    File? thumbnailFile,
   }) {
     return ProductImage(
       id: id,
       file: file,
+      isVideo: isVideo,
+      thumbnailFile: thumbnailFile ?? this.thumbnailFile,
       uploadProgress: uploadProgress ?? this.uploadProgress,
       isCompressing: isCompressing ?? this.isCompressing,
       isUploaded: isUploaded ?? this.isUploaded,
@@ -41,7 +50,7 @@ class ProductImage {
   }
 }
 
-/// Sell Product Controller
+/// Sell Product Controller with Dynamic Location
 class SellProductController extends ChangeNotifier {
   // Form Controllers
   final List<TextEditingController> _allControllers = [];
@@ -49,26 +58,37 @@ class SellProductController extends ChangeNotifier {
   final titleController = TextEditingController();
   final descriptionController = TextEditingController();
   final priceController = TextEditingController();
-  final locationController = TextEditingController();
-  final villageController = TextEditingController();
-  final talukoController = TextEditingController();
-  final districtController = TextEditingController();
   final zipCodeController = TextEditingController();
-  final stateController = TextEditingController();
   final contactController = TextEditingController();
   final emailController = TextEditingController();
 
   // Image Picker
   final ImagePicker _picker = ImagePicker();
 
+  // Location Service
+  final LocationService _locationService = LocationService();
+
   // State
   List<ProductImage> _images = [];
   List<CategoryModel> _categories = [];
-  List<CategoryModel> get categories => _categories;
   String? _selectedCategoryId;
   String _selectedCondition = 'Good';
+  String _selectedType = "Sell";
   bool _isLoading = false;
   String? _errorMessage;
+
+  // Location State
+  String? _selectedState;
+  String? _selectedDistrict;
+  String? _selectedSubDistrict;
+  String? _selectedVillage;
+
+  List<String> _statesList = [];
+  List<String> _districtsList = [];
+  List<String> _subDistrictsList = [];
+  List<String> _villagesList = [];
+
+  bool _showSubDistrict = false;
 
   // Constants
   static const int maxImages = 6;
@@ -85,137 +105,138 @@ class SellProductController extends ChangeNotifier {
     'Heavily Used',
   ];
 
+  static const List<String> productTypes = [
+    "Sell",
+    "Buy",
+    "Rent",
+    "Exchange",
+  ];
+
   // Getters
   List<ProductImage> get images => _images;
   int get imageCount => _images.length;
   bool get canAddMoreImages => _images.length < maxImages;
+  List<CategoryModel> get categories => _categories;
   String? get selectedCategoryId => _selectedCategoryId;
   String get selectedCondition => _selectedCondition;
+  String get selectedType => _selectedType;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get hasImages => _images.isNotEmpty;
 
+  // Location Getters
+  String? get selectedState => _selectedState;
+  String? get selectedDistrict => _selectedDistrict;
+  String? get selectedSubDistrict => _selectedSubDistrict;
+  String? get selectedVillage => _selectedVillage;
+  List<String> get statesList => _statesList;
+  List<String> get districtsList => _districtsList;
+  List<String> get subDistrictsList => _subDistrictsList;
+  List<String> get villagesList => _villagesList;
+  bool get showSubDistrict => _showSubDistrict;
+  bool get isLocationDataReady => _statesList.isNotEmpty;
+  bool get canSelectDistrict =>
+      _selectedState != null && _districtsList.isNotEmpty;
+  bool get canSelectSubDistrict =>
+      _showSubDistrict &&
+      _selectedDistrict != null &&
+      _subDistrictsList.isNotEmpty;
+  bool get canSelectVillage =>
+      _selectedDistrict != null &&
+      (!_showSubDistrict || _selectedSubDistrict != null);
+  bool get allowManualVillageEntry =>
+      canSelectVillage && _villagesList.isEmpty;
 
   SellProductController() {
     _allControllers.addAll([
       titleController,
       descriptionController,
       priceController,
-      locationController,
-      villageController,
-      talukoController,
-      districtController,
       zipCodeController,
-      stateController,
       contactController,
       emailController,
     ]);
   }
 
-  /// Pick image from camera
-  Future<void> pickFromCamera(BuildContext context) async {
+  /// Load Location Data
+  Future<void> loadLocationData() async {
     try {
-      if (!canAddMoreImages) {
-        _showError(context, 'Maximum $maxImages images allowed');
-        return;
-      }
-
-      HapticFeedback.mediumImpact();
-
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.camera,
-        maxWidth: 1920,
-        maxHeight: 1920,
-        imageQuality: 85,
-      );
-
-      if (image != null) {
-        await _addImage(File(image.path), context);
-      }
+      await _locationService.loadLocationData();
+      _statesList = _locationService.getStates();
+      notifyListeners();
     } catch (e) {
-      debugPrint('❌ Error picking from camera: $e');
-      _showError(context, 'Failed to capture image');
+      debugPrint('Error loading location data: $e');
     }
   }
 
-  /// Pick images from gallery
-  Future<void> pickFromGallery(BuildContext context) async {
-    try {
-      if (!canAddMoreImages) {
-        _showError(context, 'Maximum $maxImages images allowed');
-        return;
-      }
+  /// Select State
+  void selectState(String state) {
+    _selectedState = state;
+    _selectedDistrict = null;
+    _selectedSubDistrict = null;
+    _selectedVillage = null;
 
-      HapticFeedback.mediumImpact();
+    _districtsList = _locationService.getDistricts(state);
+    _subDistrictsList = [];
+    _villagesList = [];
+    _showSubDistrict = false;
 
-      final List<XFile> images = await _picker.pickMultiImage(
-        maxWidth: 1920,
-        maxHeight: 1920,
-        imageQuality: 85,
-      );
-
-      if (images.isNotEmpty) {
-        final availableSlots = maxImages - _images.length;
-        final imagesToAdd = images.take(availableSlots).toList();
-
-        for (var image in imagesToAdd) {
-          await _addImage(File(image.path), context);
-        }
-
-        if (images.length > availableSlots) {
-          _showError(context, 'Only first $availableSlots images added (max $maxImages)');
-        }
-      }
-    } catch (e) {
-      debugPrint('❌ Error picking from gallery: $e');
-      _showError(context, 'Failed to select images');
-    }
-  }
-
-  /// Add image with compression simulation
-  Future<void> _addImage(File file, BuildContext context) async {
-    final imageId = DateTime.now().millisecondsSinceEpoch.toString();
-    final productImage = ProductImage(
-      id: imageId,
-      file: file,
-      isCompressing: true,
-    );
-
-    _images.add(productImage);
     notifyListeners();
-
-    // Simulate compression
-    await Future.delayed(const Duration(milliseconds: 800));
-
-    final index = _images.indexWhere((img) => img.id == imageId);
-    if (index != -1) {
-      _images[index] = _images[index].copyWith(isCompressing: false);
-      notifyListeners();
-
-      // Simulate upload with progress
-      await _simulateUpload(imageId);
-    }
   }
 
-  /// Simulate upload progress
-  Future<void> _simulateUpload(String imageId) async {
-    final index = _images.indexWhere((img) => img.id == imageId);
-    if (index == -1) return;
+  /// Select District
+  void selectDistrict(String district) {
+    _selectedDistrict = district;
+    _selectedSubDistrict = null;
+    _selectedVillage = null;
 
-    for (int i = 0; i <= 100; i += 10) {
-      await Future.delayed(const Duration(milliseconds: 100));
-      if (index < _images.length) {
-        _images[index] = _images[index].copyWith(uploadProgress: i / 100);
-        notifyListeners();
+    if (_selectedState != null) {
+      _showSubDistrict = _locationService.hasSubDistricts(
+        _selectedState!,
+        district,
+      );
+
+      if (_showSubDistrict) {
+        _subDistrictsList = _locationService.getSubDistricts(
+          _selectedState!,
+          district,
+        );
+        _villagesList = [];
+      } else {
+        _subDistrictsList = [];
+        _villagesList = _locationService.getVillages(
+          _selectedState!,
+          district,
+        );
       }
     }
 
-    if (index < _images.length) {
-      _images[index] = _images[index].copyWith(isUploaded: true);
-      notifyListeners();
-    }
+    notifyListeners();
   }
 
+  /// Select Sub-District
+  void selectSubDistrict(String subDistrict) {
+    _selectedSubDistrict = subDistrict;
+    _selectedVillage = null;
+
+    if (_selectedState != null && _selectedDistrict != null) {
+      _villagesList = _locationService.getVillages(
+        _selectedState!,
+        _selectedDistrict!,
+        subDistrict,
+      );
+    }
+
+    notifyListeners();
+  }
+
+  /// Select Village
+  void selectVillage(String village) {
+    _selectedVillage = village;
+    notifyListeners();
+  }
+
+  /// Load Categories
   Future<void> loadCategories() async {
     try {
       var services = await getApiClient();
@@ -228,132 +249,210 @@ class SellProductController extends ChangeNotifier {
     } catch (e) {
       debugPrint("❌ Error loading categories: $e");
     }
-
     notifyListeners();
   }
 
+  /// Pick from Camera
+  Future<void> pickFromCamera(BuildContext context, {String mediaType = 'photo'}) async {
+    try {
+      if (!canAddMoreImages) {
+        _showError(context, 'Maximum $maxImages images allowed');
+        return;
+      }
 
-  /// Remove image
+      HapticFeedback.mediumImpact();
+
+      final XFile? file;
+      if (mediaType == 'video') {
+        file = await _picker.pickVideo(source: ImageSource.camera);
+      } else {
+        file = await _picker.pickImage(
+          source: ImageSource.camera,
+          maxWidth: 1920,
+          maxHeight: 1920,
+          imageQuality: 85,
+        );
+      }
+
+      if (file != null) {
+        await _addImage(File(file.path), context, isVideo: mediaType == 'video');
+      }
+    } catch (e) {
+      debugPrint('❌ Error picking from camera: $e');
+      _showError(context, 'Failed to capture media');
+    }
+  }
+
+  /// Pick from Gallery
+  Future<void> pickFromGallery(BuildContext context, {String mediaType = 'photo'}) async {
+    try {
+      if (!canAddMoreImages) {
+        _showError(context, 'Maximum $maxImages images allowed');
+        return;
+      }
+
+      HapticFeedback.mediumImpact();
+
+      if (mediaType == 'video') {
+        final XFile? video = await _picker.pickVideo(source: ImageSource.gallery);
+        if (video != null) {
+          await _addImage(File(video.path), context, isVideo: true);
+        }
+      } else {
+        final List<XFile> images = await _picker.pickMultiImage(
+          maxWidth: 1920,
+          maxHeight: 1920,
+          imageQuality: 85,
+        );
+        if (images.isNotEmpty) {
+          final slots = maxImages - _images.length;
+          final toAdd = images.take(slots);
+          for (var img in toAdd) {
+            await _addImage(File(img.path), context);
+          }
+          if (images.length > slots) {
+            _showError(context, 'Only first $slots images added (max $maxImages)');
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error picking from gallery: $e');
+      _showError(context, 'Failed to select media');
+    }
+  }
+
+  /// Add Image/Video
+  Future<void> _addImage(File file, BuildContext context, {bool isVideo = false}) async {
+    final imageId = DateTime.now().millisecondsSinceEpoch.toString();
+
+    File? thumbnailFile;
+    if (isVideo) {
+      try {
+        final thumbnailPath = await VideoThumbnail.thumbnailFile(
+          video: file.path,
+          thumbnailPath: (await getTemporaryDirectory()).path,
+          imageFormat: ImageFormat.JPEG,
+          maxWidth: 400,
+          quality: 75,
+        );
+        if (thumbnailPath != null) {
+          thumbnailFile = File(thumbnailPath);
+        }
+      } catch (e) {
+        debugPrint('❌ Error generating thumbnail: $e');
+      }
+    }
+
+    final productImage = ProductImage(
+      id: imageId,
+      file: file,
+      isVideo: isVideo,
+      thumbnailFile: thumbnailFile,
+      isCompressing: true,
+    );
+
+    _images.add(productImage);
+    notifyListeners();
+
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    final index = _images.indexWhere((img) => img.id == imageId);
+    if (index != -1) {
+      _images[index] = _images[index].copyWith(isCompressing: false);
+      notifyListeners();
+      await _simulateUpload(imageId);
+    }
+  }
+
+  /// Simulate Upload Progress
+  Future<void> _simulateUpload(String imageId) async {
+    final index = _images.indexWhere((img) => img.id == imageId);
+    if (index == -1) return;
+
+    for (int i = 0; i <= 100; i += 10) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      if (index < _images.length) {
+        _images[index] = _images[index].copyWith(uploadProgress: i / 100);
+        notifyListeners();
+      }
+    }
+    if (index < _images.length) {
+      _images[index] = _images[index].copyWith(isUploaded: true);
+      notifyListeners();
+    }
+  }
+
+  /// Remove Image
   void removeImage(String imageId) {
     HapticFeedback.lightImpact();
     _images.removeWhere((img) => img.id == imageId);
     notifyListeners();
-    debugPrint('🗑️ Image removed: $imageId');
   }
 
-  /// Reorder images
+  /// Reorder Images
   void reorderImages(int oldIndex, int newIndex) {
-    if (newIndex > oldIndex) {
-      newIndex -= 1;
-    }
+    if (newIndex > oldIndex) newIndex -= 1;
     final item = _images.removeAt(oldIndex);
     _images.insert(newIndex, item);
     HapticFeedback.mediumImpact();
     notifyListeners();
-    debugPrint('🔄 Images reordered: $oldIndex → $newIndex');
   }
 
-  /// Update category
+  /// Select Category
   void selectCategory(String? categoryId) {
     _selectedCategoryId = categoryId;
     notifyListeners();
-    debugPrint('📂 Category selected: $categoryId');
   }
 
-  /// Update condition
+  /// Select Condition
   void selectCondition(String condition) {
     _selectedCondition = condition;
     notifyListeners();
-    debugPrint('✨ Condition selected: $condition');
   }
 
-  /// Validate form
+  /// Select Type
+  void selectType(String value) {
+    _selectedType = value;
+    notifyListeners();
+  }
+
+  /// Validate Form
   String? validateForm() {
-    if (_images.isEmpty) {
-      return 'Please add at least one image';
-    }
-    if (_selectedCategoryId == null) {
-      return 'Please select a category';
-    }
-    if (titleController.text
-        .trim()
-        .isEmpty) {
-      return 'Product title is required';
-    }
-    if (descriptionController.text
-        .trim()
-        .isEmpty) {
-      return 'Description is required';
-    }
-    if (priceController.text
-        .trim()
-        .isEmpty) {
-      return 'Price is required';
-    }
+    if (_images.isEmpty) return 'Please add at least one image';
+    if (_selectedCategoryId == null) return 'Please select a category';
+    if (titleController.text.trim().isEmpty) return 'Product title is required';
+    if (descriptionController.text.trim().isEmpty) return 'Description is required';
+    if (priceController.text.trim().isEmpty) return 'Price is required';
+
     final price = double.tryParse(priceController.text.trim());
-    if (price == null || price <= 0) {
-      return 'Enter a valid price';
-    }
-    if (villageController.text
-        .trim()
-        .isEmpty) {
-      return 'Village is required';
-    }
-    if (talukoController.text
-        .trim()
-        .isEmpty) {
-      return 'Taluko is required';
-    }
-    if (districtController.text
-        .trim()
-        .isEmpty) {
-      return 'District is required';
-    }
-    if (stateController.text
-        .trim()
-        .isEmpty) {
-      return 'State is required';
-    }
-    if (zipCodeController.text
-        .trim()
-        .isEmpty) {
-      return 'ZipCode is required';
-    }
-    if (locationController.text
-        .trim()
-        .isEmpty) {
-      return 'Country is required';
-    }
-    if (contactController.text
-        .trim()
-        .isEmpty) {
-      return 'Contact number is required';
-    }
-    if (contactController.text
-        .trim()
-        .length < 10) {
-      return 'Enter a valid contact number';
-    }
-    if (Utils.isEmpty(emailController.text.trim())) {
-      return 'Please enter email';
-    }
+    if (price == null || price <= 0) return 'Enter a valid price';
+
+    if (_selectedState == null) return 'Please select a state';
+    if (_selectedDistrict == null) return 'Please select a district';
+    if (_showSubDistrict && _selectedSubDistrict == null) return 'Please select a sub-district';
+    if (_selectedVillage == null || _selectedVillage!.isEmpty) return 'Please select or enter a village';
+    if (zipCodeController.text.trim().isEmpty) return 'Zip Code is required';
+    if (contactController.text.trim().isEmpty) return 'Contact number is required';
+    if (contactController.text.trim().length < 10) return 'Enter a valid contact number';
     if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(emailController.text.trim())) {
       return 'Please enter a valid email';
     }
+
     return null;
   }
 
-  /// Submit product
+  /// Submit Product
   Future<bool> submitProduct(BuildContext context) async {
     final error = validateForm();
     if (error != null) {
       _showError(context, error);
       return false;
     }
+
     _isLoading = true;
     notifyListeners();
-    try {
 
+    try {
       Map<String, dynamic> queryParams = {
         "title": titleController.text,
         "description": descriptionController.text,
@@ -361,36 +460,25 @@ class SellProductController extends ChangeNotifier {
         "category": _selectedCategoryId,
         "images": _images.map((img) => img.file).toList(),
         "condition": _selectedCondition.toLowerCase(),
-        "type": "sell",
+        "type": _selectedType.toLowerCase(),
         "location": {
-          "village": villageController.text,
-          "taluko": talukoController.text,
-          "district": districtController.text,
-          "state": stateController.text,
+          "country": "India",
+          "state": _selectedState,
+          "district": _selectedDistrict,
+          "subDistrict": _selectedSubDistrict,
+          "village": _selectedVillage,
           "zipCode": zipCodeController.text,
-          "country": locationController.text,
         },
         "contactInfo": {
-          "phone": [
-            contactController.text
-          ],
-          "email": [
-            emailController.text
-          ],
+          "phone": [contactController.text],
+          "email": [emailController.text],
         }
       };
 
       debugPrint(queryParams.toString());
-
       await Future.delayed(const Duration(seconds: 2));
 
-      debugPrint('✅ Product submitted successfully');
-      debugPrint('Title: ${titleController.text}');
-      debugPrint('Price: ${priceController.text}');
-      debugPrint('Images: ${_images.length}');
-
       HapticFeedback.heavyImpact();
-
       if (context.mounted) {
         _showSuccess(context, 'Product listed successfully!');
       }
@@ -408,7 +496,7 @@ class SellProductController extends ChangeNotifier {
     }
   }
 
-  /// Clear form
+  /// Clear Form
   void clearForm() {
     for (var c in _allControllers) {
       c.clear();
@@ -416,9 +504,13 @@ class SellProductController extends ChangeNotifier {
     _images.clear();
     _selectedCategoryId = null;
     _selectedCondition = 'Good';
+    _selectedType = "Sell";
+    _selectedState = null;
+    _selectedDistrict = null;
+    _selectedSubDistrict = null;
+    _selectedVillage = null;
     _errorMessage = null;
     notifyListeners();
-    debugPrint('🔄 Form cleared');
   }
 
   void _showError(BuildContext context, String message) {
@@ -441,7 +533,6 @@ class SellProductController extends ChangeNotifier {
     for (var c in _allControllers) {
       c.dispose();
     }
-    debugPrint('🗑️ SellProductController disposed');
     super.dispose();
   }
 }

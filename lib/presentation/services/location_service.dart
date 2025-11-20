@@ -1,7 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:get/get.dart';
+
+import 'models/location/location_models.dart';
 
 class LocationService {
   /// Get current address safely with user permission handling
@@ -90,4 +95,116 @@ class LocationService {
       ),
     );
   }
+  static LocationService? _instance;
+  LocationData? _locationData;
+
+  LocationService._();
+
+  factory LocationService() {
+    _instance ??= LocationService._();
+    return _instance!;
+  }
+
+  Future<void> loadLocationData() async {
+    if (_locationData != null) return;
+
+    try {
+      final String jsonString =
+          await rootBundle.loadString('assets/data/india_locations.json');
+      final List<dynamic> jsonData = json.decode(jsonString);
+      _locationData = LocationData.fromJson(jsonData);
+    } catch (e) {
+      throw Exception('Failed to load location data: $e');
+    }
+  }
+
+  List<String> getStates() {
+    if (_locationData == null) return [];
+    final states = _locationData!.states.map((e) => e.state).toList();
+    states.sort(_caseInsensitiveSort);
+    return states;
+  }
+
+  List<String> getDistricts(String stateName) {
+    final state = _findState(stateName);
+    if (state == null) return [];
+    final districts = state.districts.map((e) => e.district).toList();
+    districts.sort(_caseInsensitiveSort);
+    return districts;
+  }
+
+  DistrictData? getDistrictData(String stateName, String districtName) {
+    final state = _findState(stateName);
+    if (state == null) return null;
+    for (final district in state.districts) {
+      if (district.district == districtName) return district;
+    }
+    return null;
+  }
+
+  List<String> getSubDistricts(String stateName, String districtName) {
+    final districtData = getDistrictData(stateName, districtName);
+    if (districtData == null || !districtData.hasSubDistricts) return [];
+    final subDistricts =
+        districtData.subDistricts!.map((e) => e.subDistrict).toList();
+    subDistricts.sort(_caseInsensitiveSort);
+    return subDistricts;
+  }
+
+  List<String> getVillages(
+    String stateName,
+    String districtName, [
+    String? subDistrictName,
+  ]) {
+    final districtData = getDistrictData(stateName, districtName);
+    if (districtData == null) return [];
+
+    if (subDistrictName != null && districtData.hasSubDistricts) {
+      final subDistrict = _findSubDistrict(districtData, subDistrictName);
+      final villages = subDistrict?.villages ?? [];
+      return _sortedCopy(villages);
+    } else if (!districtData.hasSubDistricts &&
+        (districtData.subDistricts ?? []).isNotEmpty) {
+      final villages = districtData.subDistricts!
+          .expand((s) => s.villages)
+          .toList(growable: false);
+      return _sortedCopy(villages);
+    }
+
+    return [];
+  }
+
+  bool hasSubDistricts(String stateName, String districtName) {
+    final districtData = getDistrictData(stateName, districtName);
+    return districtData?.hasSubDistricts ?? false;
+  }
+
+  StateData? _findState(String stateName) {
+    if (_locationData == null) return null;
+    for (final state in _locationData!.states) {
+      if (state.state == stateName) return state;
+    }
+    return null;
+  }
+
+  SubDistrictData? _findSubDistrict(
+    DistrictData district,
+    String subDistrictName,
+  ) {
+    for (final subDistrict in district.subDistricts ?? []) {
+      if (subDistrict.subDistrict == subDistrictName) {
+        return subDistrict;
+      }
+    }
+    return null;
+  }
+
+  List<String> _sortedCopy(List<String> source) {
+    final copy = List<String>.from(source);
+    copy.sort(_caseInsensitiveSort);
+    return copy;
+  }
+
+  int _caseInsensitiveSort(String a, String b) =>
+      a.toLowerCase().compareTo(b.toLowerCase());
 }
