@@ -1,13 +1,13 @@
+import 'package:bazzar_hub_app/app/core/utils/app_spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:bazzar_hub_app/presentation/services/models/news/news_model.dart';
-import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../routes/app_routes.dart';
 import '../../home/widgets/header_widget.dart';
 import '../widgets/compact_news_card.dart';
 import '../controllers/news_controller.dart';
 import '../widgets/featured_news_card.dart';
+import '../widgets/news_category_selector.dart';
 
 class NewsView extends StatefulWidget {
   const NewsView({Key? key}) : super(key: key);
@@ -17,10 +17,13 @@ class NewsView extends StatefulWidget {
 }
 
 class _NewsViewState extends State<NewsView> with SingleTickerProviderStateMixin {
+
   late TabController _tabController;
+
   final NewsController _newsController = Get.put(NewsController());
   
   int _selectedCategoryIndex = 0;
+
   final List<String> categories = [
     'All',
     'My Village',
@@ -129,13 +132,26 @@ class _NewsViewState extends State<NewsView> with SingleTickerProviderStateMixin
                 child: Column(
                     children: [
 
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                        child: CategorySelectorWidget(
+                          categories: _newsController.newsCategories,
+                          selectedIndex: _selectedCategoryIndex,
+                          onSelect: (index) {
+                            setState(() {
+
+                            });
+                          },
+                        ),
+                      ),
+
                       // News List with Mixed Layout
                       Expanded(
                         child: ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           itemCount: _newsController.newsList.length,
                           itemBuilder: (context, index) {
-                            if (index < 2) {
+                            if (index < 1) {
                               return FeaturedNewsCard(
                                 newsData: _newsController.newsList[index],
                                 onTap: () {
@@ -154,6 +170,7 @@ class _NewsViewState extends State<NewsView> with SingleTickerProviderStateMixin
                           },
                         ),
                       ),
+
                     ]
                 ),
               ),

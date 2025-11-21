@@ -2,14 +2,13 @@
 import 'package:bazzar_hub_app/presentation/services/endpoints.dart';
 import 'package:bazzar_hub_app/presentation/services/models/categorie/category_list_response_model.dart';
 import 'package:bazzar_hub_app/presentation/services/models/news/news_model.dart';
-import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 import '../../app/core/utils/session_manager.dart';
 import '../../app/core/utils/utils.dart';
-import '../modules/home/model/category_model.dart';
 import 'models/base/base_list_model.dart';
 import 'models/base/base_model.dart';
+import 'models/categorie/categorie_model.dart';
 import 'models/marketplace/marketplace_model.dart';
 import 'models/upload/upload_response_model.dart';
 import 'models/user/user_model.dart';
@@ -103,8 +102,6 @@ abstract class ApiServices{
   @GET(Endpoints.GET_ALL_CATEGORIES)
   Future<HttpResponse<BaseModel<CategoryListResponseModel>>> requestAllCategories();
 
-  @GET("${Endpoints.GET_ALL_CATEGORIES}/{id}")
-  Future<HttpResponse<BaseModel<CategoryModel>>> requestCategoryById(@Path("id") String id);
 
   //Marketplace
 
@@ -144,6 +141,9 @@ abstract class ApiServices{
       );
 
   //News
+
+  @GET(Endpoints.NEWS_CATEGORIES)
+  Future<HttpResponse<BaseListModel<CategoryModel>>> getNewsCategories();
 
   @GET(Endpoints.NEWS)
     Future<HttpResponse<BaseListModel<NewsModel>>> getNews(@Queries() Map<String, dynamic> queryParams);

@@ -34,6 +34,8 @@ class Endpoints {
 
   //Marketplace
 
+  static const String NEWS_CATEGORIES = "api/news/categories";
+
   static const String NEWS = "/api/news";
 
   static const String NEWS_FAVORITE = "/api/news/favorite";
