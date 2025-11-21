@@ -1,4 +1,4 @@
-import 'package:bazzar_hub_app/presentation/controller/fecth_locations_controller.dart';
+import 'package:bazzar_hub_app/presentation/controller/location_repository.dart';
 import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';

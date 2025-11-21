@@ -10,9 +10,9 @@ import 'package:geolocator/geolocator.dart';
 
 import '../commons/dialogs/app_toasts.dart';
 import '../services/api_service.dart';
-import '../services/location_service.dart';
 import '../services/models/categorie/categorie_model.dart';
 import '../services/models/Common/coordinates_model.dart';
+import 'location_repository.dart';
 
 /// Image/Video Upload State
 class ProductImage {
@@ -76,7 +76,7 @@ class SellProductController extends ChangeNotifier {
   final ImagePicker _picker = ImagePicker();
 
   // Location Service
-  final LocationService _locationService = LocationService();
+  final LocationRepository _locationRepo = LocationRepository.instance;
 
   // State
   List<ProductImage> _images = [];
@@ -104,20 +104,7 @@ class SellProductController extends ChangeNotifier {
 
   // Constants
   static const int maxImages = 6;
-  static const List<String> conditions = [
-    'Used',
-    'New',
-    // 'Good',
-    // 'Fair',
-    // 'Used – Excellent',
-    // 'Used – Good',
-    // 'Used – Fair',
-    // 'Refurbished',
-    // 'Open Box',
-    // 'Heavily Used',
-  ];
-
-  static const List<String> productTypes = ["new", "used"];
+  static const List<String> conditions = ['Used', 'New'];
 
   // Getters
   List<ProductImage> get images => _images;
@@ -153,8 +140,7 @@ class SellProductController extends ChangeNotifier {
   bool get canSelectVillage =>
       _selectedDistrict != null &&
       (!_showSubDistrict || _selectedSubDistrict != null);
-  bool get allowManualVillageEntry =>
-      canSelectVillage && _villagesList.isEmpty;
+  bool get allowManualVillageEntry => canSelectVillage && _villagesList.isEmpty;
 
   SellProductController() {
     _allControllers.addAll([
@@ -170,8 +156,8 @@ class SellProductController extends ChangeNotifier {
   /// Load Location Data
   Future<void> loadLocationData() async {
     try {
-      await _locationService.loadLocationData();
-      _statesList = _locationService.getStates();
+      await _locationRepo.initialize();
+      _statesList = _locationRepo.getStates();
       notifyListeners();
     } catch (e) {
       debugPrint('Error loading location data: $e');
@@ -185,7 +171,7 @@ class SellProductController extends ChangeNotifier {
     _selectedSubDistrict = null;
     _selectedVillage = null;
 
-    _districtsList = _locationService.getDistricts(state);
+    _districtsList = _locationRepo.getDistricts(state)!;
     _subDistrictsList = [];
     _villagesList = [];
     _showSubDistrict = false;
@@ -200,23 +186,25 @@ class SellProductController extends ChangeNotifier {
     _selectedVillage = null;
 
     if (_selectedState != null) {
-      _showSubDistrict = _locationService.hasSubDistricts(
+      _showSubDistrict = _locationRepo.hasSubDistricts(
         _selectedState!,
         district,
       );
 
       if (_showSubDistrict) {
-        _subDistrictsList = _locationService.getSubDistricts(
+        List<String> subDistricts = _locationRepo.getSubDistricts(
           _selectedState!,
           district,
         );
+
+        if (!subDistricts.contains(district)) {
+          subDistricts = [district, ...subDistricts];
+        }
+        _subDistrictsList = subDistricts;
         _villagesList = [];
       } else {
         _subDistrictsList = [];
-        _villagesList = _locationService.getVillages(
-          _selectedState!,
-          district,
-        );
+        _villagesList = _locationRepo.getVillages(_selectedState!, district);
       }
     }
 
@@ -229,11 +217,16 @@ class SellProductController extends ChangeNotifier {
     _selectedVillage = null;
 
     if (_selectedState != null && _selectedDistrict != null) {
-      _villagesList = _locationService.getVillages(
+      List<String> villages = _locationRepo.getVillages(
         _selectedState!,
         _selectedDistrict!,
         subDistrict,
       );
+
+      if (!villages.contains(subDistrict)) {
+        villages = [subDistrict, ...villages];
+      }
+      _villagesList = villages;
     }
 
     notifyListeners();
@@ -262,7 +255,10 @@ class SellProductController extends ChangeNotifier {
   }
 
   /// Pick from Camera
-  Future<void> pickFromCamera(BuildContext context, {String mediaType = 'photo'}) async {
+  Future<void> pickFromCamera(
+    BuildContext context, {
+    String mediaType = 'photo',
+  }) async {
     try {
       if (!canAddMoreImages) {
         _showError(context, 'Maximum $maxImages images allowed');
@@ -284,7 +280,11 @@ class SellProductController extends ChangeNotifier {
       }
 
       if (file != null) {
-        await _addImage(File(file.path), context, isVideo: mediaType == 'video');
+        await _addImage(
+          File(file.path),
+          context,
+          isVideo: mediaType == 'video',
+        );
       }
     } catch (e) {
       debugPrint('❌ Error picking from camera: $e');
@@ -293,7 +293,10 @@ class SellProductController extends ChangeNotifier {
   }
 
   /// Pick from Gallery
-  Future<void> pickFromGallery(BuildContext context, {String mediaType = 'photo'}) async {
+  Future<void> pickFromGallery(
+    BuildContext context, {
+    String mediaType = 'photo',
+  }) async {
     try {
       if (!canAddMoreImages) {
         _showError(context, 'Maximum $maxImages images allowed');
@@ -303,7 +306,9 @@ class SellProductController extends ChangeNotifier {
       HapticFeedback.mediumImpact();
 
       if (mediaType == 'video') {
-        final XFile? video = await _picker.pickVideo(source: ImageSource.gallery);
+        final XFile? video = await _picker.pickVideo(
+          source: ImageSource.gallery,
+        );
         if (video != null) {
           await _addImage(File(video.path), context, isVideo: true);
         }
@@ -320,7 +325,10 @@ class SellProductController extends ChangeNotifier {
             await _addImage(File(img.path), context);
           }
           if (images.length > slots) {
-            _showError(context, 'Only first $slots images added (max $maxImages)');
+            _showError(
+              context,
+              'Only first $slots images added (max $maxImages)',
+            );
           }
         }
       }
@@ -331,7 +339,11 @@ class SellProductController extends ChangeNotifier {
   }
 
   /// Add Image/Video
-  Future<void> _addImage(File file, BuildContext context, {bool isVideo = false}) async {
+  Future<void> _addImage(
+    File file,
+    BuildContext context, {
+    bool isVideo = false,
+  }) async {
     final imageId = DateTime.now().millisecondsSinceEpoch.toString();
 
     File? thumbnailFile;
@@ -363,7 +375,7 @@ class SellProductController extends ChangeNotifier {
     _images.add(productImage);
     notifyListeners();
 
-      await Future.delayed(const Duration(milliseconds: 800));
+    await Future.delayed(const Duration(milliseconds: 800));
 
     final index = _images.indexWhere((img) => img.id == imageId);
     if (index != -1) {
@@ -374,7 +386,10 @@ class SellProductController extends ChangeNotifier {
   }
 
   /// Upload Image/Video to Server
-  Future<bool> _uploadImage(ProductImage productImage, {int maxRetries = 3}) async {
+  Future<bool> _uploadImage(
+    ProductImage productImage, {
+    int maxRetries = 3,
+  }) async {
     final index = _images.indexWhere((img) => img.id == productImage.id);
     if (index == -1) return false;
 
@@ -412,7 +427,7 @@ class SellProductController extends ChangeNotifier {
 
         if (response.data.status && response.data.data != null) {
           final uploadedUrl = response.data.data!.url;
-          
+
           // Update with success
           _images[index] = _images[index].copyWith(
             uploadProgress: 1.0,
@@ -428,7 +443,7 @@ class SellProductController extends ChangeNotifier {
       } catch (e) {
         retryCount++;
         debugPrint('❌ Upload error (attempt $retryCount/$maxRetries): $e');
-        
+
         if (retryCount >= maxRetries) {
           // Final failure
           _images[index] = _images[index].copyWith(
@@ -439,7 +454,7 @@ class SellProductController extends ChangeNotifier {
           notifyListeners();
           return false;
         }
-        
+
         // Wait before retry
         await Future.delayed(Duration(seconds: retryCount));
       }
@@ -465,7 +480,7 @@ class SellProductController extends ChangeNotifier {
           }
         }
       }
-      
+
       _isUploading = false;
       notifyListeners();
       return true;
@@ -549,12 +564,8 @@ class SellProductController extends ChangeNotifier {
   /// Map user-friendly condition to API value (new or used)
   String _mapConditionToApiValue(String condition) {
     // Conditions that map to "new"
-    const newConditions = [
-      'Brand New',
-      'Like New',
-      'Open Box',
-    ];
-    
+    const newConditions = ['Brand New', 'Like New', 'Open Box'];
+
     // All other conditions map to "used"
     if (newConditions.contains(condition)) {
       return 'new';
@@ -573,7 +584,8 @@ class SellProductController extends ChangeNotifier {
     if (_images.isEmpty) return 'Please add at least one image';
     if (_selectedCategoryId == null) return 'Please select a category';
     if (titleController.text.trim().isEmpty) return 'Product title is required';
-    if (descriptionController.text.trim().isEmpty) return 'Description is required';
+    if (descriptionController.text.trim().isEmpty)
+      return 'Description is required';
     if (priceController.text.trim().isEmpty) return 'Price is required';
 
     final price = double.tryParse(priceController.text.trim());
@@ -581,11 +593,14 @@ class SellProductController extends ChangeNotifier {
 
     if (_selectedState == null) return 'Please select a state';
     if (_selectedDistrict == null) return 'Please select a district';
-    if (_showSubDistrict && _selectedSubDistrict == null) return 'Please select a sub-district';
+    if (_showSubDistrict && _selectedSubDistrict == null)
+      return 'Please select a sub-district';
     // if (_selectedVillage == null || _selectedVillage!.isEmpty) return 'Please select or enter a village';
     if (zipCodeController.text.trim().isEmpty) return 'Zip Code is required';
-    if (contactController.text.trim().isEmpty) return 'Contact number is required';
-    if (contactController.text.trim().length < 10) return 'Enter a valid contact number';
+    if (contactController.text.trim().isEmpty)
+      return 'Contact number is required';
+    if (contactController.text.trim().length < 10)
+      return 'Enter a valid contact number';
     if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(emailController.text.trim())) {
       return 'Please enter a valid email';
     }
@@ -618,7 +633,9 @@ class SellProductController extends ChangeNotifier {
 
       // Step 3: Collect all uploaded URLs
       final uploadedUrls = _images
-          .where((img) => img.uploadedUrl != null && img.uploadedUrl!.isNotEmpty)
+          .where(
+            (img) => img.uploadedUrl != null && img.uploadedUrl!.isNotEmpty,
+          )
           .map((img) => img.uploadedUrl!)
           .toList();
 
@@ -654,7 +671,9 @@ class SellProductController extends ChangeNotifier {
         "price": double.parse(priceController.text.trim()),
         "category": _selectedCategoryId!,
         "images": uploadedUrls,
-        "condition": _mapConditionToApiValue(_selectedCondition), // Map to "new" or "used"
+        "condition": _mapConditionToApiValue(
+          _selectedCondition,
+        ), // Map to "new" or "used"
         "type": _selectedType.toLowerCase(),
         "location": locationData,
         "contactInfo": {
@@ -672,12 +691,12 @@ class SellProductController extends ChangeNotifier {
       if (response.data.status && response.data.data != null) {
         HapticFeedback.heavyImpact();
         if (context.mounted) {
-          _showSuccess(context, 'Product listed successfully!');
+          AppToast.showSuccess('Product listed successfully!');
         }
-        
+
         // Clear form on success
         clearForm();
-        
+
         _isLoading = false;
         notifyListeners();
         return true;
@@ -715,16 +734,6 @@ class SellProductController extends ChangeNotifier {
   void _showError(BuildContext context, String message) {
     HapticFeedback.heavyImpact();
     AppToast.showError(message);
-  }
-
-  void _showSuccess(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   @override

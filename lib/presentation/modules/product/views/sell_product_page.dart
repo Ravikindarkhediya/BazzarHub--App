@@ -1,3 +1,5 @@
+import 'package:bazzar_hub_app/presentation/commons/dialogs/appDialog.dart';
+import 'package:bazzar_hub_app/presentation/commons/dialogs/app_toasts.dart';
 import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -44,10 +46,9 @@ class _SellProductPageState extends State<SellProductPage> {
   }
 
   void _nextStep() {
-    // Validate current step before moving forward
     String? error = _validateCurrentStep();
     if (error != null) {
-      _showError(error);
+      AppToast.showError(error);
       return;
     }
 
@@ -123,59 +124,79 @@ class _SellProductPageState extends State<SellProductPage> {
     return null;
   }
 
-  void _showError(String message) {
-    HapticFeedback.heavyImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.error,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
-
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
       value: _controller,
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          backgroundColor: AppColors.white,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-            onPressed: () => Navigator.pop(context),
-          ),
-          title: Text(
-            'Sell Product',
-            style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
-          ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.close, color: AppColors.textPrimary),
-              onPressed: () => Navigator.pop(context),
+      child: WillPopScope(
+        onWillPop: () async {
+          final shouldPop = await AppDialog.show(
+            context,
+            title: "Confirm Exit",
+            message: "Are you sure you want to leave this page?",
+            confirmText: "Exit",
+            cancelText: "Cancel",
+            onConfirm: () {
+              Navigator.of(context).pop(true);
+              print("Confirmed!");
+            },
+            onCancel: () {
+              Navigator.of(context).pop(false);
+              print("Cancelled!");
+            },
+          );
+          return shouldPop;
+        },
+        child: Scaffold(
+          backgroundColor: AppColors.background,
+          appBar: AppBar(
+            backgroundColor: AppColors.white,
+            elevation: 0,
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back),
+              onPressed: () async {
+                final shouldPop = await AppDialog.show(
+                  context,
+                  title: "Confirm Exit",
+                  message: "Are you sure you want to leave this page?",
+                  confirmText: "Exit",
+                  cancelText: "Cancel",
+                  onConfirm: () {
+                    Navigator.of(context).pop(true);
+                    print("Confirmed!");
+                  },
+                  onCancel: () {
+                    Navigator.of(context).pop(false);
+                    print("Cancelled!");
+                  },
+                );
+                if (shouldPop) {
+                  Navigator.of(context).pop();
+                }
+              },
             ),
-          ],
-        ),
-        body: Column(
-          children: [
-            /// Progress Indicator
-            _buildProgressIndicator(),
+            title: Text(
+              'Sell Product',
+              style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
+            ),
+          ),
+          body: Column(
+            children: [
+              /// Progress Indicator
+              _buildProgressIndicator(),
 
-            /// Step Content
-            Expanded(
-              child: SingleChildScrollView(
-                padding: AppSpacing.paddingMD,
-                child: Form(key: _formKey, child: _buildStepContent()),
+              /// Step Content
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: AppSpacing.paddingMD,
+                  child: Form(key: _formKey, child: _buildStepContent()),
+                ),
               ),
-            ),
 
-            /// Bottom Buttons
-            _buildBottomButtons(),
-          ],
+              /// Bottom Buttons
+              _buildBottomButtons(),
+            ],
+          ),
         ),
       ),
     );
@@ -1071,7 +1092,10 @@ class _SellProductPageState extends State<SellProductPage> {
                         onPressed: _previousStep,
                         style: OutlinedButton.styleFrom(
                           padding: EdgeInsets.zero,
-                          side: BorderSide(color: AppColors.primary, width: 1.5),
+                          side: BorderSide(
+                            color: AppColors.primary,
+                            width: 1.5,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: AppSpacing.borderRadiusMD,
                           ),
@@ -1102,7 +1126,8 @@ class _SellProductPageState extends State<SellProductPage> {
                     child: SizedBox(
                       height: AppSpacing.buttonHeightMD,
                       child: ElevatedButton(
-                        onPressed: controller.isLoading || controller.isUploading
+                        onPressed:
+                            controller.isLoading || controller.isUploading
                             ? null
                             : submitForm,
                         style: ElevatedButton.styleFrom(
@@ -1115,35 +1140,35 @@ class _SellProductPageState extends State<SellProductPage> {
                         ),
                         child: controller.isLoading || controller.isUploading
                             ? Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                color: AppColors.white,
-                                strokeWidth: 2,
-                              ),
-                            ),
-                            SizedBox(width: 12),
-                            Text(
-                              controller.isUploading
-                                  ? 'Uploading...'
-                                  : 'Submitting...',
-                              style: AppTextStyles.button.copyWith(
-                                color: AppColors.white,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
-                        )
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      color: AppColors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                  SizedBox(width: 12),
+                                  Text(
+                                    controller.isUploading
+                                        ? 'Uploading...'
+                                        : 'Submitting...',
+                                    style: AppTextStyles.button.copyWith(
+                                      color: AppColors.white,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              )
                             : Text(
-                          'Submit',
-                          style: AppTextStyles.button.copyWith(
-                            color: AppColors.white,
-                            fontSize: 16,
-                          ),
-                        ),
+                                'Submit',
+                                style: AppTextStyles.button.copyWith(
+                                  color: AppColors.white,
+                                  fontSize: 16,
+                                ),
+                              ),
                       ),
                     ),
                   )
@@ -1154,7 +1179,7 @@ class _SellProductPageState extends State<SellProductPage> {
                       height: AppSpacing.buttonHeightMD,
                       child: ElevatedButton(
                         onPressed:
-                        controller.isLoading || controller.isUploading
+                            controller.isLoading || controller.isUploading
                             ? null
                             : _nextStep,
                         style: ElevatedButton.styleFrom(

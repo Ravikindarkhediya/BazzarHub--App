@@ -1,5 +1,4 @@
 import 'package:bazzar_hub_app/app/core/manager/log_manager.dart';
-import 'package:bazzar_hub_app/presentation/controller/fecth_locations_controller.dart';
 import 'package:bazzar_hub_app/presentation/services/models/marketplace/marketplace_model.dart';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
@@ -10,8 +9,6 @@ import '../../../../app/data/constants/app_colors.dart';
 import '../../../commons/dialogs/app_toasts.dart';
 import '../../../controller/filter_controller.dart';
 import '../../../services/api_service.dart';
-import '../../../services/location_service.dart';
-import '../../../commons/widgets/filter_side_sheet.dart';
 import '../../../commons/widgets/location_bar_widget.dart';
 import '../../../routes/app_routes.dart';
 import '../../../services/models/categorie/categorie_model.dart';

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../commons/dialogs/app_toasts.dart';  // Import your AppToast here
 import '../services/api_service.dart';
 import '../services/models/Common/location_model.dart';
 import '../services/models/categorie/categorie_model.dart';
@@ -13,8 +14,8 @@ import '../services/models/user/user_model.dart';
 /// Manages state for product details, images, favorites, and actions
 class ProductController extends ChangeNotifier {
   ProductController({required MarketplaceModel product})
-    : _product = product,
-      _isFavorite = product.favorites > 0 || product.favoritesCount > 0;
+      : _product = product,
+        _isFavorite = product.favorites > 0 || product.favoritesCount > 0;
 
   // State Variables
   MarketplaceModel _product;
@@ -120,7 +121,7 @@ class ProductController extends ChangeNotifier {
 
     final listingId = _product.id;
     if (listingId.isEmpty) {
-      _showSnackBar(context, 'Product information unavailable.', isError: true);
+      AppToast.showError('Product information unavailable.');
       return;
     }
 
@@ -168,19 +169,15 @@ class ProductController extends ChangeNotifier {
 
       final message =
           response.data.message ?? 'Favorite status updated successfully.';
-      _showSnackBar(context, message, isError: false);
+      AppToast.showSuccess(message);
     } on DioException catch (error) {
       _isFavorite = previousState;
-      _showSnackBar(context, _mapDioError(error), isError: true);
+      AppToast.showError(_mapDioError(error));
     } catch (error) {
       _isFavorite = previousState;
-      _showSnackBar(
-        context,
-        error.toString().isNotEmpty
-            ? error.toString()
-            : 'Failed to update favorite status.',
-        isError: true,
-      );
+      AppToast.showError(error.toString().isNotEmpty
+          ? error.toString()
+          : 'Failed to update favorite status.');
     } finally {
       _setFavoriteLoading(false);
     }
@@ -190,19 +187,19 @@ class ProductController extends ChangeNotifier {
   Future<void> shareProduct(BuildContext context) async {
     try {
       final shareText =
-          '''
+      '''
 $productTitle
 Price: $formattedPrice
 Location: $locationSummary
 
 Check out this amazing product on BazzarHub!
       '''
-              .trim();
+          .trim();
 
       await Share.share(shareText, subject: productTitle);
     } catch (e) {
       if (context.mounted) {
-        _showSnackBar(context, 'Failed to share product', isError: true);
+        AppToast.showError('Failed to share product');
       }
     }
   }
@@ -216,11 +213,11 @@ Check out this amazing product on BazzarHub!
       await Future.delayed(const Duration(milliseconds: 800));
 
       if (context.mounted) {
-        _showSnackBar(context, '🎉 Proceeding to checkout...', isError: false);
+        AppToast.showSuccess('🎉 Proceeding to checkout...');
       }
     } catch (e) {
       if (context.mounted) {
-        _showSnackBar(context, 'Failed to process request', isError: true);
+        AppToast.showError('Failed to process request');
       }
     } finally {
       _setLoading(false);
@@ -233,15 +230,11 @@ Check out this amazing product on BazzarHub!
       await Future.delayed(const Duration(milliseconds: 300));
 
       if (context.mounted) {
-        _showSnackBar(
-          context,
-          '💬 Opening chat with $sellerName...',
-          isError: false,
-        );
+        AppToast.showSuccess('💬 Opening chat with $sellerName...');
       }
     } catch (e) {
       if (context.mounted) {
-        _showSnackBar(context, 'Failed to open chat', isError: true);
+        AppToast.showError('Failed to open chat');
       }
     }
   }
@@ -255,11 +248,11 @@ Check out this amazing product on BazzarHub!
       }
 
       if (context.mounted) {
-        _showSnackBar(context, '📞 Calling $phone...', isError: false);
+        AppToast.showSuccess('📞 Calling $phone...');
       }
     } catch (e) {
       if (context.mounted) {
-        _showSnackBar(context, e.toString(), isError: true);
+        AppToast.showError(e.toString());
       }
     }
   }
@@ -318,27 +311,6 @@ Check out this amazing product on BazzarHub!
       case DioExceptionType.unknown:
         return error.message ?? 'Unexpected error occurred.';
     }
-  }
-
-  void _showSnackBar(
-    BuildContext context,
-    String message, {
-    required bool isError,
-  }) {
-    if (!context.mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError
-            ? const Color(0xFFE74C3C) // AppColors.error
-            : const Color(0xFF00A65A), // AppColors.success
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-        margin: const EdgeInsets.all(16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    );
   }
 
   @override

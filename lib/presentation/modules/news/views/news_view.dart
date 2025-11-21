@@ -4,7 +4,6 @@ import 'package:bazzar_hub_app/presentation/services/models/news/news_model.dart
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../routes/app_routes.dart';
-import '../../../services/location_service.dart';
 import '../../home/widgets/header_widget.dart';
 import '../widgets/compact_news_card.dart';
 import '../controllers/news_controller.dart';
