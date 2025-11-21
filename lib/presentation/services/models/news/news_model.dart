@@ -1,9 +1,9 @@
-import 'package:bazzar_hub_app/presentation/services/models/Common/location_model.dart';
-import 'package:bazzar_hub_app/presentation/services/models/Common/multi_lang_text_model.dart';
-import 'package:bazzar_hub_app/presentation/services/models/user/user_model.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 import 'news_media_model.dart';
+import 'package:bazzar_hub_app/presentation/services/models/Common/location_model.dart';
+import 'package:bazzar_hub_app/presentation/services/models/Common/multi_lang_text_model.dart';
+import 'package:bazzar_hub_app/presentation/services/models/user/user_model.dart';
 
 part 'news_model.g.dart';
 
@@ -37,7 +37,7 @@ class NewsModel {
   final int views;
 
   @JsonKey(name: 'isActive', defaultValue: false)
-  final bool isActive;
+  final bool? isActive;
 
   @JsonKey(name: 'createdAt', defaultValue: '')
   final String createdAt;
@@ -55,7 +55,7 @@ class NewsModel {
     this.tags = const [],
     this.createdBy,
     this.views = 0,
-    this.isActive = false,
+    this.isActive ,
     this.createdAt = '',
     this.updatedAt = '',
   });

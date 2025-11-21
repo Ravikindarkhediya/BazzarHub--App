@@ -146,7 +146,7 @@ abstract class ApiServices{
   //News
 
   @GET(Endpoints.NEWS)
-  Future<HttpResponse<BaseListModel<NewsModel>>> getNews(@Queries() Map<String, dynamic> queryParams);
+    Future<HttpResponse<BaseListModel<NewsModel>>> getNews(@Queries() Map<String, dynamic> queryParams);
 
   @POST(Endpoints.NEWS)
   Future<HttpResponse<BaseModel<NewsModel>>> createNews(@Body() Map<String, dynamic> body);

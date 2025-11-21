@@ -391,7 +391,160 @@ class _AccountPageState extends State<AccountPage> with SingleTickerProviderStat
             child: const Text('Delete'),
             onPressed: () {
               Navigator.of(context).pop();
-              _performAccountDeletion();
+              _showDeleteValidationDialog(context);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteValidationDialog(BuildContext context) {
+    final TextEditingController textController = TextEditingController();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: AppColors.border, width: 1),
+        ),
+        title: Row(
+          children: [
+            Icon(
+              Icons.warning_rounded,
+              color: AppColors.error,
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Confirm Account Deletion',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'To proceed with account deletion, please type "delete" in the field below:',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: textController,
+              autofocus: true,
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 16,
+              ),
+              decoration: InputDecoration(
+                hintText: 'Type "delete" to continue',
+                hintStyle: TextStyle(
+                  color: AppColors.textHint,
+                  fontSize: 14,
+                ),
+                filled: true,
+                fillColor: AppColors.background,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: AppColors.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: AppColors.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: AppColors.primary, width: 2),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: AppColors.error, width: 2),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        actions: [
+          TextButton(
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: AppColors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              elevation: 2,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.delete_forever, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  'Delete Account',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            onPressed: () {
+              if (textController.text.trim().toLowerCase() == 'delete') {
+                Navigator.of(context).pop();
+                _performAccountDeletion();
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        const Icon(Icons.error_outline, color: AppColors.white),
+                        const SizedBox(width: 8),
+                        const Text('Please type "delete" to continue'),
+                      ],
+                    ),
+                    backgroundColor: AppColors.error,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              }
             },
           ),
         ],

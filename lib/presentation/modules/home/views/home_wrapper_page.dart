@@ -5,6 +5,7 @@ import 'package:flutter/rendering.dart';
 import 'package:get/get.dart';
 import '../../../../app/core/manager/log_manager.dart';
 import '../../chat/views/chat_page.dart';
+import '../../news/views/news_view.dart';
 import '../../product/views/sell_product_page.dart';
 import '../../profile/views/account_page.dart';
 import '../widgets/bottom_navbar_widget.dart';
@@ -23,8 +24,8 @@ class _HomeWrapperState extends State<HomeWrapper> {
   final ScrollController _scrollController = ScrollController();
 
   final List<Widget> _pages = [
+    const NewsView(),
     const HomeView(),
-    const MarketplaceScreen(),
     const ChatPage(),
     const AccountPage(),
   ];
