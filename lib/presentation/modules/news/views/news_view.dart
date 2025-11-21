@@ -23,11 +23,10 @@ class _NewsViewState extends State<NewsView> with SingleTickerProviderStateMixin
   int _selectedCategoryIndex = 0;
   final List<String> categories = [
     'All',
-    'Business',
-    'Technology',
-    'Sports',
-    'Entertainment',
-    'Health'
+    'My Village',
+    'My Sub-District (Taluko)',
+    'My District',
+    'My State',
   ];
 
   @override
@@ -84,7 +83,6 @@ class _NewsViewState extends State<NewsView> with SingleTickerProviderStateMixin
             children: [
               // Header with location and notification
               HeaderWidget(
-                currentLocation: 'Rajkot, Gujarat',
                 onNotificationTap: () =>
                     Get.toNamed(AppRoutes.notificationPage),
                 onSearchTap: () {
@@ -98,12 +96,14 @@ class _NewsViewState extends State<NewsView> with SingleTickerProviderStateMixin
                 child: TabBar(
                   controller: _tabController,
                   isScrollable: true,
+                  tabAlignment: TabAlignment.start,
+                  labelPadding: EdgeInsets.zero,
                   labelColor: AppColors.primary,
                   unselectedLabelColor: AppColors.textSecondary,
                   labelStyle: TextStyle(
                       fontSize: 16, fontWeight: FontWeight.bold),
                   unselectedLabelStyle: TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.w400),
+                      fontSize: 15, fontWeight: FontWeight.w600),
                   indicatorColor: AppColors.primary,
                   indicatorWeight: 4,
                   indicatorSize: TabBarIndicatorSize.label,
@@ -111,7 +111,7 @@ class _NewsViewState extends State<NewsView> with SingleTickerProviderStateMixin
                   tabs: categories.map((category) =>
                       Tab(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 15),
                           child: Text(category),
                         ),
                       )).toList(),
@@ -132,17 +132,13 @@ class _NewsViewState extends State<NewsView> with SingleTickerProviderStateMixin
                       // News List with Mixed Layout
                       Expanded(
                         child: ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16,
-                              vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           itemCount: _newsController.newsList.length,
                           itemBuilder: (context, index) {
-                            // First 2 items: Featured Layout
                             if (index < 2) {
                               return FeaturedNewsCard(
                                 newsData: _newsController.newsList[index],
-                                language: 'english',
                                 onTap: () {
-
                                 },
                               );
                             }
@@ -150,7 +146,6 @@ class _NewsViewState extends State<NewsView> with SingleTickerProviderStateMixin
                             else {
                               return CompactNewsCard(
                                 newsData: _newsController.newsList[index],
-                                language: 'english',
                                 onTap: () {
 
                                 },

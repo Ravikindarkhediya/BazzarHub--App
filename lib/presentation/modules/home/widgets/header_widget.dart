@@ -6,13 +6,11 @@ import '../../../../app/data/constants/app_constant.dart';
 import '../../../../app/data/constants/app_text_style.dart';
 
 class HeaderWidget extends StatelessWidget {
-  final String? currentLocation;
   final VoidCallback onNotificationTap;
   final VoidCallback onSearchTap;
 
   const HeaderWidget({
     super.key,
-    this.currentLocation,
     required this.onNotificationTap,
     required this.onSearchTap,
   });
@@ -46,7 +44,6 @@ class HeaderWidget extends StatelessWidget {
 
                 AppSpacing.horizontalSpaceSM,
 
-
                 Spacer(),
 
                 /// Search Icon
@@ -58,7 +55,6 @@ class HeaderWidget extends StatelessWidget {
 
                 AppSpacing.horizontalSpaceSM,
 
-
                 /// Notification Icon
                 _buildIconButton(
                   icon: Icons.notifications_outlined,
@@ -67,8 +63,6 @@ class HeaderWidget extends StatelessWidget {
                 ),
               ],
             ),
-
-
           ],
         ),
       ),
@@ -120,11 +114,7 @@ class HeaderWidget extends StatelessWidget {
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            Icon(
-              icon,
-              size: AppSpacing.iconMD,
-              color: AppColors.textPrimary,
-            ),
+            Icon(icon, size: AppSpacing.iconMD, color: AppColors.textPrimary),
             if (hasBadge)
               Positioned(
                 right: -2,
@@ -135,10 +125,7 @@ class HeaderWidget extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: AppColors.error,
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.white,
-                      width: 1.5,
-                    ),
+                    border: Border.all(color: AppColors.white, width: 1.5),
                   ),
                 ),
               ),
@@ -160,10 +147,7 @@ class HeaderWidget extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.grey50,
           borderRadius: AppSpacing.borderRadiusMD,
-          border: Border.all(
-            color: AppColors.border,
-            width: 1,
-          ),
+          border: Border.all(color: AppColors.border, width: 1),
         ),
         child: Row(
           children: [

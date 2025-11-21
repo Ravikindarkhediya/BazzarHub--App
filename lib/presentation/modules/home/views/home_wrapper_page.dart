@@ -80,7 +80,12 @@ class _HomeWrapperState extends State<HomeWrapper> {
               }
               return true;
             },
-            child: _pages[_currentIndex],
+            // child: _pages[_currentIndex],
+            child: IndexedStack(
+              index: _currentIndex,
+              children: _pages,
+            ),
+
           ),
 
           // 🔹 bottom nav (animated overlay)

@@ -151,6 +151,14 @@ class AppTextStyles {
     color: AppColors.primary,
   );
 
+  static const TextStyle newsTitle = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 18,
+    fontWeight: FontWeight.bold, // Roboto Bold
+    height: 1.2,
+    color: AppColors.black,
+  );
+
   // Label
   static const TextStyle label = TextStyle(
     fontFamily: fontFamily,

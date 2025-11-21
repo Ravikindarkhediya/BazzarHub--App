@@ -156,7 +156,6 @@ class SellProductController extends ChangeNotifier {
   /// Load Location Data
   Future<void> loadLocationData() async {
     try {
-      await _locationRepo.initialize();
       _statesList = _locationRepo.getStates();
       notifyListeners();
     } catch (e) {

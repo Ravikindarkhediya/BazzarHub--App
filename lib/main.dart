@@ -1,3 +1,4 @@
+import 'package:bazzar_hub_app/presentation/controller/initialBinding_binding.dart';
 import 'package:bazzar_hub_app/presentation/controller/location_repository.dart';
 import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
 import 'package:flutter/material.dart';
@@ -23,6 +24,7 @@ class MyApp extends StatelessWidget {
       title: 'BazzarHub',
       debugShowCheckedModeBanner: false,
       initialRoute: AppRoutes.splash,
+      initialBinding: InitialBinding(),
       getPages: AppPages.routes,
       themeMode: ThemeMode.system,
     );

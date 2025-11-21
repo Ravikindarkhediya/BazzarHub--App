@@ -266,7 +266,6 @@ class _HomeViewState extends State<HomeView> {
           children: [
             /// 🎯 Header Section
             HeaderWidget(
-              currentLocation: _currentLocation,
               onNotificationTap: () => Get.toNamed(AppRoutes.notificationPage),
               onSearchTap: () {
                 debugPrint('🔍 Search Tapped');

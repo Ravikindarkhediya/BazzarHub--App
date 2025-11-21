@@ -25,7 +25,7 @@ class NewsModel {
   final List<NewsMediaModel> media;
 
   @JsonKey(name: 'category', defaultValue: '')
-  final String category;
+  final String? category;
 
   @JsonKey(name: 'tags', defaultValue: <String>[])
   final List<String> tags;
@@ -37,7 +37,7 @@ class NewsModel {
   final int views;
 
   @JsonKey(name: 'isActive', defaultValue: false)
-  final bool? isActive;
+  final bool isActive;
 
   @JsonKey(name: 'createdAt', defaultValue: '')
   final String createdAt;
@@ -55,7 +55,7 @@ class NewsModel {
     this.tags = const [],
     this.createdBy,
     this.views = 0,
-    this.isActive ,
+    this.isActive = false ,
     this.createdAt = '',
     this.updatedAt = '',
   });

@@ -5,7 +5,7 @@ import 'package:bazzar_hub_app/presentation/services/models/news/news_model.dart
 
 class NewsController extends GetxController {
   final ApiServices _apiService = Get.find<ApiServices>();
-  
+
   var isLoading = false.obs;
   var newsList = <NewsModel>[].obs;
   var featuredNews = <NewsModel>[].obs;
@@ -21,33 +21,19 @@ class NewsController extends GetxController {
     try {
       isLoading(true);
       errorMessage('');
-      
-      final response = await _apiService.getNews({
-        'limit': '10',
-        'page': '1',
-        'sort': '-createdAt',
-      });
-      
-      if (response.data != null) {
-        newsList.value = response.data!.data ?? [];
-        // Get first item as featured news (you can adjust this logic as needed)
-        if (newsList.isNotEmpty) {
-          featuredNews.value = newsList.take(1).toList();
-        }
+
+      final response = await _apiService.getNews({'limit': '10', 'page': '1'});
+
+      newsList.value = response.data.data ?? [];
+      // Get first item as featured news (you can adjust this logic as needed)
+      if (newsList.isNotEmpty) {
+        featuredNews.value = newsList.take(1).toList();
       }
-    } catch (e) {
+    } catch (e,s) {
       errorMessage('Failed to load news: ${e.toString()}');
+      print(s);
     } finally {
       isLoading(false);
     }
-  }
-
-  String getLocalizedText(dynamic text, {String language = 'english'}) {
-    if (text == null) return '';
-    if (text is String) return text;
-    if (text is Map) {
-      return text[language] ?? text['english'] ?? '';
-    }
-    return '';
   }
 }

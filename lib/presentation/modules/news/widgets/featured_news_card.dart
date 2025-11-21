@@ -2,16 +2,17 @@ import 'package:bazzar_hub_app/presentation/services/models/news/news_model.dart
 import 'package:flutter/material.dart';
 
 import '../../../../app/core/utils/app_language.dart';
+import '../../../../app/core/utils/responsive_size.dart';
+import '../../../../app/data/constants/app_text_style.dart';
+import '../../../services/models/news/news_media_model.dart';
 
 class FeaturedNewsCard extends StatelessWidget {
   final NewsModel newsData;
-  final String language;
   final VoidCallback? onTap;
 
   const FeaturedNewsCard({
     Key? key,
     required this.newsData,
-    this.language = 'english',
     this.onTap,
   }) : super(key: key);
 
@@ -39,25 +40,15 @@ class FeaturedNewsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final title = AppLanguage.getText(newsData.title);
-    final List<dynamic> mediaList = newsData.media;
-    final imageUrl = mediaList.isNotEmpty ? mediaList.first : '';
+    final List<NewsMediaModel> mediaList = newsData.media;
+    final imageUrl = mediaList.isNotEmpty ? mediaList.first.url : '';
 
-    final location = newsData.location?.district;
-    final views = newsData.views;
     final createdAt = newsData.createdAt;
 
     final bool isLive = true;
     final String videoDuration = '5:12';
 
-    // Author અને Village માહિતી
-    final String? authorName = newsData.createdBy?.name;
     final String? villageName = newsData.location?.district;
-
-
-
-
-
-
 
     return InkWell(
       onTap: onTap,
@@ -211,97 +202,65 @@ class FeaturedNewsCard extends StatelessWidget {
                   // Title
                   Text(
                     title,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      height: 1.4,
+                    style: AppTextStyles.newsTitle.copyWith(
+                      fontSize: AppResponsiveSize.isMobile(context)
+                          ? 15
+                          : 16,
                     ),
-                    maxLines: 2,
+                    maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
 
                   const SizedBox(height: 8),
 
-                  // Author અને Village Name
+                  // Time and  Village Name
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Icon(
-                        Icons.person_outline,
-                        size: 14,
-                        color: Colors.grey[600],
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        authorName!,
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
                       if (villageName!.isNotEmpty) ...[
-                        const SizedBox(width: 12),
-                        Icon(
-                          Icons.location_on_outlined,
-                          size: 14,
-                          color: Colors.grey[600],
-                        ),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            villageName,
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 12,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
+                        _buildButton(icon: Icons.location_on_outlined, text: villageName)
                       ],
-                    ],
-                  ),
-
-                  const SizedBox(height: 6),
-
-                  // Footer (Views, Time)
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.remove_red_eye_outlined,
-                        size: 14,
-                        color: Colors.grey[600],
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '$views',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Icon(
-                        Icons.access_time,
-                        size: 14,
-                        color: Colors.grey[600],
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        createdAt.isNotEmpty ? _getTimeAgo(createdAt) : '',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
-                        ),
-                      ),
+                      _buildButton(icon: Icons.access_time, text: createdAt.isNotEmpty ? _getTimeAgo(createdAt) : '')
                     ],
                   ),
                 ],
               ),
             ),
+
+            const Divider(
+              color: Colors.grey,
+              thickness: 0.5,
+              height: 1,
+              indent: 0,
+              endIndent: 0,
+            ),
           ],
         ),
       ),
     );
+
   }
+
+  Widget _buildButton({required IconData icon, required String text}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Icon(
+          icon,
+          size: 14,
+          color: Colors.grey[600],
+        ),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
+
+
 }
