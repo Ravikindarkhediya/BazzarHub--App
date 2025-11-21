@@ -135,6 +135,17 @@ class _AccountPageState extends State<AccountPage> with SingleTickerProviderStat
                               }
                             },
                           ),
+                          SettingsTile(
+                            icon: Icons.list_alt_outlined,
+                            title: 'My posts',
+                            subtitle: 'Your news & marketplace posts',
+                            onTap: () async {
+                              final result = await Get.toNamed(AppRoutes.editProfilePage);
+                              if (result == true) {
+                                setState(() {});
+                              }
+                            },
+                          ),
                         ],
                       ),
 
