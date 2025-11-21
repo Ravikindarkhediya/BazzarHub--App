@@ -103,37 +103,38 @@ class HeaderWidget extends StatelessWidget {
 
     final String dummyLocation = 'Rajkot, Gujarat';
 
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.grey50,
-        borderRadius: AppSpacing.borderRadiusSM,
-        border: Border.all(
-          color: AppColors.borderLight,
-          width: 1,
+    return GestureDetector(
+      onTap : () {
+        onLocationTap.call();
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
         ),
-      ),
-      child: Row(
-        children: [
-          /// 📍 Location Icon
-          Icon(
-            Icons.location_on,
-            size: AppSpacing.iconSM,
-            color: isLocationUndefined
-                ? AppColors.textSecondary
-                : AppColors.primary,
+        decoration: BoxDecoration(
+          color: AppColors.grey50,
+          borderRadius: AppSpacing.borderRadiusSM,
+          border: Border.all(
+            color: AppColors.borderLight,
+            width: 1,
           ),
+        ),
+        child: Row(
+          children: [
+            /// 📍 Location Icon
+            Icon(
+              Icons.location_on,
+              size: AppSpacing.iconSM,
+              color: isLocationUndefined
+                  ? AppColors.textSecondary
+                  : AppColors.primary,
+            ),
 
-          AppSpacing.horizontalSpaceXS,
+            AppSpacing.horizontalSpaceXS,
 
-          /// 🏙️ Location Text or Get Button
-          Expanded(
-            child: InkWell(
-              onTap: isLocationUndefined ? onLocationTap : null,
-              borderRadius: AppSpacing.borderRadiusSM,
+            /// 🏙️ Location Text or Get Button
+            Expanded(
               child: Text(
                 isLocationUndefined
                     ? 'Get Current Location'
@@ -148,22 +149,21 @@ class HeaderWidget extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-          ),
 
-          /// 📡 Right-side to get Current Location
-          InkWell(
-            onTap: onLocationTap,
-            borderRadius: BorderRadius.circular(AppSpacing.radiusCircle),
-            child: Padding(
-              padding: const EdgeInsets.all(6.0),
-              child: Icon(
-                Icons.my_location_rounded,
-                size: AppSpacing.iconSM + 2,
-                color: AppColors.primary.withOpacity(0.9),
-              ),
-            ),
-          ),
-        ],
+            // /// 📡 Right-side to get Current Location
+            // ClipRRect(
+            //   borderRadius: BorderRadius.circular(AppSpacing.radiusCircle),
+            //   child: Padding(
+            //     padding: const EdgeInsets.all(6.0),
+            //     child: Icon(
+            //       Icons.my_location_rounded,
+            //       size: AppSpacing.iconSM + 2,
+            //       color: AppColors.primary.withOpacity(0.9),
+            //     ),
+            //   ),
+            // ),
+          ],
+        ),
       ),
     );
   }

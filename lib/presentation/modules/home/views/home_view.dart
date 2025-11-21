@@ -1,5 +1,7 @@
 // lib/features/home/presentation/pages/home_view.dart (Updated)
 
+import 'package:bazzar_hub_app/app/core/manager/log_manager.dart';
+import 'package:bazzar_hub_app/presentation/controller/fecth_locations_controller.dart';
 import 'package:bazzar_hub_app/presentation/services/models/marketplace/marketplace_model.dart';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
@@ -18,6 +20,7 @@ import '../../../services/models/categorie/categorie_model.dart';
 import '../../product/views/product_detail_page.dart';
 import '../widgets/header_widget.dart';
 import '../widgets/category_list_widget.dart';
+import '../widgets/location_selection_bottom_sheet.dart';
 import '../widgets/product_grid_widget.dart';
 import '../widgets/category_selection_bottom_sheet.dart';
 
@@ -55,7 +58,7 @@ class _HomeViewState extends State<HomeView> {
     _filterController = FilterController();
     _getCategory();
     _getMarketplace();
-    _mockGetLocation();
+    _buildLocationFromMap();
   }
 
   @override
@@ -100,7 +103,11 @@ class _HomeViewState extends State<HomeView> {
         );
       }
     } on DioException catch (e) {
-      AppToast.showError('Network error: ${e.message}');
+      if (e.response?.statusCode == 404) {
+        _displayedProducts.clear();
+      } else {
+        AppToast.showError('Network error: ${e.message}');
+      }
     } catch (error) {
       AppToast.showError('Error loading products: $error');
     } finally {
@@ -108,19 +115,59 @@ class _HomeViewState extends State<HomeView> {
     }
   }
 
-  /// 📍 Mock Location Fetch
-  Future<void> _mockGetLocation() async {
-    try {
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (mounted) {
-        setState(() {
-          _currentLocation = 'Rajkot, Gujarat';
-        });
+  // /// 📍 Mock Location Fetch
+  // Future<void> _mockGetLocation() async {
+  //   try {
+  //     await Future.delayed(const Duration(milliseconds: 500));
+  //     if (mounted) {
+  //       setState(() {
+  //         _currentLocation = 'Rajkot, Gujarat';
+  //       });
+  //     }
+  //   } catch (error) {
+  //     debugPrint('Error fetching location: $error');
+  //   }
+  // }
+
+  void _buildLocationFromMap() {
+    const order = ["village", "taluko", "district", "state"];
+    List<String> parts = [];
+
+    // Loop through map values
+    for (var key in order) {
+      if (queryParams.containsKey(key)) {
+        final value = queryParams[key];
+        if (value != null && value.toString().isNotEmpty) {
+          parts.add(value.toString());
+        }
       }
-    } catch (error) {
-      debugPrint('Error fetching location: $error');
     }
+
+    // If map is empty → use fallback (LogManager)
+    if (parts.isEmpty) {
+      final fallbackState = LogManager.getField("state", "");
+      final fallbackCity = LogManager.getField("city", "");
+
+      List<String> fallbackParts = [];
+
+      if (fallbackCity.isNotEmpty) fallbackParts.add(fallbackCity);
+      if (fallbackState.isNotEmpty) fallbackParts.add(fallbackState);
+
+      // Return empty if nothing found
+      if (fallbackParts.isEmpty) {
+        _currentLocation = "";
+        return;
+      }
+
+      _currentLocation = fallbackParts.join(", ");
+      return;
+    }
+
+    _currentLocation = parts.join(", ");
   }
+
+
+
 
   /// 🔍 Filter Products by Single Category (tap on category card)
   void _filterByCategory(String categoryId) {
@@ -186,6 +233,24 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
+  /// 🎯 Handle View All Button - Show bottom sheet
+  void _handleFilterLocation() {
+    LocationSelectionBottomSheet.show(
+      context: context,
+      onApply: (selectedLocations) {
+        setState(() {
+          queryParams.remove("state");
+          queryParams.remove("district");
+          queryParams.remove("taluko");
+          queryParams.remove("village");
+          queryParams.addAll(selectedLocations);
+          _buildLocationFromMap();
+          _getMarketplace();
+        });
+      },
+    );
+  }
+
   /// 🔍 Handle Filter Button Tap
   void _handleFilterTap() {
     debugPrint('🎯 Filter Button Tapped');
@@ -227,7 +292,9 @@ class _HomeViewState extends State<HomeView> {
             /// 🎯 Header Section
             HeaderWidget(
               currentLocation: _currentLocation,
-              onLocationTap: () => LocationService().getCurrentAddress(context),
+              onLocationTap: () {
+                _handleFilterLocation();
+              },
               onNotificationTap: () => Get.toNamed(AppRoutes.notificationPage),
               onSearchTap: () {
                 debugPrint('🔍 Search Tapped');
