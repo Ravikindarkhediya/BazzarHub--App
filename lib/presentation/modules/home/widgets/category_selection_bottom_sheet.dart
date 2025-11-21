@@ -59,11 +59,13 @@ class _CategorySelectionBottomSheetState
   /// Toggle category selection
   void _toggleCategory(String categoryId) {
     setState(() {
-      if (_tempSelectedIds.contains(categoryId)) {
-        _tempSelectedIds.remove(categoryId);
-      } else {
-        _tempSelectedIds.add(categoryId);
-      }
+      _tempSelectedIds.clear();
+      _tempSelectedIds.add(categoryId);
+      // if (_tempSelectedIds.contains(categoryId)) {
+      //   _tempSelectedIds.remove(categoryId);
+      // } else {
+      //   _tempSelectedIds.add(categoryId);
+      // }
     });
   }
 
@@ -137,22 +139,22 @@ class _CategorySelectionBottomSheetState
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  if (_tempSelectedIds.isNotEmpty)
-                    TextButton(
-                      onPressed: _clearAll,
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        minimumSize: Size(0, 0),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: Text(
-                        'Clear All',
-                        style: AppTextStyles.button.copyWith(
-                          color: AppColors.error,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
+                  // if (_tempSelectedIds.isNotEmpty)
+                  //   TextButton(
+                  //     onPressed: _clearAll,
+                  //     style: TextButton.styleFrom(
+                  //       padding: EdgeInsets.zero,
+                  //       minimumSize: Size(0, 0),
+                  //       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  //     ),
+                  //     child: Text(
+                  //       'Clear All',
+                  //       style: AppTextStyles.button.copyWith(
+                  //         color: AppColors.error,
+                  //         fontWeight: FontWeight.w600,
+                  //       ),
+                  //     ),
+                  //   ),
                 ],
               ),
             ),
@@ -160,44 +162,6 @@ class _CategorySelectionBottomSheetState
             AppSpacing.verticalSpaceXS,
       
             const Divider(height: 1),
-      
-            /// Selected Count Indicator
-            // if (_tempSelectedIds.isNotEmpty)
-            //   Container(
-            //     width: double.infinity,
-            //     padding: const EdgeInsets.symmetric(
-            //       horizontal: AppSpacing.md,
-            //       vertical: AppSpacing.sm,
-            //     ),
-            //     color: AppColors.primary.withOpacity(0.1),
-            //     child: Row(
-            //       children: [
-            //         Container(
-            //           padding: const EdgeInsets.all(4),
-            //           decoration: BoxDecoration(
-            //             color: AppColors.primary,
-            //             borderRadius: BorderRadius.circular(AppSpacing.radiusCircle),
-            //           ),
-            //           child: const Icon(
-            //             Icons.check,
-            //             size: 14,
-            //             color: AppColors.white,
-            //           ),
-            //         ),
-            //         const SizedBox(width: 8),
-            //         Text(
-            //           '${_tempSelectedIds.length} ${_tempSelectedIds.length == 1 ? 'category' : 'categories'} selected',
-            //           style: AppTextStyles.bodySmall.copyWith(
-            //             color: AppColors.primary,
-            //             fontWeight: FontWeight.w600,
-            //           ),
-            //         ),
-            //       ],
-            //     ),
-            //   )
-            //       .animate()
-            //       .fadeIn(duration: 300.ms)
-            //       .slideY(begin: -0.5, end: 0),
       
             /// Categories Grid
             Expanded(
@@ -289,7 +253,7 @@ class _CategorySelectionBottomSheetState
                             Text(
                               _tempSelectedIds.isEmpty
                                   ? 'Show All Products'
-                                  : 'Apply (${_tempSelectedIds.length})',
+                                  : 'Apply',
                               style: AppTextStyles.button.copyWith(
                                 color: AppColors.white,
                                 fontSize: 15,

@@ -1,5 +1,3 @@
-// lib/features/home/presentation/pages/home_view.dart (Updated)
-
 import 'package:bazzar_hub_app/app/core/manager/log_manager.dart';
 import 'package:bazzar_hub_app/presentation/controller/fecth_locations_controller.dart';
 import 'package:bazzar_hub_app/presentation/services/models/marketplace/marketplace_model.dart';
@@ -14,7 +12,7 @@ import '../../../controller/filter_controller.dart';
 import '../../../services/api_service.dart';
 import '../../../services/location_service.dart';
 import '../../../commons/widgets/filter_side_sheet.dart';
-import '../../../commons/widgets/search_bar_widget.dart';
+import '../../../commons/widgets/location_bar_widget.dart';
 import '../../../routes/app_routes.dart';
 import '../../../services/models/categorie/categorie_model.dart';
 import '../../product/views/product_detail_page.dart';
@@ -115,19 +113,6 @@ class _HomeViewState extends State<HomeView> {
     }
   }
 
-  // /// 📍 Mock Location Fetch
-  // Future<void> _mockGetLocation() async {
-  //   try {
-  //     await Future.delayed(const Duration(milliseconds: 500));
-  //     if (mounted) {
-  //       setState(() {
-  //         _currentLocation = 'Rajkot, Gujarat';
-  //       });
-  //     }
-  //   } catch (error) {
-  //     debugPrint('Error fetching location: $error');
-  //   }
-  // }
 
   void _buildLocationFromMap() {
     const order = ["village", "taluko", "district", "state"];
@@ -165,8 +150,6 @@ class _HomeViewState extends State<HomeView> {
 
     _currentLocation = parts.join(", ");
   }
-
-
 
 
   /// 🔍 Filter Products by Single Category (tap on category card)
@@ -251,11 +234,6 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  /// 🔍 Handle Filter Button Tap
-  void _handleFilterTap() {
-    debugPrint('🎯 Filter Button Tapped');
-    FilterSideSheet.show(context, filterController: _filterController);
-  }
 
   /// 📱 Handle Product Tap
   void _handleProductTap(MarketplaceModel product) {
@@ -292,9 +270,6 @@ class _HomeViewState extends State<HomeView> {
             /// 🎯 Header Section
             HeaderWidget(
               currentLocation: _currentLocation,
-              onLocationTap: () {
-                _handleFilterLocation();
-              },
               onNotificationTap: () => Get.toNamed(AppRoutes.notificationPage),
               onSearchTap: () {
                 debugPrint('🔍 Search Tapped');
@@ -302,9 +277,9 @@ class _HomeViewState extends State<HomeView> {
             ),
 
             /// 🔍 Enhanced Search Bar with Filter
-            SearchBarWidget(
-              filterController: _filterController,
-              onFilterTap: _handleFilterTap,
+            LocationBarWidget(
+              onLocationTap: _handleFilterLocation,
+              location: _currentLocation,
             ),
 
             /// 📊 Filter Summary (if filters applied)
@@ -324,8 +299,6 @@ class _HomeViewState extends State<HomeView> {
                     SliverToBoxAdapter(
                       child: Column(
                         children: [
-                          AppSpacing.verticalSpaceSM,
-
                           if (!_isLoading)
                             CategoryListWidget(
                               categories: _displayedCategories,

@@ -35,8 +35,6 @@ class _HomeWrapperState extends State<HomeWrapper> {
 
     LocationManager().requestLocation();
 
-    LogManager.initialize();
-
     _scrollController.addListener(() {
       if (_scrollController.position.userScrollDirection ==
           ScrollDirection.reverse) {

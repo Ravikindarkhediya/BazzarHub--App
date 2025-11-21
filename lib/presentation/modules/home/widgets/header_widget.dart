@@ -7,14 +7,12 @@ import '../../../../app/data/constants/app_text_style.dart';
 
 class HeaderWidget extends StatelessWidget {
   final String? currentLocation;
-  final VoidCallback onLocationTap;
   final VoidCallback onNotificationTap;
   final VoidCallback onSearchTap;
 
   const HeaderWidget({
     super.key,
     this.currentLocation,
-    required this.onLocationTap,
     required this.onNotificationTap,
     required this.onSearchTap,
   });
@@ -48,10 +46,18 @@ class HeaderWidget extends StatelessWidget {
 
                 AppSpacing.horizontalSpaceSM,
 
-                /// Location Selector
-                Expanded(child: _buildLocationSelector()),
+
+                Spacer(),
+
+                /// Search Icon
+                _buildIconButton(
+                  icon: Icons.search,
+                  onTap: onSearchTap,
+                  hasBadge: false,
+                ),
 
                 AppSpacing.horizontalSpaceSM,
+
 
                 /// Notification Icon
                 _buildIconButton(
@@ -94,77 +100,6 @@ class HeaderWidget extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildLocationSelector() {
-    final isLocationUndefined =
-        currentLocation == null || currentLocation == 'undefined';
-
-    final String dummyLocation = 'Rajkot, Gujarat';
-
-    return GestureDetector(
-      onTap : () {
-        onLocationTap.call();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
-          vertical: AppSpacing.xs,
-        ),
-        decoration: BoxDecoration(
-          color: AppColors.grey50,
-          borderRadius: AppSpacing.borderRadiusSM,
-          border: Border.all(
-            color: AppColors.borderLight,
-            width: 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            /// 📍 Location Icon
-            Icon(
-              Icons.location_on,
-              size: AppSpacing.iconSM,
-              color: isLocationUndefined
-                  ? AppColors.textSecondary
-                  : AppColors.primary,
-            ),
-
-            AppSpacing.horizontalSpaceXS,
-
-            /// 🏙️ Location Text or Get Button
-            Expanded(
-              child: Text(
-                isLocationUndefined
-                    ? 'Get Current Location'
-                    : (currentLocation ?? dummyLocation),
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: isLocationUndefined
-                      ? AppColors.textSecondary
-                      : AppColors.textPrimary,
-                  fontWeight: FontWeight.w600,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-
-            // /// 📡 Right-side to get Current Location
-            // ClipRRect(
-            //   borderRadius: BorderRadius.circular(AppSpacing.radiusCircle),
-            //   child: Padding(
-            //     padding: const EdgeInsets.all(6.0),
-            //     child: Icon(
-            //       Icons.my_location_rounded,
-            //       size: AppSpacing.iconSM + 2,
-            //       color: AppColors.primary.withOpacity(0.9),
-            //     ),
-            //   ),
-            // ),
-          ],
-        ),
-      ),
     );
   }
 
