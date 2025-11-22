@@ -1,5 +1,5 @@
 import 'package:bazzar_hub_app/app/core/manager/location_manager.dart';
-import 'package:bazzar_hub_app/presentation/modules/marketplace/view/marketplace_screen.dart';
+import 'package:bazzar_hub_app/presentation/modules/marketplace/view/marketplace_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:get/get.dart';
@@ -24,9 +24,9 @@ class _HomeWrapperState extends State<HomeWrapper> {
   final ScrollController _scrollController = ScrollController();
 
   final List<Widget> _pages = [
-    const NewsView(),
     const HomeView(),
-    const ChatPage(),
+    const NewsView(),
+    const MarketplaceView(),
     const AccountPage(),
   ];
 

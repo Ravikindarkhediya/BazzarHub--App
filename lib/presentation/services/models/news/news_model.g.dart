@@ -22,7 +22,9 @@ NewsModel _$NewsModelFromJson(Map<String, dynamic> json) => NewsModel(
           ?.map((e) => NewsMediaModel.fromJson(e as Map<String, dynamic>))
           .toList() ??
       [],
-  category: json['category'] as String? ?? '',
+  category: json['category'] == null
+      ? null
+      : CategoryModel.fromJson(json['category'] as Map<String, dynamic>),
   tags:
       (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
   createdBy: json['createdBy'] == null

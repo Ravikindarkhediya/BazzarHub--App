@@ -1,3 +1,4 @@
+import 'package:bazzar_hub_app/presentation/services/models/categorie/categorie_model.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 import 'news_media_model.dart';
@@ -24,8 +25,8 @@ class NewsModel {
   @JsonKey(name: 'media', defaultValue: <NewsMediaModel>[])
   final List<NewsMediaModel> media;
 
-  @JsonKey(name: 'category', defaultValue: '')
-  final String? category;
+  @JsonKey(name: 'category')
+  final CategoryModel? category;
 
   @JsonKey(name: 'tags', defaultValue: <String>[])
   final List<String> tags;
@@ -51,7 +52,7 @@ class NewsModel {
     this.location,
     this.id = '',
     this.media = const [],
-    this.category = '',
+    this.category,
     this.tags = const [],
     this.createdBy,
     this.views = 0,

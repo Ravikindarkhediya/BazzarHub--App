@@ -3,11 +3,13 @@ import 'package:bazzar_hub_app/app/core/utils/app_spacing.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../app/core/utils/responsive_size.dart';
+import '../../../../app/core/utils/utils.dart';
 import '../../../../app/data/constants/app_text_style.dart';
 import '../../../services/models/news/news_media_model.dart';
 import '../../../services/models/news/news_model.dart';
 
 class CompactNewsCard extends StatelessWidget {
+
   final NewsModel newsData;
   final VoidCallback? onTap;
 
@@ -17,20 +19,6 @@ class CompactNewsCard extends StatelessWidget {
     this.onTap,
   }) : super(key: key);
 
-  String _getTimeAgo(String dateTimeString) {
-    final dateTime = DateTime.parse(dateTimeString);
-    final difference = DateTime.now().difference(dateTime);
-
-    if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}m ago';
-    } else {
-      return 'Just now';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -167,7 +155,7 @@ class CompactNewsCard extends StatelessWidget {
                           if (villageName!.isNotEmpty) ...[
                             _buildButton(icon: Icons.location_on_outlined, text: villageName)
                           ],
-                          _buildButton(icon: Icons.access_time, text: createdAt.isNotEmpty ? _getTimeAgo(createdAt) : '')
+                          _buildButton(icon: Icons.access_time, text: createdAt.isNotEmpty ? Utils.getTimeAgo(createdAt) : '')
                         ],
                       ),
                     ],

@@ -1,3 +1,4 @@
+import 'package:bazzar_hub_app/app/core/utils/utils.dart';
 import 'package:bazzar_hub_app/presentation/services/models/news/news_model.dart';
 import 'package:flutter/material.dart';
 
@@ -16,38 +17,21 @@ class FeaturedNewsCard extends StatelessWidget {
     this.onTap,
   }) : super(key: key);
 
-  String _getTimeAgo(String dateTimeString) {
-    if (dateTimeString.isEmpty) return '';
-    DateTime dateTime;
-    try {
-      dateTime = DateTime.parse(dateTimeString);
-    } catch (_) {
-      return '';
-    }
-    final difference = DateTime.now().difference(dateTime);
-
-    if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}m ago';
-    } else {
-      return 'Just now';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     final title = AppLanguage.getText(newsData.title);
+
     final List<NewsMediaModel> mediaList = newsData.media;
-    final imageUrl = mediaList.isNotEmpty ? mediaList.first.url : '';
+    final imageUrl = mediaList.isNotEmpty ? mediaList.first.thumbnail : '';
+    final bool isVideo = mediaList.isNotEmpty
+        ? mediaList.first.type == "video"
+        : false;
 
     final createdAt = newsData.createdAt;
 
     final bool isLive = true;
-    final String videoDuration = '5:12';
-
+    final String newsCategory = AppLanguage.getText(newsData.category?.name);
     final String? villageName = newsData.location?.district;
 
     return InkWell(
@@ -113,7 +97,8 @@ class FeaturedNewsCard extends StatelessWidget {
                 ),
 
                 // Play Button Overlay
-                Positioned.fill(
+                if(isVideo)
+                 Positioned.fill(
                   child: Center(
                     child: Container(
                       width: 60,
@@ -167,7 +152,7 @@ class FeaturedNewsCard extends StatelessWidget {
                     ),
                   ),
 
-                // Video Duration (bottom-right)
+                // Category (bottom-right)
                 Positioned(
                   bottom: 8,
                   right: 8,
@@ -181,7 +166,7 @@ class FeaturedNewsCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      videoDuration,
+                      newsCategory,
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 11,
@@ -220,7 +205,7 @@ class FeaturedNewsCard extends StatelessWidget {
                       if (villageName!.isNotEmpty) ...[
                         _buildButton(icon: Icons.location_on_outlined, text: villageName)
                       ],
-                      _buildButton(icon: Icons.access_time, text: createdAt.isNotEmpty ? _getTimeAgo(createdAt) : '')
+                      _buildButton(icon: Icons.access_time, text: createdAt.isNotEmpty ? Utils.getTimeAgo(createdAt) : '')
                     ],
                   ),
                 ],

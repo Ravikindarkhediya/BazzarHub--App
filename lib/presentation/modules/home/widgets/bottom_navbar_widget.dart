@@ -44,32 +44,35 @@ class BottomNavBarWidget extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _buildNavItem(
-                      icon: Icons.shopping_bag_outlined,
-                      label: 'News',
+                      icon: Icons.home,
+                      label: 'Home',
                       index: 0,
                       isSelected: currentIndex == 0,
                     ),
                   ),
+
                   Expanded(
                     child: _buildNavItem(
-                      icon: Icons.store,
-                      label: 'Marketplace',
+                      icon: Icons.shopping_bag_outlined,
+                      label: 'News',
                       index: 1,
                       isSelected: currentIndex == 1,
                     ),
                   ),
+
 
                   /// Spacer for FAB
                   const SizedBox(width: 60),
 
                   Expanded(
                     child: _buildNavItem(
-                      icon: Icons.chat_bubble,
-                      label: 'Chat',
+                      icon: Icons.store,
+                      label: 'Marketplace',
                       index: 2,
                       isSelected: currentIndex == 2,
                     ),
                   ),
+
                   Expanded(
                     child: _buildNavItem(
                       icon: Icons.person_rounded,
