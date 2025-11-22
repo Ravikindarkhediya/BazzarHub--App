@@ -1,6 +1,4 @@
-import 'package:bazzar_hub_app/presentation/modules/product/views/edit_product_page.dart';
 import 'package:bazzar_hub_app/presentation/modules/product/widgets/custom_image_widget.dart';
-import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
 import 'package:bazzar_hub_app/presentation/services/models/Common/location_model.dart';
 import 'package:bazzar_hub_app/presentation/services/models/marketplace/marketplace_model.dart';
 import 'package:flutter/cupertino.dart';
@@ -11,6 +9,8 @@ import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
 import 'package:get/get.dart';
+
+import '../../product/views/sell_product_page.dart';
 
 class YourProductGrid extends StatefulWidget {
   final List<MarketplaceModel> products;
@@ -353,10 +353,11 @@ class _YourProductGridState extends State<YourProductGrid> {
     );
   }
 
+  // Updated _showProductOptionsBottomSheet function
   void _showProductOptionsBottomSheet(
-    BuildContext context,
-    MarketplaceModel product,
-  ) {
+      BuildContext context,
+      MarketplaceModel product,
+      ) {
     showCupertinoModalPopup(
       context: context,
       builder: (context) {
@@ -377,15 +378,20 @@ class _YourProductGridState extends State<YourProductGrid> {
           ),
           actions: [
             CupertinoActionSheetAction(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.pop(context);
-                // Edit action
-                Navigator.push(
+                // Navigate to SellProductPage in Edit Mode
+                final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => EditProductPage(product: product),
+                    builder: (_) => SellProductPage(product: product),
                   ),
                 );
+                // Optionally refresh the list if product was updated
+                if (result == true) {
+                  // Refresh your product list here
+                  // e.g., _refreshProducts();
+                }
               },
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
@@ -409,8 +415,8 @@ class _YourProductGridState extends State<YourProductGrid> {
             CupertinoActionSheetAction(
               onPressed: () {
                 Navigator.pop(context);
-                // Delete action
-                // आप अपनी डिलीट लॉजिक यहां कॉल कर सकते हैं
+                // Delete action - implement your delete logic
+                _showDeleteConfirmation(context, product);
               },
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
@@ -433,9 +439,7 @@ class _YourProductGridState extends State<YourProductGrid> {
             ),
           ],
           cancelButton: CupertinoActionSheetAction(
-            onPressed: () {
-              Navigator.pop(context);
-            },
+            onPressed: () => Navigator.pop(context),
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
               child: Text(
@@ -450,6 +454,57 @@ class _YourProductGridState extends State<YourProductGrid> {
           ),
         );
       },
+    );
+  }
+
+// Optional: Delete confirmation dialog
+  void _showDeleteConfirmation(BuildContext context, MarketplaceModel product) {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: Text('Delete Product'),
+        content: Text('Are you sure you want to delete "${product.title}"?'),
+        actions: [
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () async {
+              Navigator.pop(context);
+              // Call your delete API here
+              // await _deleteProduct(product.id);
+            },
+            child: Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+// ============================================
+// Alternative: Using Get.to() with GetX
+// ============================================
+
+  void _onEditTap(MarketplaceModel product) {
+    Get.to(
+          () => SellProductPage(product: product),
+      transition: Transition.rightToLeft,
+      duration: const Duration(milliseconds: 400),
+    );
+  }
+
+// ============================================
+// Sell Button (for new product) - No changes needed
+// ============================================
+
+  void _onSellTap() {
+    Get.to(
+          () => const SellProductPage(), // No product = Create mode
+      transition: Transition.rightToLeft,
+      duration: const Duration(milliseconds: 400),
     );
   }
 }

@@ -12,8 +12,6 @@ import '../../../services/api_service.dart';
 import '../../../services/models/marketplace/marketplace_model.dart';
 import 'package:get/get.dart';
 
-import '../../product/views/edit_product_page.dart';
-
 class YourPostView extends StatefulWidget {
   const YourPostView({super.key});
 
