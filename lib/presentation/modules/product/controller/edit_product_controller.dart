@@ -4,64 +4,19 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:path_provider/path_provider.dart';
-
 import 'package:dio/dio.dart';
 import 'package:geolocator/geolocator.dart';
 
-import '../commons/dialogs/app_toasts.dart';
-import '../services/api_service.dart';
-import '../services/models/categorie/categorie_model.dart';
-import '../services/models/Common/coordinates_model.dart';
-import 'location_repository.dart';
+import '../../../commons/dialogs/app_toasts.dart';
+import '../../../controller/location_repository.dart';
+import '../../../controller/product_image_controller.dart';
+import '../../../services/api_service.dart';
+import '../../../services/models/Common/coordinates_model.dart';
+import '../../../services/models/categorie/categorie_model.dart';
+import '../../../services/models/marketplace/marketplace_model.dart';
 
-/// Image/Video Upload State
-class ProductImage {
-  final String id;
-  final File file;
-  final bool isVideo;
-  final File? thumbnailFile;
-  double uploadProgress;
-  bool isCompressing;
-  bool isUploaded;
-  String? uploadedUrl; // Store the uploaded URL from API
-  String? uploadError; // Store upload error if any
-
-  ProductImage({
-    required this.id,
-    required this.file,
-    this.isVideo = false,
-    this.thumbnailFile,
-    this.uploadProgress = 0.0,
-    this.isCompressing = false,
-    this.isUploaded = false,
-    this.uploadedUrl,
-    this.uploadError,
-  });
-
-  ProductImage copyWith({
-    double? uploadProgress,
-    bool? isCompressing,
-    bool? isUploaded,
-    File? thumbnailFile,
-    String? uploadedUrl,
-    String? uploadError,
-  }) {
-    return ProductImage(
-      id: id,
-      file: file,
-      isVideo: isVideo,
-      thumbnailFile: thumbnailFile ?? this.thumbnailFile,
-      uploadProgress: uploadProgress ?? this.uploadProgress,
-      isCompressing: isCompressing ?? this.isCompressing,
-      isUploaded: isUploaded ?? this.isUploaded,
-      uploadedUrl: uploadedUrl ?? this.uploadedUrl,
-      uploadError: uploadError ?? this.uploadError,
-    );
-  }
-}
-
-/// Sell Product Controller with Dynamic Location
-class SellProductController extends ChangeNotifier {
+class EditProductController extends ChangeNotifier
+    implements ProductImageController {
   final List<TextEditingController> _allControllers = [];
 
   final titleController = TextEditingController();
@@ -71,22 +26,26 @@ class SellProductController extends ChangeNotifier {
   final contactController = TextEditingController();
   final emailController = TextEditingController();
 
-  // Image Picker
   final ImagePicker _picker = ImagePicker();
-
-  // LocationRepository Singleton (instead of LocationService)
   final LocationRepository _locationRepo = LocationRepository.instance;
+
+  // Original product data
+  MarketplaceModel? _originalProduct;
+  String? _productId;
 
   // State
   List<ProductImage> _images = [];
+  List<String> _existingImageUrls = []; // URLs from existing product
+  List<String> _removedImageUrls = []; // URLs to be removed
   List<CategoryModel> _categories = [];
   String? _selectedCategoryId;
   String _selectedCondition = 'Used';
   String _selectedType = "Sell";
   bool _isLoading = false;
-  bool _isUploading = false; // Track if files are being uploaded
+  bool _isUploading = false;
+  bool _isInitializing = true;
   String? _errorMessage;
-  CoordinatesModel? _currentCoordinates; // Store current GPS coordinates
+  CoordinatesModel? _currentCoordinates;
 
   // Location State
   String? _selectedState;
@@ -101,28 +60,25 @@ class SellProductController extends ChangeNotifier {
 
   bool _showSubDistrict = false;
 
-  // Constants
   static const int maxImages = 6;
-  static const List<String> conditions = [
-    'Used',
-    'New',
-  ];
+  static const List<String> conditions = ['Used', 'New'];
 
   // Getters
   List<ProductImage> get images => _images;
-  int get imageCount => _images.length;
-  bool get canAddMoreImages => _images.length < maxImages;
+  List<String> get existingImageUrls => _existingImageUrls;
+  int get imageCount => _images.length + _existingImageUrls.length;
+  bool get canAddMoreImages => imageCount < maxImages;
   List<CategoryModel> get categories => _categories;
   String? get selectedCategoryId => _selectedCategoryId;
   String get selectedCondition => _selectedCondition;
   String get selectedType => _selectedType;
   bool get isLoading => _isLoading;
   bool get isUploading => _isUploading;
+  bool get isInitializing => _isInitializing;
   String? get errorMessage => _errorMessage;
-  bool get hasImages => _images.isNotEmpty;
+  bool get hasImages => _images.isNotEmpty || _existingImageUrls.isNotEmpty;
   CoordinatesModel? get currentCoordinates => _currentCoordinates;
 
-  // Location Getters updated to use LocationRepository lists
   String? get selectedState => _selectedState;
   String? get selectedDistrict => _selectedDistrict;
   String? get selectedSubDistrict => _selectedSubDistrict;
@@ -137,15 +93,14 @@ class SellProductController extends ChangeNotifier {
       _selectedState != null && _districtsList.isNotEmpty;
   bool get canSelectSubDistrict =>
       _showSubDistrict &&
-          _selectedDistrict != null &&
-          _subDistrictsList.isNotEmpty;
+      _selectedDistrict != null &&
+      _subDistrictsList.isNotEmpty;
   bool get canSelectVillage =>
       _selectedDistrict != null &&
-          (!_showSubDistrict || _selectedSubDistrict != null);
-  bool get allowManualVillageEntry =>
-      canSelectVillage && _villagesList.isEmpty;
+      (!_showSubDistrict || _selectedSubDistrict != null);
+  bool get allowManualVillageEntry => canSelectVillage && _villagesList.isEmpty;
 
-  SellProductController() {
+  EditProductController() {
     _allControllers.addAll([
       titleController,
       descriptionController,
@@ -156,7 +111,144 @@ class SellProductController extends ChangeNotifier {
     ]);
   }
 
-  /// Load Location Data ONCE through LocationRepository
+  Future<void> initializeWithProduct(MarketplaceModel product) async {
+    _isInitializing = true;
+    notifyListeners();
+
+    try {
+      _originalProduct = product;
+      _productId = product.id;
+
+      // Fill basic details
+      titleController.text = product.title ?? '';
+      descriptionController.text = product.description ?? '';
+      priceController.text = product.price.toString();
+
+      // Fill existing images
+      _existingImageUrls = List<String>.from(product.images ?? []);
+
+      // Fill condition and type
+      _selectedCondition = _mapApiConditionToDisplay(
+        product.condition ?? 'used',
+      );
+      _selectedType = _capitalizeFirst(product.type ?? 'sell');
+
+      // Fill contact info
+      if (product.contactInfo != null) {
+        contactController.text =
+            (product.contactInfo!.phone?.isNotEmpty ?? false)
+            ? product.contactInfo!.phone!.first
+            : '';
+        emailController.text = (product.contactInfo!.email?.isNotEmpty ?? false)
+            ? product.contactInfo!.email!.first
+            : '';
+      }
+
+      // Fill location
+      if (product.location != null) {
+        zipCodeController.text = product.location!.zipCode ?? '';
+
+        final savedState =
+            product.location!.state; // यहाँ coordinate को state से बदला
+        final savedDistrict = product.location!.district;
+        final savedSubDistrict = product.location!.taluko;
+        final savedVillage = product.location!.village;
+
+        // Load location data
+        await _locationRepo.initialize();
+        _statesList = _locationRepo.getStates();
+
+        // Set state
+        if (savedState != null && _statesList.contains(savedState)) {
+          _selectedState = savedState;
+          _districtsList = _locationRepo.getDistricts(savedState) ?? [];
+
+          // Set district
+          if (savedDistrict != null && _districtsList.contains(savedDistrict)) {
+            _selectedDistrict = savedDistrict;
+            _showSubDistrict = _locationRepo.hasSubDistricts(
+              savedState,
+              savedDistrict,
+            );
+
+            if (_showSubDistrict) {
+              List<String> subDistricts = _locationRepo.getSubDistricts(
+                savedState,
+                savedDistrict,
+              );
+              if (!subDistricts.contains(savedDistrict)) {
+                subDistricts = [savedDistrict, ...subDistricts];
+              }
+              _subDistrictsList = subDistricts;
+
+              // Set sub-district
+              if (savedSubDistrict != null &&
+                  _subDistrictsList.contains(savedSubDistrict)) {
+                _selectedSubDistrict = savedSubDistrict;
+                List<String> villages = _locationRepo.getVillages(
+                  savedState,
+                  savedDistrict,
+                  savedSubDistrict,
+                );
+                if (!villages.contains(savedSubDistrict)) {
+                  villages = [savedSubDistrict, ...villages];
+                }
+                _villagesList = villages;
+              }
+            } else {
+              _villagesList = _locationRepo.getVillages(
+                savedState,
+                savedDistrict,
+              );
+            }
+
+            // Set village
+            if (savedVillage != null) {
+              _selectedVillage = savedVillage;
+            }
+          }
+        }
+
+        // Set coordinates if available
+        if (product.location!.coordinates != null) {
+          _currentCoordinates = product.location!.coordinates;
+        }
+      } else {
+        await loadLocationData();
+      }
+
+      // Load categories and set selected
+      await loadCategories();
+
+      // Set category - handle both string ID and object
+      if (product.category != null) {
+        if (product.category is String) {
+          _selectedCategoryId = product.category as String;
+        } else if (product.category is Map) {
+          _selectedCategoryId =
+              (product.category as Map)['_id'] ??
+              (product.category as Map)['id'];
+        }
+      }
+
+      _isInitializing = false;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('❌ Error initializing product: $e');
+      _isInitializing = false;
+      notifyListeners();
+    }
+  }
+
+  String _mapApiConditionToDisplay(String apiCondition) {
+    return apiCondition.toLowerCase() == 'new' ? 'New' : 'Used';
+  }
+
+  String _capitalizeFirst(String text) {
+    if (text.isEmpty) return text;
+    return text[0].toUpperCase() + text.substring(1).toLowerCase();
+  }
+
   Future<void> loadLocationData() async {
     try {
       await _locationRepo.initialize();
@@ -167,74 +259,76 @@ class SellProductController extends ChangeNotifier {
     }
   }
 
-  /// Select State - update subsequent district/subDistrict/village lists using LocationRepository
   void selectState(String state) {
     _selectedState = state;
     _selectedDistrict = null;
     _selectedSubDistrict = null;
     _selectedVillage = null;
-
     _districtsList = _locationRepo.getDistricts(state)!;
     _subDistrictsList = [];
     _villagesList = [];
     _showSubDistrict = false;
-
     notifyListeners();
   }
 
-  /// Select District
   void selectDistrict(String district) {
     _selectedDistrict = district;
     _selectedSubDistrict = null;
     _selectedVillage = null;
 
     if (_selectedState != null) {
-      _showSubDistrict = _locationRepo.hasSubDistricts(_selectedState!, district);
+      _showSubDistrict = _locationRepo.hasSubDistricts(
+        _selectedState!,
+        district,
+      );
 
       if (_showSubDistrict) {
-        _subDistrictsList = _locationRepo.getSubDistricts(_selectedState!, district);
+        List<String> subDistricts = _locationRepo.getSubDistricts(
+          _selectedState!,
+          district,
+        );
+        if (!subDistricts.contains(district)) {
+          subDistricts = [district, ...subDistricts];
+        }
+        _subDistrictsList = subDistricts;
         _villagesList = [];
       } else {
         _subDistrictsList = [];
         _villagesList = _locationRepo.getVillages(_selectedState!, district);
       }
     }
-
     notifyListeners();
   }
 
-  /// Select Sub-District
   void selectSubDistrict(String subDistrict) {
     _selectedSubDistrict = subDistrict;
     _selectedVillage = null;
 
     if (_selectedState != null && _selectedDistrict != null) {
-      _villagesList = _locationRepo.getVillages(
+      List<String> villages = _locationRepo.getVillages(
         _selectedState!,
         _selectedDistrict!,
         subDistrict,
       );
+      if (!villages.contains(subDistrict)) {
+        villages = [subDistrict, ...villages];
+      }
+      _villagesList = villages;
     }
-
     notifyListeners();
   }
 
-  /// Select Village
   void selectVillage(String village) {
     _selectedVillage = village;
     notifyListeners();
   }
 
-
-  /// Load Categories
   Future<void> loadCategories() async {
     try {
       var services = await getApiClient();
       var response = await services.requestAllCategories();
       if (response.data.status) {
         _categories = response.data.data?.categories ?? [];
-      } else {
-        debugPrint("❌ Category load failed");
       }
     } catch (e) {
       debugPrint("❌ Error loading categories: $e");
@@ -242,7 +336,14 @@ class SellProductController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Pick from Camera
+  // Remove existing image URL
+  void removeExistingImage(String url) {
+    HapticFeedback.lightImpact();
+    _existingImageUrls.remove(url);
+    _removedImageUrls.add(url);
+    notifyListeners();
+  }
+
   Future<void> pickFromCamera(
     BuildContext context, {
     String mediaType = 'photo',
@@ -280,7 +381,6 @@ class SellProductController extends ChangeNotifier {
     }
   }
 
-  /// Pick from Gallery
   Future<void> pickFromGallery(
     BuildContext context, {
     String mediaType = 'photo',
@@ -307,7 +407,7 @@ class SellProductController extends ChangeNotifier {
           imageQuality: 85,
         );
         if (images.isNotEmpty) {
-          final slots = maxImages - _images.length;
+          final slots = maxImages - imageCount;
           final toAdd = images.take(slots);
           for (var img in toAdd) {
             await _addImage(File(img.path), context);
@@ -326,7 +426,6 @@ class SellProductController extends ChangeNotifier {
     }
   }
 
-  /// Add Image/Video
   Future<void> _addImage(
     File file,
     BuildContext context, {
@@ -369,11 +468,9 @@ class SellProductController extends ChangeNotifier {
     if (index != -1) {
       _images[index] = _images[index].copyWith(isCompressing: false);
       notifyListeners();
-      // Note: Actual upload happens when submitting the form
     }
   }
 
-  /// Upload Image/Video to Server
   Future<bool> _uploadImage(
     ProductImage productImage, {
     int maxRetries = 3,
@@ -381,7 +478,6 @@ class SellProductController extends ChangeNotifier {
     final index = _images.indexWhere((img) => img.id == productImage.id);
     if (index == -1) return false;
 
-    // Skip if already uploaded
     if (productImage.isUploaded && productImage.uploadedUrl != null) {
       return true;
     }
@@ -389,34 +485,26 @@ class SellProductController extends ChangeNotifier {
     int retryCount = 0;
     while (retryCount < maxRetries) {
       try {
-        // Update progress
         _images[index] = _images[index].copyWith(
           uploadProgress: 0.1,
           uploadError: null,
         );
         notifyListeners();
 
-        // Get API client
         final apiClient = await getApiClient();
-
-        // Create MultipartFile from File
         final fileName = productImage.file.path.split('/').last;
         final multipartFile = await MultipartFile.fromFile(
           productImage.file.path,
           filename: fileName,
         );
 
-        // Update progress
         _images[index] = _images[index].copyWith(uploadProgress: 0.3);
         notifyListeners();
 
-        // Upload file
         final response = await apiClient.uploadFile(multipartFile);
 
         if (response.data.status && response.data.data != null) {
           final uploadedUrl = response.data.data!.url;
-
-          // Update with success
           _images[index] = _images[index].copyWith(
             uploadProgress: 1.0,
             isUploaded: true,
@@ -433,7 +521,6 @@ class SellProductController extends ChangeNotifier {
         debugPrint('❌ Upload error (attempt $retryCount/$maxRetries): $e');
 
         if (retryCount >= maxRetries) {
-          // Final failure
           _images[index] = _images[index].copyWith(
             uploadProgress: 0.0,
             isUploaded: false,
@@ -442,15 +529,12 @@ class SellProductController extends ChangeNotifier {
           notifyListeners();
           return false;
         }
-
-        // Wait before retry
         await Future.delayed(Duration(seconds: retryCount));
       }
     }
     return false;
   }
 
-  /// Upload All Images/Videos
   Future<bool> uploadAllImages() async {
     if (_images.isEmpty) return true;
 
@@ -480,32 +564,19 @@ class SellProductController extends ChangeNotifier {
     }
   }
 
-  /// Get Current GPS Coordinates
   Future<void> getCurrentCoordinates() async {
     try {
-      // Check if location service is enabled
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        debugPrint('⚠️ Location service is disabled');
-        return;
-      }
+      if (!serviceEnabled) return;
 
-      // Check and request permission
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          debugPrint('⚠️ Location permission denied');
-          return;
-        }
+        if (permission == LocationPermission.denied) return;
       }
 
-      if (permission == LocationPermission.deniedForever) {
-        debugPrint('⚠️ Location permission permanently denied');
-        return;
-      }
+      if (permission == LocationPermission.deniedForever) return;
 
-      // Get current position
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
@@ -517,59 +588,60 @@ class SellProductController extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       debugPrint('❌ Error getting coordinates: $e');
-      // Don't throw, just log - coordinates are optional
     }
   }
 
-  /// Remove Image
   void removeImage(String imageId) {
     HapticFeedback.lightImpact();
     _images.removeWhere((img) => img.id == imageId);
     notifyListeners();
   }
 
-  /// Reorder Images
   void reorderImages(int oldIndex, int newIndex) {
-    if (newIndex > oldIndex) newIndex -= 1;
-    final item = _images.removeAt(oldIndex);
-    _images.insert(newIndex, item);
+    // Handle reordering considering both existing and new images
+    final totalExisting = _existingImageUrls.length;
+
+    if (oldIndex < totalExisting && newIndex < totalExisting) {
+      // Both are existing images
+      if (newIndex > oldIndex) newIndex -= 1;
+      final item = _existingImageUrls.removeAt(oldIndex);
+      _existingImageUrls.insert(newIndex, item);
+    } else if (oldIndex >= totalExisting && newIndex >= totalExisting) {
+      // Both are new images
+      final adjustedOld = oldIndex - totalExisting;
+      var adjustedNew = newIndex - totalExisting;
+      if (adjustedNew > adjustedOld) adjustedNew -= 1;
+      final item = _images.removeAt(adjustedOld);
+      _images.insert(adjustedNew, item);
+    }
+
     HapticFeedback.mediumImpact();
     notifyListeners();
   }
 
-  /// Select Category
   void selectCategory(String? categoryId) {
     _selectedCategoryId = categoryId;
     notifyListeners();
   }
 
-  /// Select Condition
   void selectCondition(String condition) {
     _selectedCondition = condition;
     notifyListeners();
   }
 
-  /// Map user-friendly condition to API value (new or used)
   String _mapConditionToApiValue(String condition) {
-    // Conditions that map to "new"
-    const newConditions = ['Brand New', 'Like New', 'Open Box'];
-
-    // All other conditions map to "used"
-    if (newConditions.contains(condition)) {
-      return 'new';
-    }
-    return 'used';
+    const newConditions = ['Brand New', 'Like New', 'Open Box', 'New'];
+    return newConditions.contains(condition) ? 'new' : 'used';
   }
 
-  /// Select Type
   void selectType(String value) {
     _selectedType = value;
     notifyListeners();
   }
 
-  /// Validate Form
   String? validateForm() {
-    if (_images.isEmpty) return 'Please add at least one image';
+    if (_images.isEmpty && _existingImageUrls.isEmpty)
+      return 'Please add at least one image';
     if (_selectedCategoryId == null) return 'Please select a category';
     if (titleController.text.trim().isEmpty) return 'Product title is required';
     if (descriptionController.text.trim().isEmpty)
@@ -583,7 +655,6 @@ class SellProductController extends ChangeNotifier {
     if (_selectedDistrict == null) return 'Please select a district';
     if (_showSubDistrict && _selectedSubDistrict == null)
       return 'Please select a sub-district';
-    // if (_selectedVillage == null || _selectedVillage!.isEmpty) return 'Please select or enter a village';
     if (zipCodeController.text.trim().isEmpty) return 'Zip Code is required';
     if (contactController.text.trim().isEmpty)
       return 'Contact number is required';
@@ -596,8 +667,7 @@ class SellProductController extends ChangeNotifier {
     return null;
   }
 
-  /// Submit Product
-  Future<bool> submitProduct(BuildContext context) async {
+  Future<bool> updateProduct(BuildContext context) async {
     final error = validateForm();
     if (error != null) {
       _showError(context, error);
@@ -608,10 +678,8 @@ class SellProductController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Step 1: Get current coordinates (optional, won't fail if unavailable)
       await getCurrentCoordinates();
 
-      // Step 2: Upload all images/videos first
       if (!await uploadAllImages()) {
         _showError(context, 'Failed to upload some images. Please try again.');
         _isLoading = false;
@@ -619,22 +687,23 @@ class SellProductController extends ChangeNotifier {
         return false;
       }
 
-      // Step 3: Collect all uploaded URLs
-      final uploadedUrls = _images
-          .where(
-            (img) => img.uploadedUrl != null && img.uploadedUrl!.isNotEmpty,
-          )
-          .map((img) => img.uploadedUrl!)
-          .toList();
+      // Combine existing and new uploaded URLs
+      final allImageUrls = <String>[
+        ..._existingImageUrls,
+        ..._images
+            .where(
+              (img) => img.uploadedUrl != null && img.uploadedUrl!.isNotEmpty,
+            )
+            .map((img) => img.uploadedUrl!),
+      ];
 
-      if (uploadedUrls.isEmpty) {
-        _showError(context, 'No images were uploaded successfully.');
+      if (allImageUrls.isEmpty) {
+        _showError(context, 'No images available.');
         _isLoading = false;
         notifyListeners();
         return false;
       }
 
-      // Step 4: Build location object
       final locationData = <String, dynamic>{
         "village": _selectedVillage ?? "",
         "taluko": _selectedSubDistrict ?? "",
@@ -644,7 +713,6 @@ class SellProductController extends ChangeNotifier {
         "country": "India",
       };
 
-      // Add coordinates if available
       if (_currentCoordinates != null) {
         locationData["coordinates"] = {
           "latitude": _currentCoordinates!.latitude,
@@ -652,16 +720,13 @@ class SellProductController extends ChangeNotifier {
         };
       }
 
-      // Step 5: Build the final payload
       final payload = <String, dynamic>{
         "title": titleController.text.trim(),
         "description": descriptionController.text.trim(),
         "price": double.parse(priceController.text.trim()),
         "category": _selectedCategoryId!,
-        "images": uploadedUrls,
-        "condition": _mapConditionToApiValue(
-          _selectedCondition,
-        ), // Map to "new" or "used"
+        "images": allImageUrls,
+        "condition": _mapConditionToApiValue(_selectedCondition),
         "type": _selectedType.toLowerCase(),
         "location": locationData,
         "contactInfo": {
@@ -670,31 +735,26 @@ class SellProductController extends ChangeNotifier {
         },
       };
 
-      debugPrint('📤 Submitting product with payload: $payload');
+      debugPrint('📤 Updating product with payload: $payload');
 
-      // Step 6: Submit to API
       final apiClient = await getApiClient();
-      final response = await apiClient.createMarketplace(payload);
+      final response = await apiClient.updateMarketplace(_productId!, payload);
 
-      if (response.data.status && response.data.data != null) {
+      if (response.data.status) {
         HapticFeedback.heavyImpact();
         if (context.mounted) {
-          _showSuccess(context, 'Product listed successfully!');
+          AppToast.showSuccess('Product updated successfully!');
         }
-
-        // Clear form on success
-        clearForm();
-
         _isLoading = false;
         notifyListeners();
         return true;
       } else {
-        throw Exception(response.data.message ?? 'Failed to create product');
+        throw Exception(response.data.message ?? 'Failed to update product');
       }
     } catch (e) {
-      debugPrint('❌ Error submitting product: $e');
+      debugPrint('❌ Error updating product: $e');
       if (context.mounted) {
-        _showError(context, 'Failed to submit product: ${e.toString()}');
+        _showError(context, 'Failed to update product: ${e.toString()}');
       }
       _isLoading = false;
       notifyListeners();
@@ -702,36 +762,9 @@ class SellProductController extends ChangeNotifier {
     }
   }
 
-  /// Clear Form
-  void clearForm() {
-    for (var c in _allControllers) {
-      c.clear();
-    }
-    _images.clear();
-    _selectedCategoryId = null;
-    _selectedCondition = 'Used';
-    _selectedType = "Sell";
-    _selectedState = null;
-    _selectedDistrict = null;
-    _selectedSubDistrict = null;
-    _selectedVillage = null;
-    _errorMessage = null;
-    notifyListeners();
-  }
-
   void _showError(BuildContext context, String message) {
     HapticFeedback.heavyImpact();
     AppToast.showError(message);
-  }
-
-  void _showSuccess(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   @override

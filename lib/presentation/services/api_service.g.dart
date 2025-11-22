@@ -328,6 +328,43 @@ class _ApiServices implements ApiServices {
   }
 
   @override
+  Future<HttpResponse<BaseListModel<MarketplaceModel>>> getYourMarketplace(
+    Map<String, dynamic> queryParams,
+  ) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    queryParameters.addAll(queryParams);
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options =
+        _setStreamType<HttpResponse<BaseListModel<MarketplaceModel>>>(
+          Options(method: 'GET', headers: _headers, extra: _extra)
+              .compose(
+                _dio.options,
+                '/api/marketplace/my-listings',
+                queryParameters: queryParameters,
+                data: _data,
+              )
+              .copyWith(
+                baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl),
+              ),
+        );
+    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
+    late BaseListModel<MarketplaceModel> _value;
+    try {
+      _value = BaseListModel<MarketplaceModel>.fromJson(
+        _result.data!,
+        (json) => MarketplaceModel.fromJson(json as Map<String, dynamic>),
+      );
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options);
+      rethrow;
+    }
+    final httpResponse = HttpResponse(_value, _result);
+    return httpResponse;
+  }
+
+  @override
   Future<HttpResponse<BaseModel<MarketplaceModel>>> createMarketplace(
     Map<String, dynamic> body,
   ) async {

@@ -45,12 +45,12 @@ class _HomeViewState extends State<HomeView> {
   bool _isLoadingProducts = true;
 
   // Filter Controller
-  late FilterController _filterController;
+  // late FilterController _filterController;
 
   @override
   void initState() {
     super.initState();
-    _filterController = FilterController();
+    // _filterController = FilterController();
     _getCategory();
     _getMarketplace();
     _buildLocationFromMap();
@@ -58,7 +58,7 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   void dispose() {
-    _filterController.dispose();
+    // _filterController.dispose();
     super.dispose();
   }
 
@@ -279,7 +279,7 @@ class _HomeViewState extends State<HomeView> {
             ),
 
             /// 📊 Filter Summary (if filters applied)
-            if (_filterController.isFilterApplied) _buildFilterSummary(),
+            // if (_filterController.isFilterApplied) _buildFilterSummary(),
 
             /// 📜 Scrollable Content
             Expanded(
@@ -358,65 +358,65 @@ class _HomeViewState extends State<HomeView> {
   }
 
   /// Build Filter Summary Widget
-  Widget _buildFilterSummary() {
-    return Container(
-      margin: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.xs,
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
-        borderRadius: AppSpacing.borderRadiusSM,
-        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.filter_alt_rounded,
-            size: 16,
-            color: AppColors.primary,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              _filterController.getFilterSummary(),
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primary,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          InkWell(
-            onTap: () {
-              _filterController.resetFilters();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Filters cleared'),
-                  backgroundColor: AppColors.info,
-                  behavior: SnackBarBehavior.floating,
-                  duration: Duration(seconds: 1),
-                ),
-              );
-            },
-            borderRadius: BorderRadius.circular(12),
-            child: const Padding(
-              padding: EdgeInsets.all(4),
-              child: Icon(
-                Icons.close_rounded,
-                size: 16,
-                color: AppColors.primary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildFilterSummary() {
+  //   return Container(
+  //     margin: const EdgeInsets.symmetric(
+  //       horizontal: AppSpacing.md,
+  //       vertical: AppSpacing.xs,
+  //     ),
+  //     padding: const EdgeInsets.symmetric(
+  //       horizontal: AppSpacing.sm,
+  //       vertical: AppSpacing.xs,
+  //     ),
+  //     decoration: BoxDecoration(
+  //       color: AppColors.primary.withOpacity(0.1),
+  //       borderRadius: AppSpacing.borderRadiusSM,
+  //       border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+  //     ),
+  //     child: Row(
+  //       children: [
+  //         const Icon(
+  //           Icons.filter_alt_rounded,
+  //           size: 16,
+  //           color: AppColors.primary,
+  //         ),
+  //         const SizedBox(width: 8),
+  //         Expanded(
+  //           child: Text(
+  //             _filterController.getFilterSummary(),
+  //             style: const TextStyle(
+  //               fontSize: 12,
+  //               fontWeight: FontWeight.w600,
+  //               color: AppColors.primary,
+  //             ),
+  //             maxLines: 1,
+  //             overflow: TextOverflow.ellipsis,
+  //           ),
+  //         ),
+  //         InkWell(
+  //           onTap: () {
+  //             _filterController.resetFilters();
+  //             ScaffoldMessenger.of(context).showSnackBar(
+  //               const SnackBar(
+  //                 content: Text('Filters cleared'),
+  //                 backgroundColor: AppColors.info,
+  //                 behavior: SnackBarBehavior.floating,
+  //                 duration: Duration(seconds: 1),
+  //               ),
+  //             );
+  //           },
+  //           borderRadius: BorderRadius.circular(12),
+  //           child: const Padding(
+  //             padding: EdgeInsets.all(4),
+  //             child: Icon(
+  //               Icons.close_rounded,
+  //               size: 16,
+  //               color: AppColors.primary,
+  //             ),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 }

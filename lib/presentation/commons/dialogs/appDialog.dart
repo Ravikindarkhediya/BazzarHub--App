@@ -38,7 +38,7 @@ class AppDialog extends StatelessWidget {
           minWidth: width * 0.6,
         ),
         child: Padding(
-          padding: AppSpacing.paddingLG,
+          padding: AppSpacing.paddingMD,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,

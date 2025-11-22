@@ -25,6 +25,7 @@ class Endpoints {
   //Marketplace
 
   static const String MARKETPLACE = "/api/marketplace";
+  static const String YOUR_MARKETPLACE = "/api/marketplace/my-listings";
 
   static const String MARKETPLACE_FAVORITE = "/api/marketplace/favorite";
 

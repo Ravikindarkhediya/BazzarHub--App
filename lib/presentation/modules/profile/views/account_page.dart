@@ -21,7 +21,8 @@ class AccountPage extends StatefulWidget {
   State<AccountPage> createState() => _AccountPageState();
 }
 
-class _AccountPageState extends State<AccountPage> with SingleTickerProviderStateMixin {
+class _AccountPageState extends State<AccountPage>
+    with SingleTickerProviderStateMixin {
   // Toggle states
   bool _pushNotifications = true;
 
@@ -101,11 +102,13 @@ class _AccountPageState extends State<AccountPage> with SingleTickerProviderStat
                       FutureBuilder<UserModel?>(
                         future: SessionManager().getUser(),
                         builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
                             return const CircularProgressIndicator();
                           } else if (snapshot.hasError) {
                             return const Text("Error loading user");
-                          } else if (!snapshot.hasData || snapshot.data == null) {
+                          } else if (!snapshot.hasData ||
+                              snapshot.data == null) {
                             return const Text("No user found");
                           } else {
                             final user = snapshot.data!;
@@ -129,21 +132,20 @@ class _AccountPageState extends State<AccountPage> with SingleTickerProviderStat
                             title: 'Edit Profile',
                             subtitle: 'Update your personal information',
                             onTap: () async {
-                              final result = await Get.toNamed(AppRoutes.editProfilePage);
+                              final result = await Get.toNamed(
+                                AppRoutes.editProfilePage,
+                              );
                               if (result == true) {
                                 setState(() {});
                               }
                             },
                           ),
                           SettingsTile(
-                            icon: Icons.list_alt_outlined,
-                            title: 'My posts',
-                            subtitle: 'Your news & marketplace posts',
+                            icon: Icons.post_add,
+                            title: 'Post',
+                            subtitle: 'View and Edit your Post',
                             onTap: () async {
-                              final result = await Get.toNamed(AppRoutes.editProfilePage);
-                              if (result == true) {
-                                setState(() {});
-                              }
+                              Get.toNamed(AppRoutes.yourPost);
                             },
                           ),
                         ],
@@ -186,13 +188,17 @@ class _AccountPageState extends State<AccountPage> with SingleTickerProviderStat
                             icon: Icons.chat_bubble_outline,
                             title: 'Contact Support',
                             subtitle: 'Chat with our support team',
-                            onTap: () => CustomBottomSheet.showContactSupportBottomSheet(context),
+                            onTap: () =>
+                                CustomBottomSheet.showContactSupportBottomSheet(
+                                  context,
+                                ),
                           ),
                           SettingsTile(
                             icon: Icons.question_answer_outlined,
                             title: 'FAQ',
                             subtitle: 'Frequently asked questions',
-                            onTap: () => CustomBottomSheet.showFAQBottomSheet(context),
+                            onTap: () =>
+                                CustomBottomSheet.showFAQBottomSheet(context),
                           ),
                           SettingsTile(
                             icon: Icons.feedback_outlined,
@@ -258,7 +264,6 @@ class _AccountPageState extends State<AccountPage> with SingleTickerProviderStat
                           fontWeight: FontWeight.w400,
                         ),
                       ),
-
                     ],
                   ),
                 ),
@@ -290,10 +295,7 @@ class _AccountPageState extends State<AccountPage> with SingleTickerProviderStat
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            AppColors.white,
-            AppColors.white,
-          ],
+          colors: [AppColors.white, AppColors.white],
         ),
         boxShadow: [
           BoxShadow(
@@ -424,11 +426,7 @@ class _AccountPageState extends State<AccountPage> with SingleTickerProviderStat
         ),
         title: Row(
           children: [
-            Icon(
-              Icons.warning_rounded,
-              color: AppColors.error,
-              size: 24,
-            ),
+            Icon(Icons.warning_rounded, color: AppColors.error, size: 24),
             const SizedBox(width: 8),
             Text(
               'Confirm Account Deletion',
@@ -456,16 +454,10 @@ class _AccountPageState extends State<AccountPage> with SingleTickerProviderStat
             TextField(
               controller: textController,
               autofocus: true,
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 16,
-              ),
+              style: TextStyle(color: AppColors.textPrimary, fontSize: 16),
               decoration: InputDecoration(
                 hintText: 'Type "delete" to continue',
-                hintStyle: TextStyle(
-                  color: AppColors.textHint,
-                  fontSize: 14,
-                ),
+                hintStyle: TextStyle(color: AppColors.textHint, fontSize: 14),
                 filled: true,
                 fillColor: AppColors.background,
                 border: OutlineInputBorder(
@@ -527,9 +519,7 @@ class _AccountPageState extends State<AccountPage> with SingleTickerProviderStat
                 const SizedBox(width: 8),
                 Text(
                   'Delete Account',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.w600),
                 ),
               ],
             ),
@@ -629,15 +619,16 @@ class _AccountPageState extends State<AccountPage> with SingleTickerProviderStat
         if (response.response.statusCode != null &&
             response.response.statusCode! >= 200 &&
             response.response.statusCode! < 300) {
-
           // Check status field - API might return 0/1 or false/true
           final apiStatus = responseData['status'];
           isSuccess = apiStatus == true || apiStatus == 1;
 
-          message = responseData['message']?.toString() ??
+          message =
+              responseData['message']?.toString() ??
               'Account deleted successfully';
         } else {
-          message = responseData['message']?.toString() ??
+          message =
+              responseData['message']?.toString() ??
               response.response.statusMessage ??
               'Failed to delete account';
         }
@@ -673,7 +664,8 @@ class _AccountPageState extends State<AccountPage> with SingleTickerProviderStat
         // Provide more user-friendly message for known backend errors
         String userMessage = message;
         if (message.contains('ObjectId cannot be invoked without \'new\'')) {
-          userMessage = 'Server error occurred. Please contact support or try again later.';
+          userMessage =
+              'Server error occurred. Please contact support or try again later.';
         }
 
         if (mounted) {

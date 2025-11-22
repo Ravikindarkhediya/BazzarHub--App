@@ -108,6 +108,9 @@ abstract class ApiServices{
   @GET(Endpoints.MARKETPLACE)
   Future<HttpResponse<BaseListModel<MarketplaceModel>>> getMarketplace(@Queries() Map<String, dynamic> queryParams);
 
+  @GET(Endpoints.YOUR_MARKETPLACE)
+  Future<HttpResponse<BaseListModel<MarketplaceModel>>> getYourMarketplace(@Queries() Map<String, dynamic> queryParams);
+
   @POST(Endpoints.MARKETPLACE)
   Future<HttpResponse<BaseModel<MarketplaceModel>>> createMarketplace(@Body() Map<String, dynamic> body);
 

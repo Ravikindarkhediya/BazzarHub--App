@@ -1,3 +1,5 @@
+import 'package:bazzar_hub_app/presentation/modules/profile/views/your_Post_view.dart';
+
 import '../modules/auth/views/sign_in.dart';
 import '../modules/auth/views/signup_page.dart';
 import '../modules/chat/views/chat_page.dart';
@@ -23,10 +25,6 @@ class AppPages {
     GetPage(name: AppRoutes.login, page: () => const SignInPage()),
     GetPage(name: AppRoutes.signup, page: () => const SignupPage()),
     GetPage(
-      name: AppRoutes.searchPage,
-      page: () => const SearchPage(categoryData: []),
-    ),
-    GetPage(
       name: AppRoutes.notificationPage,
       page: () => const NotificationPage(),
     ),
@@ -43,6 +41,7 @@ class AppPages {
     GetPage(name: AppRoutes.favoritesPage, page: () => const FavoritesPage()),
     GetPage(name: AppRoutes.mainPage, page: () => const MainScreen()),
     GetPage(name: AppRoutes.homeWrapper, page: () => const HomeWrapper()),
+    GetPage(name: AppRoutes.yourPost, page: () => const YourPostView()),
 
     GetPage(
       name: ProductDetailPage.routeName,
@@ -74,4 +73,5 @@ class AppRoutes {
   static const favoritesPage = '/favoritesPage';
   static const mainPage = '/mainPage';
   static const homeWrapper = '/homeWrapper';
+  static const yourPost = '/yourPost';
 }
