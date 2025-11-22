@@ -193,7 +193,7 @@ class _FavoritesPageState extends State<FavoritesPage>
                       Expanded(
                         child: Center(
                           child: Text(
-                            'Favorite',
+                            'Favourite',
                             style: AppTextStyles.h4.copyWith(
                               color: AppColors.primary,
                               fontSize: 20,
