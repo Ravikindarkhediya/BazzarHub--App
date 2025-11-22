@@ -148,6 +148,19 @@ class _AccountPageState extends State<AccountPage>
                               Get.toNamed(AppRoutes.yourPost);
                             },
                           ),
+                          SettingsTile(
+                            icon: Icons.favorite_outline,
+                            title: 'Favourite',
+                            subtitle: 'View and manage your saved items',
+                            onTap: () async {
+                              final result = await Get.toNamed(
+                                AppRoutes.favoritesPage,
+                              );
+                              if (result == true) {
+                                setState(() {});
+                              }
+                            },
+                          ),
                         ],
                       ),
 

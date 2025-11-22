@@ -10,17 +10,22 @@ import '../../../../app/core/utils/responsive_size.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
+import '../../../services/api_service.dart';
 
 class ProductGridWidget extends StatefulWidget {
   final List<MarketplaceModel> products;
   final bool isLoading;
   final Function(MarketplaceModel) onProductTap;
+  final Function(MarketplaceModel, bool isFavorite)? onFavoriteToggle;
+  final bool showHeartIcon;
 
   const ProductGridWidget({
     super.key,
     required this.products,
     this.isLoading = false,
     required this.onProductTap,
+    this.onFavoriteToggle,
+    this.showHeartIcon = true,
   });
 
   @override
@@ -28,6 +33,27 @@ class ProductGridWidget extends StatefulWidget {
 }
 
 class _ProductGridWidgetState extends State<ProductGridWidget> {
+  // Store loading state for favorites per product
+  final Set<String> _favoriteLoadingSet = {};
+
+  Future<void> _handleFavoriteTap(MarketplaceModel product) async {
+    final id = product.id;
+    if (_favoriteLoadingSet.contains(id)) return;
+    setState(() => _favoriteLoadingSet.add(id));
+    bool wasFavorite = (product.favorites > 0 || product.favoritesCount > 0);
+    try {
+      final services = await getApiClient();
+      await services.addToFavorite({'listingId': id});
+      if (widget.onFavoriteToggle != null) {
+        widget.onFavoriteToggle!(product, !wasFavorite);
+      }
+    } catch (e) {
+      // Optionally show error
+    } finally {
+      setState(() => _favoriteLoadingSet.remove(id));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.isLoading) {
@@ -143,9 +169,8 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
     final imageWidth =
         (MediaQuery.of(context).size.width - (AppSpacing.md * 2) - 12) /
         _getCrossAxisCount(context);
-
     final imageHeight = imageWidth / 1.2;
-
+    final loading = _favoriteLoadingSet.contains(product.id);
     return Stack(
       children: [
         /// Main Image
@@ -169,12 +194,13 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
             ),
           ),
         ),
-
-        /// Favorite Button
-        if (product.favoritesCount != 0)
-          Positioned(
-            top: 8,
-            right: 8,
+        
+        /// Favorite Button (overlay)
+        Positioned(
+          top: 8,
+          right: 8,
+          child: GestureDetector(
+            onTap: loading ? null : () => _handleFavoriteTap(product),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               decoration: BoxDecoration(
@@ -188,27 +214,20 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
                   ),
                 ],
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.favorite_border_rounded,
-                    size: 16,
-                    color: AppColors.textPrimary,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${product.favoritesCount}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+              child: loading
+                  ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : Icon(
+                      (product.favorites > 0 || product.favoritesCount > 0)
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
+                      size: 16,
+                      color: (product.favorites > 0 || product.favoritesCount > 0)
+                          ? Colors.red
+                          : AppColors.textPrimary,
                     ),
-                  ),
-                ],
-              ),
             ),
           ),
+        )
       ],
     );
   }

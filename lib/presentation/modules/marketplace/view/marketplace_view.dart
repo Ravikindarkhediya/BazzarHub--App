@@ -338,7 +338,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                       child: ProductGridWidget(
                         products: _displayedProducts,
                         isLoading: _isLoadingProducts,
-                        onProductTap: _handleProductTap,
+                        onProductTap: _handleProductTap, onFavoriteToggle: (MarketplaceModel product, bool isFavorite) {  }, showHeartIcon: true,
                       ),
                     ),
 

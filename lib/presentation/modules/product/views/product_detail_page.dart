@@ -22,6 +22,7 @@ class ProductDetailPage extends StatefulWidget {
   final MarketplaceModel? product;
   final String? currentLocation;
   final bool showEditDeleteButtons;
+  final VoidCallback? onFavoriteChanged;
 
   const ProductDetailPage({
     super.key,
@@ -29,6 +30,7 @@ class ProductDetailPage extends StatefulWidget {
     this.product,
     this.currentLocation,
     this.showEditDeleteButtons = false,
+    this.onFavoriteChanged,
   });
 
   /// Named route for navigation
@@ -340,7 +342,13 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               : Icons.favorite_border_rounded,
           onTap: controller.isFavoriteLoading
               ? null
-              : () => controller.toggleFavorite(context),
+              : () async {
+                  final prev = controller.isFavorite;
+                  await controller.toggleFavorite(context);
+                  if (widget.onFavoriteChanged != null && prev != controller.isFavorite) {
+                    widget.onFavoriteChanged!();
+                  }
+                },
           background: AppColors.primary,
           iconColor: controller.isFavorite ? AppColors.error : AppColors.white,
         ),
