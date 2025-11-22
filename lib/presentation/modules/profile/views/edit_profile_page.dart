@@ -3,7 +3,6 @@ import 'package:bazzar_hub_app/app/core/utils/session_manager.dart';
 import 'package:bazzar_hub_app/app/core/utils/utils.dart';
 import 'package:bazzar_hub_app/app/data/constants/app_colors.dart';
 import 'package:bazzar_hub_app/presentation/commons/dialogs/app_toasts.dart';
-import 'package:bazzar_hub_app/presentation/modules/auth/widget/common_widget.dart';
 import 'package:bazzar_hub_app/presentation/services/api_service.dart';
 import 'package:bazzar_hub_app/presentation/services/models/user/user_model.dart';
 import 'package:dio/dio.dart';

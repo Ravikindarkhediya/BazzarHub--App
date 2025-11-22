@@ -167,11 +167,6 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
               ),
             ),
           ),
-          Positioned(
-            bottom: AppSpacing.md,
-            left: AppSpacing.md,
-            child: _buildVideoHint(isActive),
-          ),
         ],
       );
     }
@@ -224,34 +219,6 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
     );
   }
 
-  Widget _buildVideoHint(bool isActive) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.black.withOpacity(0.6),
-        borderRadius: AppSpacing.borderRadiusSM,
-        border: Border.all(color: AppColors.white.withOpacity(0.2), width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.play_circle_filled_rounded,
-            color: AppColors.white,
-            size: 18,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            isActive ? 'Playing...' : 'Tap to open',
-            style: AppTextStyles.caption.copyWith(color: AppColors.white),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildImageCounter(int totalImages) {
     return Positioned(

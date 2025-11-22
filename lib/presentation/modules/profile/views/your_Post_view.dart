@@ -93,10 +93,11 @@ class _YourPostViewState extends State<YourPostView>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
+            // Custom AppBar
             Container(
               height: kToolbarHeight,
               decoration: const BoxDecoration(
@@ -131,7 +132,7 @@ class _YourPostViewState extends State<YourPostView>
                     child: Center(
                       child:
                           Text(
-                                'Your Posts',
+                                'My Posts',
                                 style: AppTextStyles.h5.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: AppColors.textPrimary,
@@ -184,8 +185,10 @@ class _YourPostViewState extends State<YourPostView>
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (_) =>
-                                ProductDetailPage(productId: product.id),
+                            builder: (_) => ProductDetailPage(
+                              productId: product.id,
+                              showEditDeleteButtons: true,
+                            ),
                           ),
                         );
                       },
@@ -222,5 +225,4 @@ class _YourPostViewState extends State<YourPostView>
       ),
     );
   }
-
 }

@@ -142,7 +142,7 @@ class _AccountPageState extends State<AccountPage>
                           ),
                           SettingsTile(
                             icon: Icons.post_add,
-                            title: 'Post',
+                            title: 'My Post',
                             subtitle: 'View and Edit your Post',
                             onTap: () async {
                               Get.toNamed(AppRoutes.yourPost);

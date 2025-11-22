@@ -1,6 +1,7 @@
 import 'package:bazzar_hub_app/presentation/modules/product/widgets/custom_image_widget.dart';
 import 'package:bazzar_hub_app/presentation/services/models/Common/location_model.dart';
 import 'package:bazzar_hub_app/presentation/services/models/marketplace/marketplace_model.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -10,6 +11,8 @@ import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
 import 'package:get/get.dart';
 
+import '../../../commons/dialogs/appDialog.dart';
+import '../../../services/api_service.dart';
 import '../../product/views/sell_product_page.dart';
 
 class YourProductGrid extends StatefulWidget {
@@ -29,6 +32,159 @@ class YourProductGrid extends StatefulWidget {
 }
 
 class _YourProductGridState extends State<YourProductGrid> {
+
+
+  Future<bool> deleteProduct(String productId) async {
+    final services = await getApiClient();
+    try {
+      final response = await services.deleteMarketplace(productId);
+      if (response.data.status) {
+        Get.snackbar(
+          'Success',
+          'Product deleted successfully',
+          backgroundColor: AppColors.success.withOpacity(0.1),
+          colorText: AppColors.success,
+        );
+        return true;
+      } else {
+        Get.snackbar(
+          'Error',
+          response.data.message ?? 'Failed to delete product',
+          backgroundColor: AppColors.error.withOpacity(0.1),
+          colorText: AppColors.error,
+        );
+        return false;
+      }
+    } on DioException catch (e) {
+      Get.snackbar(
+        'Error',
+        'Network error: ${e.message}',
+        backgroundColor: AppColors.error.withOpacity(0.1),
+        colorText: AppColors.error,
+      );
+      return false;
+    }
+  }
+
+  void _showProductOptionsBottomSheet(
+      BuildContext context,
+      MarketplaceModel product,
+      ) {
+    showCupertinoModalPopup<void>(
+      context: context,
+      builder: (BuildContext ctx) {
+        return SafeArea(
+          child: CupertinoActionSheet(
+            title: Padding(
+              padding: AppSpacing.paddingMD,
+              child: Text(
+                product.title,
+                style: AppTextStyles.bodyLarge.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+              ),
+            ),
+            actions: [
+              CupertinoActionSheetAction(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Get.to(() => SellProductPage(product: product));
+                },
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.edit, color: AppColors.primary, size: AppSpacing.iconMD),
+                    SizedBox(width: AppSpacing.sm),
+                    Text(
+                      'Edit',
+                      style: AppTextStyles.bodyLarge.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              CupertinoActionSheetAction(
+                onPressed: () async {
+                  Navigator.pop(ctx);
+                  final bool confirmed = await AppDialog.show(
+                    context,
+                    title: 'Delete Product',
+                    message: 'Are you sure you want to delete "${product.title}"?',
+                    confirmText: 'Delete',
+                    cancelText: 'Cancel',
+                  );
+                  if (!mounted) return;
+                  if (confirmed) {
+                    bool success = await deleteProduct(product.id);
+                    if (!mounted) return;
+                    if (success) {
+                      setState(() {
+                        widget.products.removeWhere((p) => p.id == product.id);
+                      });
+                    }
+                  }
+                },
+                isDestructiveAction: true,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.delete_forever, color: AppColors.error, size: AppSpacing.iconMD),
+                    SizedBox(width: AppSpacing.sm),
+                    Text(
+                      'Delete',
+                      style: AppTextStyles.bodyLarge.copyWith(
+                        color: AppColors.error,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              CupertinoActionSheetAction(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  // Implement your Active logic here (e.g., mark product active)
+                  Get.snackbar('Active', 'Marked product as active');
+                },
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.check_circle_outline, color: AppColors.success, size: AppSpacing.iconMD),
+                    SizedBox(width: AppSpacing.sm),
+                    Text(
+                      'Active',
+                      style: AppTextStyles.bodyLarge.copyWith(
+                        color: AppColors.success,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            cancelButton: CupertinoActionSheetAction(
+              isDefaultAction: true,
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(
+                'Cancel',
+                style: AppTextStyles.bodyLarge.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.isLoading) {
@@ -52,7 +208,103 @@ class _YourProductGridState extends State<YourProductGrid> {
         ),
         itemCount: widget.products.length,
         itemBuilder: (context, index) {
-          return _buildProductCard(context, widget.products[index], index);
+          final product = widget.products[index];
+          return GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => widget.onProductTap(product),
+                child: Stack(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.white,
+                        borderRadius: AppSpacing.borderRadiusMD,
+                        border: Border.all(
+                          color: AppColors.borderLight,
+                          width: 1,
+                        ),
+                        boxShadow: AppColors.cardShadow,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildProductImage(product),
+                          Expanded(
+                            child: Padding(
+                              padding: AppSpacing.paddingSM,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    product.title,
+                                    style: AppTextStyles.priceMedium.copyWith(
+                                      fontSize:
+                                          AppResponsiveSize.isMobile(context)
+                                          ? 16
+                                          : 18,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  AppSpacing.verticalSpaceXS,
+                                  Text(
+                                    "₹ ${product.price}",
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const Spacer(),
+                                  _buildLocationInfo(context, product.location),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: GestureDetector(
+                        onTap: () =>
+                            _showProductOptionsBottomSheet(context, product),
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: AppColors.black.withOpacity(0.35),
+                            borderRadius: BorderRadius.only(
+                              bottomLeft: Radius.circular(20),
+                              topRight: Radius.circular(12),
+
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.12),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                            border: Border.all(
+                              color: AppColors.white.withOpacity(0.4),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.more_vert,
+                            color: AppColors.white,
+                            size: AppSpacing.iconMD,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+              .animate()
+              .fadeIn(duration: 600.ms, delay: (50 * index).ms)
+              .scale(delay: (50 * index).ms, duration: 400.ms);
         },
       ),
     );
@@ -70,110 +322,10 @@ class _YourProductGridState extends State<YourProductGrid> {
     return 0.68;
   }
 
-  Widget _buildProductCard(
-    BuildContext context,
-    MarketplaceModel product,
-    int index,
-  ) {
-    final card = GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => widget.onProductTap(product),
-      child: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: AppSpacing.borderRadiusMD,
-              border: Border.all(color: AppColors.borderLight, width: 1),
-              boxShadow: AppColors.cardShadow,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildProductImage(product),
-                Expanded(
-                  child: Padding(
-                    padding: AppSpacing.paddingSM,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          product.title,
-                          style: AppTextStyles.priceMedium.copyWith(
-                            fontSize: AppResponsiveSize.isMobile(context)
-                                ? 16
-                                : 18,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        AppSpacing.verticalSpaceXS,
-                        Text(
-                          "₹ ${product.price}",
-                          style: AppTextStyles.bodySmall.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const Spacer(),
-                        _buildLocationInfo(context, product.location),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Positioned(
-            top: 0,
-            right: 0,
-            child: GestureDetector(
-              onTap: () {
-                _showProductOptionsBottomSheet(context, product);
-              },
-              child: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: AppColors.black.withOpacity(0.35),
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusCircle),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.12),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                  border: Border.all(
-                    color: AppColors.white.withOpacity(0.4),
-                    width: 1.2,
-                  ),
-                ),
-                child: Icon(
-                  Icons.more_vert,
-                  color: AppColors.white,
-                  size: AppSpacing.iconMD,
-                ),
-              ),
-            ),
-          ),
-
-        ],
-      ),
-    );
-
-    return card
-        .animate()
-        .fadeIn(duration: 600.ms, delay: (50 * index).ms)
-        .scale(delay: (50 * index).ms, duration: 400.ms);
-  }
-
   Widget _buildProductImage(MarketplaceModel product) {
     final imageWidth =
         (MediaQuery.of(context).size.width - (AppSpacing.md * 2) - 12) /
         _getCrossAxisCount(context);
-
     final imageHeight = imageWidth / 1.2;
 
     return Stack(
@@ -295,9 +447,7 @@ class _YourProductGridState extends State<YourProductGrid> {
     );
   }
 
-  Widget _buildShimmerCard(
-
-      ) {
+  Widget _buildShimmerCard() {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.white,
@@ -350,161 +500,6 @@ class _YourProductGridState extends State<YourProductGrid> {
           ),
         ],
       ),
-    );
-  }
-
-  // Updated _showProductOptionsBottomSheet function
-  void _showProductOptionsBottomSheet(
-      BuildContext context,
-      MarketplaceModel product,
-      ) {
-    showCupertinoModalPopup(
-      context: context,
-      builder: (context) {
-        return CupertinoActionSheet(
-          title: Padding(
-            padding: AppSpacing.paddingMD,
-            child: Text(
-              product.title,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-                color: AppColors.textPrimary,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-            ),
-          ),
-          actions: [
-            CupertinoActionSheetAction(
-              onPressed: () async {
-                Navigator.pop(context);
-                // Navigate to SellProductPage in Edit Mode
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => SellProductPage(product: product),
-                  ),
-                );
-                // Optionally refresh the list if product was updated
-                if (result == true) {
-                  // Refresh your product list here
-                  // e.g., _refreshProducts();
-                }
-              },
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.edit, color: AppColors.primary),
-                    SizedBox(width: AppSpacing.sm),
-                    Text(
-                      'Edit',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            CupertinoActionSheetAction(
-              onPressed: () {
-                Navigator.pop(context);
-                // Delete action - implement your delete logic
-                _showDeleteConfirmation(context, product);
-              },
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.delete_forever_outlined, color: AppColors.error),
-                    SizedBox(width: AppSpacing.sm),
-                    Text(
-                      'Delete',
-                      style: TextStyle(
-                        color: AppColors.error,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-          cancelButton: CupertinoActionSheetAction(
-            onPressed: () => Navigator.pop(context),
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-              child: Text(
-                'Cancel',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-// Optional: Delete confirmation dialog
-  void _showDeleteConfirmation(BuildContext context, MarketplaceModel product) {
-    showCupertinoDialog(
-      context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: Text('Delete Product'),
-        content: Text('Are you sure you want to delete "${product.title}"?'),
-        actions: [
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            onPressed: () async {
-              Navigator.pop(context);
-              // Call your delete API here
-              // await _deleteProduct(product.id);
-            },
-            child: Text('Delete'),
-          ),
-        ],
-      ),
-    );
-  }
-
-// ============================================
-// Alternative: Using Get.to() with GetX
-// ============================================
-
-  void _onEditTap(MarketplaceModel product) {
-    Get.to(
-          () => SellProductPage(product: product),
-      transition: Transition.rightToLeft,
-      duration: const Duration(milliseconds: 400),
-    );
-  }
-
-// ============================================
-// Sell Button (for new product) - No changes needed
-// ============================================
-
-  void _onSellTap() {
-    Get.to(
-          () => const SellProductPage(), // No product = Create mode
-      transition: Transition.rightToLeft,
-      duration: const Duration(milliseconds: 400),
     );
   }
 }
