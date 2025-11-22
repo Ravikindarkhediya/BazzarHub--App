@@ -1,11 +1,16 @@
 import 'dart:ui';
 
 import 'package:bazzar_hub_app/app/core/manager/log_manager.dart';
+import 'package:bazzar_hub_app/presentation/modules/product/views/sell_product_page.dart';
+import 'package:bazzar_hub_app/presentation/modules/profile/views/your_Post_view.dart';
+import 'package:bazzar_hub_app/presentation/modules/profile/widgets/your_product_grid.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
+import '../../../commons/dialogs/appDialog.dart';
 import '../../../controller/product_controller.dart';
 import '../../../services/api_service.dart';
 import '../../../services/models/marketplace/marketplace_model.dart';
@@ -16,12 +21,14 @@ class ProductDetailPage extends StatefulWidget {
   final String productId;
   final MarketplaceModel? product;
   final String? currentLocation;
+  final bool showEditDeleteButtons;
 
   const ProductDetailPage({
     super.key,
     required this.productId,
     this.product,
     this.currentLocation,
+    this.showEditDeleteButtons = false,
   });
 
   /// Named route for navigation
@@ -113,6 +120,39 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     }
   }
 
+  Future<void> _deleteProduct(String productId) async {
+    final services = await getApiClient();
+    try {
+      final response = await services.deleteMarketplace(productId);
+      if (response.data.status) {
+        // Show success toast or message
+        Get.snackbar(
+          'Success',
+          'Product deleted successfully',
+          backgroundColor: AppColors.success.withOpacity(0.1),
+          colorText: AppColors.success,
+        );
+
+        // Go back to previous screen after successful deletion
+        if (mounted) Navigator.of(context).pop(true);
+      } else {
+        Get.snackbar(
+          'Error',
+          response.data.message ?? 'Failed to delete product',
+          backgroundColor: AppColors.error.withOpacity(0.1),
+          colorText: AppColors.error,
+        );
+      }
+    } on DioException catch (e) {
+      Get.snackbar(
+        'Error',
+        'Network error: ${e.message}',
+        backgroundColor: AppColors.error.withOpacity(0.1),
+        colorText: AppColors.error,
+      );
+    }
+  }
+
   void _attachController(MarketplaceModel product) {
     if (_controller == null) {
       _controller = ProductController(product: product)
@@ -193,8 +233,85 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           ],
         ),
       ),
+      bottomNavigationBar: widget.showEditDeleteButtons
+          ? Container(
+              padding: AppSpacing.horizontalMD.add(AppSpacing.verticalMD),
+              decoration: BoxDecoration(
+                color: AppColors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.black.withOpacity(0.06),
+                    blurRadius: 12,
+                    offset: Offset(0, -2),
+                  ),
+                ],
+                borderRadius: AppSpacing.borderRadiusTopMD,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.white,
+                        padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppSpacing.radiusMD,
+                          ),
+                        ),
+                        textStyle: AppTextStyles.button,
+                      ),
+                      icon: Icon(Icons.edit, size: AppSpacing.iconMD),
+                      label: Text(
+                        'Edit',
+                        style: AppTextStyles.button.copyWith(
+                          color: AppColors.white,
+                        ),
+                      ),
+                      onPressed: () {
+                        Get.to(
+                          () => SellProductPage(product: _controller?.product),
+                        );
+                      },
+                    ),
+                  ),
+                  AppSpacing.horizontalSpaceMD,
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.error,
+                        foregroundColor: AppColors.white,
+                        padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            AppSpacing.radiusMD,
+                          ),
+                        ),
+                        textStyle: AppTextStyles.button,
+                      ),
+                      icon: Icon(Icons.delete_forever, size: AppSpacing.iconMD),
+                      label: Text(
+                        'Delete',
+                        style: AppTextStyles.button.copyWith(
+                          color: AppColors.white,
+                        ),
+                      ),
+                      onPressed: () {
+
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : null,
     );
   }
+
 
   SliverAppBar _buildSliverAppBar(ProductController controller) {
     return SliverAppBar(
