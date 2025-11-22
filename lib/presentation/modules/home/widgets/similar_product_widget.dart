@@ -1,39 +1,14 @@
+import 'package:bazzar_hub_app/presentation/services/models/marketplace/marketplace_model.dart';
 import 'package:flutter/material.dart';
+import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/core/utils/responsive_size.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
 
 class SimilarProductWidget extends StatelessWidget {
-  const SimilarProductWidget({super.key});
+  final List<MarketplaceModel>? marketPlaceModel;
+  const SimilarProductWidget({super.key, required this.marketPlaceModel});
 
-  static final List<Map<String, String>> products = [
-    {
-      'title':
-          'Python Satchel Bag with extra long description here to test how it wraps below the image for overflow scenarios',
-      'imageUrl':
-          'https://img.freepik.com/free-photo/shop-clothing-clothes-shop-hanger-modern-shop-boutique_1150-8886.jpg?w=740&q=80',
-      'village': 'Rajkot',
-    },
-    {
-      'title': 'Round Sport Watch',
-      'imageUrl':
-          'https://img.freepik.com/free-photo/fashion-watch-still-life_1203-8877.jpg?w=740&q=80',
-      'village': 'Surat',
-    },
-    {
-      'title': 'Leeward Boat Shoes',
-      'imageUrl':
-          'https://img.freepik.com/free-photo/brown-casual-mans-shoes-white-background_93675-131.jpg?w=740&q=80',
-      'village': 'Ahmedabad',
-    },
-    {
-      'title':
-          'Slim Straight Fit Jeans with even longer description text should not overflow the card but wrap neatly',
-      'imageUrl':
-          'https://img.freepik.com/free-photo/pair-blue-jeans-isolated-white-background-female-clothes_93675-97403.jpg?w=740&q=80',
-      'village': 'Vadodara',
-    },
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -50,9 +25,7 @@ class SimilarProductWidget extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: screenWidth < 400 ? 8 : 16,
-            ),
+            padding: AppSpacing.horizontalMD,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -81,16 +54,14 @@ class SimilarProductWidget extends StatelessWidget {
             height: imageHeight + 65,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.symmetric(
-                horizontal: screenWidth < 400 ? 8 : 16,
-              ),
-              itemCount: products.length,
+              padding: AppSpacing.horizontalMD,
+              itemCount: marketPlaceModel?.length,
               itemBuilder: (context, index) {
-                final product = products[index];
+                final product = marketPlaceModel?[index];
                 return _ProductCard(
-                  title: product['title']!,
-                  imageUrl: product['imageUrl']!,
-                  village: product['village']!,
+                  title: product?.title ?? '',
+                  imageUrl: product?.images.first ?? '',
+                  village: product?.location!.village ?? '',
                   cardWidth: cardWidth,
                   imageHeight: imageHeight,
                   margin: screenWidth < 400 ? 8.0 : 12.0,

@@ -62,7 +62,10 @@ class MarketplaceModel {
   @JsonKey(name: '__v', defaultValue: 0)
   final int version;
 
-   MarketplaceModel({
+  @JsonKey(name: 'relatedListings')
+  final List<MarketplaceModel>? list;
+
+  MarketplaceModel({
     this.id = '',
     this.title = '',
     this.description = '',
@@ -81,6 +84,7 @@ class MarketplaceModel {
     this.createdAt = '',
     this.updatedAt = '',
     this.version = 0,
+    this.list
   });
 
   factory MarketplaceModel.fromJson(Map<String, dynamic> json) =>

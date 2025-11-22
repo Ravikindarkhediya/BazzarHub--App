@@ -40,6 +40,9 @@ MarketplaceModel _$MarketplaceModelFromJson(Map<String, dynamic> json) =>
       createdAt: json['createdAt'] as String? ?? '',
       updatedAt: json['updatedAt'] as String? ?? '',
       version: (json['__v'] as num?)?.toInt() ?? 0,
+      list: (json['relatedListings'] as List<dynamic>?)
+          ?.map((e) => MarketplaceModel.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
 
 Map<String, dynamic> _$MarketplaceModelToJson(MarketplaceModel instance) =>
@@ -62,4 +65,5 @@ Map<String, dynamic> _$MarketplaceModelToJson(MarketplaceModel instance) =>
       'createdAt': instance.createdAt,
       'updatedAt': instance.updatedAt,
       '__v': instance.version,
+      'relatedListings': instance.list,
     };

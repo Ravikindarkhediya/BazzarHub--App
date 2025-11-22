@@ -1,5 +1,7 @@
+import 'package:bazzar_hub_app/presentation/modules/home/widgets/similar_product_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:get/get.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
@@ -49,6 +51,7 @@ class ProductDetailsWidget extends StatelessWidget {
             _buildSellerCard(product, context),
 
             AppSpacing.verticalSpaceLG,
+            SimilarProductWidget(marketPlaceModel: product.list )
           ],
         );
       },
