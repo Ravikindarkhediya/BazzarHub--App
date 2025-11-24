@@ -168,15 +168,15 @@ abstract class ApiServices{
       @Path("id") String id,
       );
 
-  @POST(Endpoints.NEWS_FAVORITE)
+  @POST("${Endpoints.NEWS}/{id}/favorite")
   Future<HttpResponse<BaseModel<dynamic>>> addToFavoriteNews(
-      @Body() Map<String, dynamic> body,
-      );
+    @Path("id") String id,
+  );
 
-  // @GET(Endpoints.NEWS_FAVORITES_LIST)
-  // Future<HttpResponse<BaseListModel<MarketplaceModel>>> getFavoriteNews(
-  //     @Queries() Map<String, dynamic> queryParams,
-  //     );
+  @GET(Endpoints.NEWS_FAVORITES_LIST)
+  Future<HttpResponse<BaseListModel<NewsModel>>> getFavoriteNews(
+      @Queries() Map<String, dynamic> queryParams,
+      );
 
   @POST(Endpoints.NEWS_VIEW_LOG)
   Future<HttpResponse<BaseModel<dynamic>>> trackNewsView(
