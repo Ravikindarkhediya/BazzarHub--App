@@ -1,4 +1,3 @@
-
 import 'package:bazzar_hub_app/presentation/modules/product/widgets/custom_image_widget.dart';
 import 'package:bazzar_hub_app/presentation/services/models/Common/location_model.dart';
 import 'package:bazzar_hub_app/presentation/services/models/marketplace/marketplace_model.dart';
@@ -65,6 +64,7 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
     return Padding(
       padding: AppSpacing.horizontalMD,
       child: GridView.builder(
+        padding: EdgeInsets.zero,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -192,40 +192,64 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
             ),
           ),
         ),
-        
-        /// Favorite Button (overlay)
-        Positioned(
-          top: 8,
-          right: 8,
-          child: GestureDetector(
-            onTap: loading ? null : () => _handleFavoriteTap(product),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: loading
-                  ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                  : Icon(
-                      (product.favorites > 0 || product.favoritesCount > 0)
-                          ? Icons.favorite_rounded
-                          : Icons.favorite_border_rounded,
-                      size: 16,
-                      color: (product.favorites > 0 || product.favoritesCount > 0)
-                          ? Colors.red
-                          : AppColors.textPrimary,
+
+        /// Favorite Button
+        if (product.favoritesCount != 0)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: GestureDetector(
+              onTap: loading ? null : () => _handleFavoriteTap(product),
+              child: Container(
+                padding: product.favoritesCount > 0
+                    ? const EdgeInsets.symmetric(horizontal: 12, vertical: 6)
+                    : const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
+                  ],
+                ),
+                child: loading
+                    ? SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Row(
+                        mainAxisSize: MainAxisSize.min, // Make row compact
+                        children: [
+                          Icon(
+                            (product.favorites > 0 ||
+                                    product.favoritesCount > 0)
+                                ? Icons.favorite_rounded
+                                : Icons.favorite_border_rounded,
+                            size: 16,
+                            color:
+                                (product.favorites > 0 ||
+                                    product.favoritesCount > 0)
+                                ? Colors.red
+                                : AppColors.textPrimary,
+                          ),
+                          AppSpacing.horizontalSpaceSM,
+                          Text(
+                            '${product.favoritesCount}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
             ),
           ),
-        )
       ],
     );
   }
@@ -248,7 +272,7 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
       return const SizedBox();
     }
     String fullAddress =
-        "${location.village}, ${location.taluko}, ${location.district} - ${location.zipCode}, ${location.country}";
+        "${location.village}, ${location.taluko}, ${location.district} , ${location.country}";
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

@@ -1,3 +1,4 @@
+import 'package:bazzar_hub_app/presentation/modules/home/widgets/product_grid_widget.dart';
 import 'package:bazzar_hub_app/presentation/modules/home/widgets/similar_product_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -8,6 +9,8 @@ import '../../../../app/data/constants/app_text_style.dart';
 import '../../../controller/product_controller.dart';
 import '../../../services/models/marketplace/marketplace_model.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import '../views/product_detail_page.dart';
 
 /// Product Details Widget
 /// Displays comprehensive product information
@@ -41,17 +44,33 @@ class ProductDetailsWidget extends StatelessWidget {
 
             AppSpacing.verticalSpaceLG,
 
-            /// Specifications Section
-            // if (product.hasSpecs) ...[
-            //   _buildSpecificationsSection(product),
-            //   AppSpacing.verticalSpaceLG,
-            // ],
-
             /// Seller Information Card
             _buildSellerCard(product, context),
 
             AppSpacing.verticalSpaceLG,
-            SimilarProductWidget(marketPlaceModel: product.list )
+            if (product.list != null && product.list!.isNotEmpty)
+              Padding(
+                padding: AppSpacing.horizontalMD,
+                child: Text(
+                  'Related Products',
+                  style: AppTextStyles.h6.copyWith(fontWeight: FontWeight.bold),
+                ),
+              ),
+            AppSpacing.verticalSpaceSM,
+            if (product.list != null && product.list!.isNotEmpty)
+              ProductGridWidget(
+                products: product.list!,
+                onProductTap: (selectedProduct) {
+                  Get.to(
+                    () => ProductDetailPage(
+                      productId: selectedProduct.id,
+                      product: selectedProduct,
+                    ),
+                  );
+                },
+                onFavoriteToggle: (updatedProduct, isFavorite) {},
+                showHeartIcon: true,
+              ),
           ],
         );
       },
@@ -90,58 +109,17 @@ class ProductDetailsWidget extends StatelessWidget {
               const Spacer(),
 
               // AppSpacing.horizontalSpaceXS,
-
               _buildMetaItem(
                 icon: Icons.favorite_rounded,
                 label: '${product.likesCount} likes',
                 color: AppColors.error,
               ),
-
-              // /// Condition Badge
-              // _buildStatusBadge(
-              //   label: product.conditionLabel,
-              //   color: AppColors.info,
-              //   icon: Icons.verified_rounded,
-              // ),
             ],
           ),
         ],
       ),
     ).animate().fadeIn(duration: 600.ms).slideX(begin: -0.1, end: 0);
   }
-
-  // Widget _buildStatusBadge({
-  //   required String label,
-  //   required Color color,
-  //   required IconData icon,
-  // }) {
-  //   return Container(
-  //     padding: const EdgeInsets.symmetric(
-  //       horizontal: AppSpacing.sm,
-  //       vertical: AppSpacing.xs,
-  //     ),
-  //     decoration: BoxDecoration(
-  //       color: color.withOpacity(0.1),
-  //       borderRadius: AppSpacing.borderRadiusSM,
-  //       border: Border.all(color: color.withOpacity(0.3), width: 1),
-  //     ),
-  //     child: Row(
-  //       mainAxisSize: MainAxisSize.min,
-  //       children: [
-  //         Icon(icon, size: 14, color: color),
-  //         const SizedBox(width: 4),
-  //         Text(
-  //           label,
-  //           style: AppTextStyles.caption.copyWith(
-  //             color: color,
-  //             fontWeight: FontWeight.w600,
-  //             fontSize: 11,
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
 
   Widget _buildProductMeta(MarketplaceModel product) {
     return Padding(
@@ -157,7 +135,7 @@ class ProductDetailsWidget extends StatelessWidget {
           _buildMetaItem(
             icon: Icons.access_time_rounded,
             label: product.timeAgo,
-          )
+          ),
         ],
       ),
     ).animate().fadeIn(duration: 600.ms, delay: 200.ms);
@@ -250,40 +228,6 @@ class ProductDetailsWidget extends StatelessWidget {
     ).animate().fadeIn(duration: 600.ms, delay: 400.ms);
   }
 
-  // Widget _buildSpecificationsSection(ProductModel product) {
-  //   return Padding(
-  //     padding: AppSpacing.horizontalMD,
-  //     child: Column(
-  //       crossAxisAlignment: CrossAxisAlignment.start,
-  //       children: [
-  //         Text(
-  //           'Specifications',
-  //           style: AppTextStyles.h6.copyWith(fontWeight: FontWeight.bold),
-  //         ),
-  //         AppSpacing.verticalSpaceSM,
-  //         Container(
-  //           decoration: BoxDecoration(
-  //             color: AppColors.grey50,
-  //             borderRadius: AppSpacing.borderRadiusMD,
-  //             border: Border.all(color: AppColors.border),
-  //           ),
-  //           child: Column(
-  //             children: product.specs.entries
-  //                 .map(
-  //                   (entry) => SpecRow(
-  //                     label: entry.key,
-  //                     value: entry.value,
-  //                     isLast: entry.key == product.specs.keys.last,
-  //                   ),
-  //                 )
-  //                 .toList(),
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   ).animate().fadeIn(duration: 600.ms, delay: 600.ms);
-  // }
-
   Widget _buildSellerCard(MarketplaceModel product, BuildContext context) {
     return Padding(
       padding: AppSpacing.horizontalMD,
@@ -366,40 +310,48 @@ class ProductDetailsWidget extends StatelessWidget {
                 ),
 
                 /// Contact Buttons
-                _buildContactButton(
-                  icon: Icons.phone_rounded,
-                  onTap: product.sellerPhone == null ? null : () async {
-                          final Uri dialUri = Uri(
-                            scheme: 'tel',
-                            path: product.sellerPhone,
-                          );
+                Column(
+                  children: [
+                    _buildContactButton(
+                      icon: Icons.phone_rounded,
+                      onTap: product.sellerPhone == null
+                          ? null
+                          : () async {
+                              final Uri dialUri = Uri(
+                                scheme: 'tel',
+                                path: product.sellerPhone,
+                              );
 
-                          if (!await launchUrl(
-                            dialUri,
-                            mode: LaunchMode.externalApplication,
-                          )) {
-                            throw 'Could not open dialer';
-                          }
-                        },
+                              if (!await launchUrl(
+                                dialUri,
+                                mode: LaunchMode.externalApplication,
+                              )) {
+                                throw 'Could not open dialer';
+                              }
+                            },
+                    ),
+                    AppSpacing.verticalSpaceSM,
+                    // /// Email Buttons
+                    _buildContactButton(
+                      icon: Icons.email,
+                      onTap: product.createdBy?.email == null
+                          ? null
+                          : () async {
+                              final Uri emailUri = Uri(
+                                scheme: 'mailto',
+                                path: product.createdBy?.email,
+                              );
+
+                              if (!await launchUrl(
+                                emailUri,
+                                mode: LaunchMode.externalApplication,
+                              )) {
+                                throw 'Could not open email';
+                              }
+                            },
+                    ),
+                  ],
                 ),
-
-                // /// Email Buttons
-                // _buildContactButton(
-                //   icon: Icons.phone_rounded,
-                //   onTap: product.sellerPhone == null ? null : () async {
-                //           final Uri dialUri = Uri(
-                //             scheme: 'tel',
-                //             path: product.sellerPhone,
-                //           );
-                //
-                //           if (!await launchUrl(
-                //             dialUri,
-                //             mode: LaunchMode.externalApplication,
-                //           )) {
-                //             throw 'Could not open dialer';
-                //           }
-                //         },
-                // ),
               ],
             ),
           ),
@@ -453,7 +405,6 @@ extension MarketplaceViewExtension on MarketplaceModel {
       loc.village,
       loc.taluko,
       loc.district,
-      loc.zipCode,
       loc.country,
     ].where((part) => part.trim().isNotEmpty).toList();
     return parts.isEmpty ? 'Location unavailable' : parts.join(', ');

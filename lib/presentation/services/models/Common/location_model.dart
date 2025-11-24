@@ -20,9 +20,6 @@ class LocationModel {
   @JsonKey(name: 'district', defaultValue: '')
   final String district;
 
-  @JsonKey(name: 'zipCode', defaultValue: '')
-  final String zipCode;
-
   @JsonKey(name: 'country', defaultValue: '')
   final String country;
 
@@ -32,7 +29,6 @@ class LocationModel {
     this.taluko = '',
     this.district = '',
     this.state = '',
-    this.zipCode = '',
     this.country = '',
   });
 

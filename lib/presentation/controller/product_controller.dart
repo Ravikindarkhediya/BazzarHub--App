@@ -79,7 +79,6 @@ class ProductController extends ChangeNotifier {
       location.village,
       location.taluko,
       location.district,
-      location.zipCode,
       location.country,
     ].where((part) => part.trim().isNotEmpty).toList();
     return parts.isEmpty ? 'Location unavailable' : parts.join(', ');

@@ -17,7 +17,6 @@ LocationModel _$LocationModelFromJson(Map<String, dynamic> json) =>
       taluko: json['taluko'] as String? ?? '',
       district: json['district'] as String? ?? '',
       state: json['state'] as String? ?? '',
-      zipCode: json['zipCode'] as String? ?? '',
       country: json['country'] as String? ?? '',
     );
 
@@ -28,6 +27,5 @@ Map<String, dynamic> _$LocationModelToJson(LocationModel instance) =>
       'taluko': instance.taluko,
       'state': instance.state,
       'district': instance.district,
-      'zipCode': instance.zipCode,
       'country': instance.country,
     };

@@ -73,7 +73,6 @@ class SellProductController extends ChangeNotifier {
   final titleController = TextEditingController();
   final descriptionController = TextEditingController();
   final priceController = TextEditingController();
-  final zipCodeController = TextEditingController();
   final contactController = TextEditingController();
   final emailController = TextEditingController();
 
@@ -152,7 +151,6 @@ class SellProductController extends ChangeNotifier {
       titleController,
       descriptionController,
       priceController,
-      zipCodeController,
       contactController,
       emailController,
     ]);
@@ -207,7 +205,6 @@ class SellProductController extends ChangeNotifier {
 
     if (product.location != null) {
       final loc = product.location!;
-      zipCodeController.text = loc.zipCode ?? '';
 
       // Set state
       if (loc.state != null && loc.state!.isNotEmpty) {
@@ -546,7 +543,6 @@ class SellProductController extends ChangeNotifier {
     if (_selectedState == null) return 'Please select a state';
     if (_selectedDistrict == null) return 'Please select a district';
     if (_showSubDistrict && _selectedSubDistrict == null) return 'Please select a sub-district';
-    if (zipCodeController.text.trim().isEmpty) return 'Zip Code is required';
     if (contactController.text.trim().isEmpty) return 'Contact number is required';
     if (contactController.text.trim().length < 10) return 'Enter a valid contact number';
     if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(emailController.text.trim())) {
@@ -586,7 +582,6 @@ class SellProductController extends ChangeNotifier {
         "taluko": _selectedSubDistrict ?? "",
         "district": _selectedDistrict ?? "",
         "state": _selectedState ?? "",
-        "zipCode": zipCodeController.text.trim(),
         "country": "India",
       };
       if (_currentCoordinates != null) {

@@ -124,8 +124,6 @@ class _SellProductPageState extends State<SellProductPage> {
         if (_controller.showSubDistrict &&
             _controller.selectedSubDistrict == null)
           return 'Please select a sub-district';
-        if (_controller.zipCodeController.text.trim().isEmpty)
-          return 'Zip Code is required';
         break;
     }
     return null;
@@ -481,14 +479,6 @@ class _SellProductPageState extends State<SellProductPage> {
               enabled: controller.canSelectVillage,
               icon: Icons.home_work,
               allowManualEntry: controller.allowManualVillageEntry,
-            ),
-            const SizedBox(height: 16),
-            _buildTextField(
-              controller: _controller.zipCodeController,
-              label: 'Zip Code',
-              hint: 'e.g., 360311',
-              icon: Icons.pin_drop,
-              keyboardType: TextInputType.number,
             ),
           ],
         ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);

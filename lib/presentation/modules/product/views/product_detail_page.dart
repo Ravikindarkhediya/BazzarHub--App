@@ -65,7 +65,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   @override
   void initState() {
     super.initState();
-    print('^^^^^^^^^^^ ${widget.product?.favorites}');
     if (widget.product != null) {
       _attachController(widget.product!);
       _isLoading = false;
@@ -131,12 +130,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     try {
       final response = await services.deleteMarketplace(productId);
       if (response.data.status) {
+        if (!mounted) return;
+        await Future.delayed(Duration(milliseconds: 200));
+        Get.offNamed(AppRoutes.marketPlace);
         AppToast.showSuccess('Product deleted successfully');
-        if (mounted) Get.offNamed(AppRoutes.marketPlace);
       } else {
-        AppToast.showError(
-          response.data.message ?? 'Failed to delete product',
-        );
+        AppToast.showError(response.data.message ?? 'Failed to delete product');
       }
     } on DioException catch (e) {
       AppToast.showError('Network error: ${e.message}');
@@ -150,11 +149,11 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     final shouldActivate = !(product.isActive);
     final confirmed = await AppDialog.show(
       context,
-      title: shouldActivate ? 'Activate Listing?' : 'Deactivate Listing?',
+      title: shouldActivate ? 'Live Listing?' : 'Pause Listing?',
       message: shouldActivate
-          ? 'Are you sure you want to activate this listing?'
-          : 'Are you sure you want to deactivate this listing? It will be hidden from marketplace.',
-      confirmText: shouldActivate ? 'Activate' : 'Deactivate',
+          ? 'Are you sure you want to live this listing?'
+          : 'Are you sure you want to pause this listing? It will be hidden from marketplace.',
+      confirmText: shouldActivate ? 'Live' : 'Pause',
       cancelText: 'Cancel',
     );
     if (!mounted || !confirmed) return;
@@ -169,7 +168,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         final updated = response.data.data as MarketplaceModel;
         _controller!.updateProduct(updated);
         setState(() {});
-        AppToast.showSuccess(shouldActivate ? 'Listing activated' : 'Listing deactivated');
+        AppToast.showSuccess(
+          shouldActivate ? 'Listing live' : 'Listing pause',
+        );
         if (mounted) Get.offNamed(AppRoutes.marketPlace);
       } else {
         AppToast.showError(
@@ -292,9 +293,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 size: AppSpacing.iconMD,
               ),
               label: Text(
-                (_controller?.product.isActive ?? false)
-                    ? 'Pause'
-                    : 'Live',
+                (_controller?.product.isActive ?? false) ? 'Pause' : 'Live',
                 style: AppTextStyles.button.copyWith(color: AppColors.white),
               ),
               onPressed: _toggleActiveStatus,

@@ -12,6 +12,9 @@ import '../../../../app/data/constants/app_text_style.dart';
 import 'package:get/get.dart';
 
 import '../../../commons/dialogs/appDialog.dart';
+import '../../../commons/dialogs/app_toasts.dart';
+import '../../../controller/product_controller.dart';
+import '../../../routes/app_routes.dart';
 import '../../../services/api_service.dart';
 import '../../product/views/sell_product_page.dart';
 
@@ -32,7 +35,7 @@ class YourProductGrid extends StatefulWidget {
 }
 
 class _YourProductGridState extends State<YourProductGrid> {
-
+  ProductController? _controller;
 
   Future<bool> deleteProduct(String productId) async {
     final services = await getApiClient();
@@ -66,10 +69,69 @@ class _YourProductGridState extends State<YourProductGrid> {
     }
   }
 
+  Future<void> _toggleActiveStatus(MarketplaceModel product) async {
+    final shouldActivate = !product.isActive;
+
+    final confirmed = await AppDialog.show(
+      context,
+      title: shouldActivate ? 'Live Listing?' : 'Pause Listing?',
+      message: shouldActivate
+          ? 'Are you sure you want to Live this listing?'
+          : 'Are you sure you want to Pause this listing?',
+      confirmText: shouldActivate ? 'Live' : 'Pause',
+      cancelText: 'Cancel',
+    );
+
+    if (!mounted || !confirmed) return;
+
+    try {
+      final services = await getApiClient();
+      final response = await services.updateMarketplace(product.id, {
+        'isActive': shouldActivate,
+      });
+
+      if (response.data.status && response.data.data != null) {
+        final updated = response.data.data as MarketplaceModel;
+
+        /// Update UI List
+        setState(() {
+          int index = widget.products.indexWhere((p) => p.id == updated.id);
+          if (index != -1) widget.products[index] = updated;
+        });
+        Get.offNamed(AppRoutes.marketPlace);
+        AppToast.showSuccess(
+          shouldActivate ? 'Listing Live' : 'Listing paused',
+        );
+      } else {
+        AppToast.showError(response.data.message ?? 'Failed to update');
+      }
+    } catch (e) {
+      AppToast.showError('Error: $e');
+    }
+  }
+
+  String _mapDioError(DioException error) {
+    switch (error.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.receiveTimeout:
+      case DioExceptionType.sendTimeout:
+        return 'Connection timed out. Please try again.';
+      case DioExceptionType.connectionError:
+        return 'Network unavailable. Check your internet connection.';
+      case DioExceptionType.badResponse:
+        final statusCode = error.response?.statusCode;
+        return 'Server error${statusCode != null ? ' ($statusCode)' : ''}. Please try again later.';
+      case DioExceptionType.badCertificate:
+      case DioExceptionType.cancel:
+      case DioExceptionType.unknown:
+        return error.message ?? 'Unexpected error occurred.';
+    }
+  }
+
   void _showProductOptionsBottomSheet(
-      BuildContext context,
-      MarketplaceModel product,
-      ) {
+    BuildContext context,
+    MarketplaceModel product,
+  ) {
     showCupertinoModalPopup<void>(
       context: context,
       builder: (BuildContext ctx) {
@@ -97,7 +159,11 @@ class _YourProductGridState extends State<YourProductGrid> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.edit, color: AppColors.primary, size: AppSpacing.iconMD),
+                    Icon(
+                      Icons.edit,
+                      color: AppColors.primary,
+                      size: AppSpacing.iconMD,
+                    ),
                     SizedBox(width: AppSpacing.sm),
                     Text(
                       'Edit',
@@ -115,7 +181,8 @@ class _YourProductGridState extends State<YourProductGrid> {
                   final bool confirmed = await AppDialog.show(
                     context,
                     title: 'Delete Product',
-                    message: 'Are you sure you want to delete "${product.title}"?',
+                    message:
+                        'Are you sure you want to delete "${product.title}"?',
                     confirmText: 'Delete',
                     cancelText: 'Cancel',
                   );
@@ -134,7 +201,11 @@ class _YourProductGridState extends State<YourProductGrid> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.delete_forever, color: AppColors.error, size: AppSpacing.iconMD),
+                    Icon(
+                      Icons.delete_forever,
+                      color: AppColors.error,
+                      size: AppSpacing.iconMD,
+                    ),
                     SizedBox(width: AppSpacing.sm),
                     Text(
                       'Delete',
@@ -149,16 +220,21 @@ class _YourProductGridState extends State<YourProductGrid> {
               CupertinoActionSheetAction(
                 onPressed: () {
                   Navigator.pop(ctx);
-                  // Implement your Active logic here (e.g., mark product active)
-                  Get.snackbar('Active', 'Marked product as active');
+                  _toggleActiveStatus(product);
                 },
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.check_circle_outline, color: AppColors.success, size: AppSpacing.iconMD),
+                    Icon(
+                      product.isActive
+                          ? Icons.pause_circle_outline
+                          : Icons.check_circle_outline,
+                      color: AppColors.success,
+                      size: AppSpacing.iconMD,
+                    ),
                     SizedBox(width: AppSpacing.sm),
                     Text(
-                      'Active',
+                      product.isActive ? 'Pause' : 'Live',
                       style: AppTextStyles.bodyLarge.copyWith(
                         color: AppColors.success,
                         fontWeight: FontWeight.bold,
@@ -277,7 +353,6 @@ class _YourProductGridState extends State<YourProductGrid> {
                             borderRadius: BorderRadius.only(
                               bottomLeft: Radius.circular(20),
                               topRight: Radius.circular(12),
-
                             ),
                             boxShadow: [
                               BoxShadow(
@@ -371,7 +446,7 @@ class _YourProductGridState extends State<YourProductGrid> {
     if (location == null) return const SizedBox.shrink();
 
     String fullAddress =
-        "${location.village}, ${location.taluko}, ${location.district} - ${location.zipCode}, ${location.country}";
+        "${location.village}, ${location.taluko}, ${location.district}, ${location.country}";
 
     return Row(
       children: [
