@@ -7,7 +7,8 @@ import '../services/api_service.dart';
 class InitialBinding extends Bindings {
   @override
   void dependencies() {
-    Get.putAsync<ApiServices>(() async => await getApiClient());
+    Get.putAsync<ApiServices>(() async => await getApiClient(),
+        permanent: true);
   }
 }
 
