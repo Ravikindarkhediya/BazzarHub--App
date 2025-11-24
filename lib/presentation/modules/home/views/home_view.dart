@@ -46,14 +46,9 @@ class _HomeViewState extends State<HomeView> {
       body: GestureDetector(
         child: Column(
           children: [
-            /// 🎯 Header Section
-            HeaderWidget(
-              onNotificationTap: () => Get.toNamed(AppRoutes.notificationPage),
-              onSearchTap: () {
-                debugPrint('🔍 Search Tapped');
-              },
-            ),
 
+            /// 🎯 Header Section
+            HeaderWidget(),
           ],
         ),
       ),

@@ -40,6 +40,15 @@ class EmptyStateWidget extends StatelessWidget {
     );
   }
 
+  /// Factory for news empty state
+  factory EmptyStateWidget.news() {
+    return EmptyStateWidget(
+      title: 'Nothing Here Yet',
+      subtitle: 'Currently, there are no articles in this section.\nPlease try another category.',
+      icon: Icons.public,
+    );
+  }
+
   /// Factory for filter empty state
   factory EmptyStateWidget.filter({
     VoidCallback? onClearFilters,

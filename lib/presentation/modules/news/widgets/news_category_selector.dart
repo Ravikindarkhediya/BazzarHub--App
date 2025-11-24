@@ -43,13 +43,32 @@ class CategorySelectorWidget extends StatelessWidget {
                   width: 1,
                 ),
               ),
-              child: Text(
-                AppLanguage.getText(categories[index].name),
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Category Icon
+                  Image.network(
+                    categories[index].icon ?? "",
+                    height: 18,
+                    width: 18,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) =>
+                    const Icon(Icons.image_not_supported, size: 18),
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  // Category Text
+                  Text(
+                    AppLanguage.getText(categories[index].name),
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
           );

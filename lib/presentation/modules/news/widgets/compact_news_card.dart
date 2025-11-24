@@ -23,13 +23,15 @@ class CompactNewsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final title = AppLanguage.getText(newsData.title);
+
     final List<NewsMediaModel> mediaList = newsData.media;
     final imageUrl = mediaList.isNotEmpty ? mediaList.first.url : '';
+    final bool isVideo = mediaList.isNotEmpty
+        ? mediaList.first.type == "video"
+        : false;
 
+    final newsCategory = AppLanguage.getText(newsData.category?.name);
     final createdAt = newsData.createdAt;
-
-    // final String videoDuration = newsData['videoDuration'] ?? '1:07';
-
     final String? villageName = newsData.location?.district;
 
 
@@ -83,47 +85,24 @@ class CompactNewsCard extends StatelessWidget {
                     ),
 
                     // Play Button
-                    // Positioned.fill(
-                    //   child: Center(
-                    //     child: Container(
-                    //       width: 36,
-                    //       height: 36,
-                    //       decoration: BoxDecoration(
-                    //         color: Colors.black.withOpacity(0.6),
-                    //         shape: BoxShape.circle,
-                    //       ),
-                    //       child: const Icon(
-                    //         Icons.play_arrow,
-                    //         color: Colors.white,
-                    //         size: 24,
-                    //       ),
-                    //     ),
-                    //   ),
-                    // ),
-
-                    // Video Duration
-                    // Positioned(
-                    //   bottom: 4,
-                    //   right: 4,
-                    //   child: Container(
-                    //     padding: const EdgeInsets.symmetric(
-                    //       horizontal: 4,
-                    //       vertical: 2,
-                    //     ),
-                    //     decoration: BoxDecoration(
-                    //       color: Colors.black.withOpacity(0.7),
-                    //       borderRadius: BorderRadius.circular(3),
-                    //     ),
-                    //     child: Text(
-                    //       videoDuration,
-                    //       style: const TextStyle(
-                    //         color: Colors.white,
-                    //         fontSize: 10,
-                    //         fontWeight: FontWeight.w500,
-                    //       ),
-                    //     ),
-                    //   ),
-                    // ),
+                    if(isVideo)
+                      Positioned.fill(
+                      child: Center(
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.6),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.play_arrow,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
 
@@ -135,6 +114,27 @@ class CompactNewsCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+
+                      if(!Utils.isEmpty(newsCategory))
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.7),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          newsCategory,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+
                       // Title
                       Text(
                         title,

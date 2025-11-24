@@ -43,6 +43,18 @@ class UserModel {
   @JsonKey(name: '_id', defaultValue: '')
   String id;
 
+  @JsonKey(name: 'district', defaultValue: '')
+  String district;
+
+  @JsonKey(name: 'state', defaultValue: '')
+  String state;
+
+  @JsonKey(name: 'taluka', defaultValue: '')
+  String taluka;
+
+  @JsonKey(name: 'village', defaultValue: '')
+  String village;
+
   @JsonKey(name: 'createdAt', defaultValue: '')
   String createdAt;
 
@@ -66,6 +78,10 @@ class UserModel {
     this.socialId = '',
     this.socialType = '',
     this.id = '',
+    this.district = '',
+    this.state = '',
+    this.taluka = '',
+    this.village = '',
     this.createdAt = '',
     this.updatedAt = '',
     this.version = 0,

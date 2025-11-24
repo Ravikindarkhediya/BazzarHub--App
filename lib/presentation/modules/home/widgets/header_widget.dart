@@ -1,27 +1,29 @@
+import 'package:bazzar_hub_app/app/core/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_constant.dart';
 import '../../../../app/data/constants/app_text_style.dart';
+import '../../news/widgets/custom_rouded_pill_tabbar.dart';
 
 class HeaderWidget extends StatelessWidget {
-  final VoidCallback onNotificationTap;
-  final VoidCallback onSearchTap;
+  final TabController? tabController;
+  final int? selectedIndex;
+  final Function(int)? onTabSelect;
+  final bool isFromNewsTab;
 
   const HeaderWidget({
     super.key,
-    required this.onNotificationTap,
-    required this.onSearchTap,
+    this.isFromNewsTab = false,
+    this.tabController,
+    this.selectedIndex,
+    this.onTabSelect,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.sm,
-      ),
       decoration: BoxDecoration(
         color: AppColors.white,
         boxShadow: [
@@ -36,32 +38,90 @@ class HeaderWidget extends StatelessWidget {
         bottom: false,
         child: Column(
           children: [
+
             /// 🎯 Top Row - App Name, Location, Actions
-            Row(
-              children: [
-                /// App Logo & Name
-                _buildAppBranding(),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md, vertical: AppSpacing.sm
+              ),
+              child: Row(
+                children: [
 
-                AppSpacing.horizontalSpaceSM,
+                  /// App Logo & Name
+                  _buildAppBranding(),
 
-                Spacer(),
+                  AppSpacing.horizontalSpaceSM,
 
-                /// Search Icon
-                _buildIconButton(
-                  icon: Icons.search,
-                  onTap: onSearchTap,
-                  hasBadge: false,
+                  Spacer(),
+
+                  /// Search Icon
+                  _buildIconButton(
+                    icon: Icons.search,
+                    onTap:(){
+
+                    },
+                    hasBadge: false,
+                  ),
+
+                  AppSpacing.horizontalSpaceSM,
+
+                  /// Notification Icon
+                  _buildIconButton(
+                    icon: Icons.notifications_outlined,
+                    onTap: (){
+
+                    },
+                    hasBadge: true,
+                  ),
+                ],
+              ),
+            ),
+
+            // Tab Bar
+            if(isFromNewsTab)
+              Container(
+              color: Colors.white,
+              child: Padding(
+                padding: EdgeInsetsGeometry.symmetric(horizontal: 5),
+                child: TabBar(
+                  dividerColor: Colors.transparent,
+                  controller: tabController,
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.start,
+                  labelPadding: EdgeInsets.zero,
+                  labelColor: AppColors.primary,
+                  unselectedLabelColor: AppColors.textSecondary,
+                  indicator: RoundedTabIndicator(
+                    color: AppColors.primary.withOpacity(0.15),
+                    radius: 25,
+                  ),
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  tabs: Utils.newsLocationCategories.map((category) =>
+                      Tab(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 15),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                category["icon"],
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(category["title"]),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ).toList(),
+
+                  onTap: (index) {
+                    if (onTabSelect != null) {
+                      onTabSelect!(index);
+                    }
+                  },
                 ),
-
-                AppSpacing.horizontalSpaceSM,
-
-                /// Notification Icon
-                _buildIconButton(
-                  icon: Icons.notifications_outlined,
-                  onTap: onNotificationTap,
-                  hasBadge: true,
-                ),
-              ],
+              ),
             ),
           ],
         ),
@@ -129,46 +189,6 @@ class HeaderWidget extends StatelessWidget {
                   ),
                 ),
               ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSearchBar(BuildContext context) {
-    return InkWell(
-      onTap: onSearchTap,
-      borderRadius: AppSpacing.borderRadiusMD,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
-        ),
-        decoration: BoxDecoration(
-          color: AppColors.grey50,
-          borderRadius: AppSpacing.borderRadiusMD,
-          border: Border.all(color: AppColors.border, width: 1),
-        ),
-        child: Row(
-          children: [
-            const Icon(
-              Icons.search_rounded,
-              size: AppSpacing.iconMD,
-              color: AppColors.textSecondary,
-            ),
-            AppSpacing.horizontalSpaceSM,
-            Text(
-              'Search for products...',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textHint,
-              ),
-            ),
-            const Spacer(),
-            const Icon(
-              Icons.tune_rounded,
-              size: AppSpacing.iconMD,
-              color: AppColors.textSecondary,
-            ),
           ],
         ),
       ),

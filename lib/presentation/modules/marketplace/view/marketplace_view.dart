@@ -262,12 +262,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
         child: Column(
           children: [
             /// 🎯 Header Section
-            HeaderWidget(
-              onNotificationTap: () => Get.toNamed(AppRoutes.notificationPage),
-              onSearchTap: () {
-                debugPrint('🔍 Search Tapped');
-              },
-            ),
+            HeaderWidget(),
 
             /// 🔍 Enhanced Search Bar with Filter
             LocationBarWidget(

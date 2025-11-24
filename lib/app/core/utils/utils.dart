@@ -59,6 +59,25 @@ class Utils {
     return nullableList.where((item) => item != null).cast<String>().toList();
   }
 
+  static const List<Map<String, dynamic>> newsLocationCategories = [
+    {
+      "title": "My Village",
+      "icon": Icons.villa,
+    },
+    {
+      "title": "My Taluko",
+      "icon": Icons.location_city,
+    },
+    {
+      "title": "My District",
+      "icon": Icons.map,
+    },
+    {
+      "title": "My State",
+      "icon": Icons.public,
+    },
+  ];
+
   static Widget getButtonLoader() {
     return SizedBox(
       height: 22,
