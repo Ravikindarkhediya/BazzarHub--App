@@ -188,24 +188,10 @@ class BottomNavBarWidget extends StatelessWidget {
           ],
         ),
         child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.add_rounded,
-                size: 28,
-                color: AppColors.primary,
-              ),
-              Text(
-                'Ads',
-                style: AppTextStyles.bodyLarge.copyWith(
-                  color: AppColors.primary,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
+          child: const Icon(
+            Icons.add_rounded,
+            size: 28,
+            color: AppColors.primary,
           ),
         ),
       ),

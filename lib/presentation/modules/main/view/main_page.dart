@@ -40,7 +40,6 @@ class _MainScreenState extends State<MainScreen> {
           setState(() => _currentIndex = index);
         },
         onSellTap: () {
-          // Open Sell Page (Separate route)
           Get.toNamed(AppRoutes.sellProductPage);
         },
       ),

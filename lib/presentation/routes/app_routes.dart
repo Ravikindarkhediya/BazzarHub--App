@@ -1,4 +1,5 @@
 import 'package:bazzar_hub_app/presentation/modules/marketplace/view/marketplace_view.dart';
+import 'package:bazzar_hub_app/presentation/modules/news/views/add_news_view.dart';
 import 'package:bazzar_hub_app/presentation/modules/profile/views/your_Post_view.dart';
 
 import '../modules/auth/views/sign_in.dart';
@@ -44,6 +45,7 @@ class AppPages {
     GetPage(name: AppRoutes.mainPage, page: () => const MainScreen()),
     GetPage(name: AppRoutes.homeWrapper, page: () => const HomeWrapper()),
     GetPage(name: AppRoutes.yourPost, page: () => const YourPostView()),
+    GetPage(name: AppRoutes.addNewsView, page: () => const AddNewsView()),
 
     GetPage(
       name: ProductDetailPage.routeName,
@@ -77,4 +79,5 @@ class AppRoutes {
   static const homeWrapper = '/homeWrapper';
   static const yourPost = '/yourPost';
   static const marketPlace = '/marketPlace';
+  static const addNewsView = '/addNews';
 }

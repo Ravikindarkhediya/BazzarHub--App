@@ -1,9 +1,14 @@
 import 'package:bazzar_hub_app/app/core/manager/location_manager.dart';
 import 'package:bazzar_hub_app/presentation/modules/marketplace/view/marketplace_view.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:get/get.dart';
 import '../../../../app/core/manager/log_manager.dart';
+import '../../../../app/core/utils/app_spacing.dart';
+import '../../../../app/data/constants/app_colors.dart';
+import '../../../../app/data/constants/app_text_style.dart';
+import '../../../routes/app_routes.dart';
 import '../../chat/views/chat_page.dart';
 import '../../news/views/news_view.dart';
 import '../../product/views/sell_product_page.dart';
@@ -56,12 +61,77 @@ class _HomeWrapperState extends State<HomeWrapper> {
   void _onItemTapped(int index) => setState(() => _currentIndex = index);
 
   void _onSellTap() {
-    Get.to(
-          () => const SellProductPage(),
-      transition: Transition.rightToLeft,
-      duration: const Duration(milliseconds: 400),
+    _showSellOptionsSheet(context);
+  }
+
+  void _showSellOptionsSheet(BuildContext context) {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (_) => CupertinoActionSheet(
+        title: Text(
+          "Create",
+          style: AppTextStyles.h5.copyWith(
+            color: AppColors.textPrimary,
+          ),
+        ),
+
+        message: Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+          child: Text(
+            "Choose what you want to post",
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+
+        actions: [
+          /// ------------------- Ads Button -------------------
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(context);
+              Get.toNamed(AppRoutes.sellProductPage);
+            },
+            child: Text(
+              "Ads",
+              style: AppTextStyles.h6.copyWith(
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+
+          /// ------------------- News Button -------------------
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(context);
+              Get.toNamed(AppRoutes.addNewsView);
+            },
+            child: Text(
+              "News",
+              style: AppTextStyles.h6.copyWith(
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+        ],
+
+        /// ------------------- Cancel Button -------------------
+        cancelButton: CupertinoActionSheetAction(
+          isDefaultAction: true,
+          onPressed: () => Navigator.pop(context),
+          child: Text(
+            "Cancel",
+            style: AppTextStyles.bodyLarge.copyWith(
+              color: AppColors.error,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ),
     );
   }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
