@@ -39,7 +39,10 @@ class MarketplaceModel {
    int favoritesCount;
 
   @JsonKey(name: 'favorites', defaultValue: 0)
-   int favorites;
+  int favorites;
+
+  @JsonKey(name: 'isFavorite',  defaultValue: false)
+  bool isFavorite;
 
   @JsonKey(name: 'isActive', defaultValue: false)
   final bool isActive;
@@ -77,6 +80,7 @@ class MarketplaceModel {
     this.views = 0,
     this.favoritesCount = 0,
     this.favorites = 0,
+    this.isFavorite = false,
     this.isActive = false,
     this.location,
     this.contactInfo,

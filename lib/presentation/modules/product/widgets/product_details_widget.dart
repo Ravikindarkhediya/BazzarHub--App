@@ -110,38 +110,38 @@ class ProductDetailsWidget extends StatelessWidget {
     ).animate().fadeIn(duration: 600.ms).slideX(begin: -0.1, end: 0);
   }
 
-  Widget _buildStatusBadge({
-    required String label,
-    required Color color,
-    required IconData icon,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: AppSpacing.borderRadiusSM,
-        border: Border.all(color: color.withOpacity(0.3), width: 1),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: AppTextStyles.caption.copyWith(
-              color: color,
-              fontWeight: FontWeight.w600,
-              fontSize: 11,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildStatusBadge({
+  //   required String label,
+  //   required Color color,
+  //   required IconData icon,
+  // }) {
+  //   return Container(
+  //     padding: const EdgeInsets.symmetric(
+  //       horizontal: AppSpacing.sm,
+  //       vertical: AppSpacing.xs,
+  //     ),
+  //     decoration: BoxDecoration(
+  //       color: color.withOpacity(0.1),
+  //       borderRadius: AppSpacing.borderRadiusSM,
+  //       border: Border.all(color: color.withOpacity(0.3), width: 1),
+  //     ),
+  //     child: Row(
+  //       mainAxisSize: MainAxisSize.min,
+  //       children: [
+  //         Icon(icon, size: 14, color: color),
+  //         const SizedBox(width: 4),
+  //         Text(
+  //           label,
+  //           style: AppTextStyles.caption.copyWith(
+  //             color: color,
+  //             fontWeight: FontWeight.w600,
+  //             fontSize: 11,
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildProductMeta(MarketplaceModel product) {
     return Padding(

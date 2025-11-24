@@ -1,3 +1,4 @@
+import 'package:bazzar_hub_app/presentation/controller/product_controller.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -27,10 +28,7 @@ class MarketplaceView extends StatefulWidget {
 
 class _MarketplaceViewState extends State<MarketplaceView> {
   // Global Query Params
-  Map<String, dynamic> queryParams = {
-    "page": 1,
-    "limit": 50,
-  };
+  Map<String, dynamic> queryParams = {"page": 1, "limit": 50};
 
   // State Variables
   List<String> _selectedCategoryIds = [];
@@ -42,7 +40,6 @@ class _MarketplaceViewState extends State<MarketplaceView> {
 
   bool _isLoading = true;
   bool _isLoadingProducts = true;
-
 
   @override
   void initState() {
@@ -107,7 +104,6 @@ class _MarketplaceViewState extends State<MarketplaceView> {
     }
   }
 
-
   void _buildLocationFromMap() {
     const order = ["village", "taluko", "district", "state"];
     List<String> parts = [];
@@ -144,7 +140,6 @@ class _MarketplaceViewState extends State<MarketplaceView> {
 
     _currentLocation = parts.join(", ");
   }
-
 
   /// 🔍 Filter Products by Single Category (tap on category card)
   void _filterByCategory(String categoryId) {
@@ -228,9 +223,8 @@ class _MarketplaceViewState extends State<MarketplaceView> {
     );
   }
 
-
   /// 📱 Handle Product Tap
-  void _handleProductTap(MarketplaceModel product) {
+  Future<void> _handleProductTap(MarketplaceModel product) async {
     try {
       final productId = product.id;
       if (productId.isEmpty) {
@@ -238,7 +232,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
         return;
       }
 
-      Get.toNamed(
+      final result = await Get.toNamed(
         ProductDetailPage.routeName,
         arguments: ProductPageArguments(
           productId: productId,
@@ -246,6 +240,23 @@ class _MarketplaceViewState extends State<MarketplaceView> {
           currentLocation: _currentLocation,
         ),
       );
+
+      if (result is MarketplaceModel) {
+        setState(() {
+          final idx = _displayedProducts.indexWhere((p) => p.id == result.id);
+          if (idx != -1) {
+            _displayedProducts[idx] = result;
+          }
+        });
+      } else if (result is Map) {
+        final deleted = result['deleted'] == true;
+        final id = result['id']?.toString();
+        if (deleted && id != null) {
+          setState(() {
+            _displayedProducts.removeWhere((p) => p.id == id);
+          });
+        }
+      }
     } catch (error) {
       AppToast.showError('Error opening product: $error');
     }
@@ -333,7 +344,28 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                       child: ProductGridWidget(
                         products: _displayedProducts,
                         isLoading: _isLoadingProducts,
-                        onProductTap: _handleProductTap, onFavoriteToggle: (MarketplaceModel product, bool isFavorite) {  }, showHeartIcon: true,
+                        onProductTap: _handleProductTap,
+                        onFavoriteToggle:
+                            (MarketplaceModel product, bool isFavorite) {
+                              setState(() {
+                                final idx = _displayedProducts.indexWhere(
+                                  (p) => p.id == product.id,
+                                );
+                                if (idx != -1) {
+                                  final current = _displayedProducts[idx];
+                                  final nextCount = isFavorite
+                                      ? current.favoritesCount + 1
+                                      : current.favoritesCount - 1;
+                                  _displayedProducts[idx] = current.copyWith(
+                                    favoritesCount: nextCount < 0
+                                        ? 0
+                                        : nextCount,
+                                    favorites: isFavorite ? 1 : 0,
+                                  );
+                                }
+                              });
+                            },
+                        showHeartIcon: true,
                       ),
                     ),
 
@@ -348,5 +380,4 @@ class _MarketplaceViewState extends State<MarketplaceView> {
       ),
     );
   }
-
 }

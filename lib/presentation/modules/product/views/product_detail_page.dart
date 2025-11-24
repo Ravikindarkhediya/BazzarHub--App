@@ -2,7 +2,9 @@ import 'dart:ui';
 
 import 'package:bazzar_hub_app/app/core/manager/log_manager.dart';
 import 'package:bazzar_hub_app/presentation/commons/dialogs/app_toasts.dart';
+import 'package:bazzar_hub_app/presentation/modules/marketplace/view/marketplace_view.dart';
 import 'package:bazzar_hub_app/presentation/modules/product/views/sell_product_page.dart';
+import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -63,6 +65,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   @override
   void initState() {
     super.initState();
+    print('^^^^^^^^^^^ ${widget.product?.favorites}');
     if (widget.product != null) {
       _attachController(widget.product!);
       _isLoading = false;
@@ -129,14 +132,54 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       final response = await services.deleteMarketplace(productId);
       if (response.data.status) {
         AppToast.showSuccess('Product deleted successfully');
-        if (mounted) Navigator.of(context).pop(true);
+        if (mounted) Get.offNamed(AppRoutes.marketPlace);
       } else {
-        AppToast.showSuccess(
+        AppToast.showError(
           response.data.message ?? 'Failed to delete product',
         );
       }
     } on DioException catch (e) {
-      AppToast.showSuccess('Network error: ${e.message}');
+      AppToast.showError('Network error: ${e.message}');
+    }
+  }
+
+  Future<void> _toggleActiveStatus() async {
+    final product = _controller?.product;
+    if (product == null) return;
+
+    final shouldActivate = !(product.isActive);
+    final confirmed = await AppDialog.show(
+      context,
+      title: shouldActivate ? 'Activate Listing?' : 'Deactivate Listing?',
+      message: shouldActivate
+          ? 'Are you sure you want to activate this listing?'
+          : 'Are you sure you want to deactivate this listing? It will be hidden from marketplace.',
+      confirmText: shouldActivate ? 'Activate' : 'Deactivate',
+      cancelText: 'Cancel',
+    );
+    if (!mounted || !confirmed) return;
+
+    try {
+      final services = await getApiClient();
+      final response = await services.updateMarketplace(product.id, {
+        'isActive': shouldActivate,
+      });
+
+      if (response.data.status && response.data.data != null) {
+        final updated = response.data.data as MarketplaceModel;
+        _controller!.updateProduct(updated);
+        setState(() {});
+        AppToast.showSuccess(shouldActivate ? 'Listing activated' : 'Listing deactivated');
+        if (mounted) Get.offNamed(AppRoutes.marketPlace);
+      } else {
+        AppToast.showError(
+          response.data.message ?? 'Failed to update listing status',
+        );
+      }
+    } on DioException catch (e) {
+      AppToast.showError(_mapDioError(e));
+    } catch (e) {
+      AppToast.showError('Unexpected error: $e');
     }
   }
 
@@ -207,8 +250,22 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 'Edit',
                 style: AppTextStyles.button.copyWith(color: AppColors.white),
               ),
-              onPressed: () {
-                Get.to(() => SellProductPage(product: _controller?.product));
+              onPressed: () async {
+                final confirm = await AppDialog.show(
+                  context,
+                  title: 'Edit Product?',
+                  message: 'Do you want to edit this product?',
+                  confirmText: 'Edit',
+                  cancelText: 'Cancel',
+                );
+                if (!mounted || !confirm) return;
+                final result = await Get.to(
+                  () => SellProductPage(product: _controller?.product),
+                );
+                if (!mounted) return;
+                if (result == true) {
+                  Navigator.pop(context);
+                }
               },
             ),
           ),
@@ -228,15 +285,19 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 ),
                 textStyle: AppTextStyles.button,
               ),
-              icon: Icon(Icons.check_circle_outline, size: AppSpacing.iconMD),
+              icon: Icon(
+                (_controller?.product.isActive ?? false)
+                    ? Icons.pause_circle_outline
+                    : Icons.check_circle_outline,
+                size: AppSpacing.iconMD,
+              ),
               label: Text(
-                'Active',
+                (_controller?.product.isActive ?? false)
+                    ? 'Pause'
+                    : 'Live',
                 style: AppTextStyles.button.copyWith(color: AppColors.white),
               ),
-              onPressed: () {
-                // Active button logic here
-                Get.snackbar('Active', 'Marked product as active');
-              },
+              onPressed: _toggleActiveStatus,
             ),
           ),
 
@@ -331,7 +392,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       ),
 
       bottomNavigationBar:
-      (SessionManager().userObjectModel?.id == _controller!.product.createdBy!.id)
+          ((_controller?.product.createdBy?.id ?? '') ==
+              (SessionManager().userObjectModel?.id ?? ''))
           ? _buildBottomNavigationBar()
           : null,
     );
@@ -349,9 +411,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           padding: const EdgeInsets.only(left: AppSpacing.md),
           child: _buildAppbarIcon(
             icon: Icons.arrow_back_rounded,
-            onTap: () => {
-              LogManager.trackMarketplaceView(widget.productId),
-              Navigator.pop(context),
+            onTap: () async {
+              LogManager.trackMarketplaceView(widget.productId);
+              final product = _controller?.product;
+              Navigator.pop(context, product);
             },
             background: AppColors.primary,
             iconColor: AppColors.white,

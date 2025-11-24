@@ -1,7 +1,9 @@
 import 'package:bazzar_hub_app/presentation/commons/dialogs/appDialog.dart';
 import 'package:bazzar_hub_app/presentation/commons/dialogs/app_toasts.dart';
+import 'package:bazzar_hub_app/presentation/modules/marketplace/view/marketplace_view.dart';
 import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -89,10 +91,9 @@ class _SellProductPageState extends State<SellProductPage> {
     if (success && mounted) {
       setState(() => _isSubmitted = true);
       if (isEditMode) {
-        // Pop back with result for edit mode
-        Navigator.of(context).pop(true);
+        Get.offNamed(AppRoutes.marketPlace);
       } else {
-        Navigator.pushNamed(context, AppRoutes.homeWrapper);
+        Get.offNamed(AppRoutes.marketPlace);
       }
     }
   }

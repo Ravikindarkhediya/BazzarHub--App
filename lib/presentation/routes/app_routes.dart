@@ -1,3 +1,4 @@
+import 'package:bazzar_hub_app/presentation/modules/marketplace/view/marketplace_view.dart';
 import 'package:bazzar_hub_app/presentation/modules/profile/views/your_Post_view.dart';
 
 import '../modules/auth/views/sign_in.dart';
@@ -38,6 +39,7 @@ class AppPages {
       page: () => const EditProfilePage(),
     ),
     GetPage(name: AppRoutes.chatPage, page: () => const ChatPage()),
+    GetPage(name: AppRoutes.marketPlace, page: () => const MarketplaceView()),
     GetPage(name: AppRoutes.favoritesPage, page: () => const FavoritesPage()),
     GetPage(name: AppRoutes.mainPage, page: () => const MainScreen()),
     GetPage(name: AppRoutes.homeWrapper, page: () => const HomeWrapper()),
@@ -74,4 +76,5 @@ class AppRoutes {
   static const mainPage = '/mainPage';
   static const homeWrapper = '/homeWrapper';
   static const yourPost = '/yourPost';
+  static const marketPlace = '/marketPlace';
 }

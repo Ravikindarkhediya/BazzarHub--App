@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../commons/dialogs/app_toasts.dart';  // Import your AppToast here
+import '../commons/dialogs/app_toasts.dart'; // Import your AppToast here
 import '../services/api_service.dart';
 import '../services/models/Common/location_model.dart';
 import '../services/models/categorie/categorie_model.dart';
@@ -14,8 +14,8 @@ import '../services/models/user/user_model.dart';
 /// Manages state for product details, images, favorites, and actions
 class ProductController extends ChangeNotifier {
   ProductController({required MarketplaceModel product})
-      : _product = product,
-        _isFavorite = product.favorites > 0 || product.favoritesCount > 0;
+    : _product = product,
+      _isFavorite = product.favorites > 0 || product.favoritesCount > 0;
 
   // State Variables
   MarketplaceModel _product;
@@ -95,11 +95,11 @@ class ProductController extends ChangeNotifier {
   static const _favoriteDebounceMs = 500;
 
   /// Update controller with new product data
-  void updateProduct(MarketplaceModel product) {
-    _product = product;
-    _isFavorite = product.favorites > 0 || product.favoritesCount > 0;
-    notifyListeners();
-  }
+  // void updateProduct(MarketplaceModel product) {
+  //   _product = product;
+  //   _isFavorite = product.favorites > 0 || product.favoritesCount > 0;
+  //   notifyListeners();
+  // }
 
   /// Update current image index
   void updateImageIndex(int index) {
@@ -112,6 +112,11 @@ class ProductController extends ChangeNotifier {
   /// Toggle description expanded state
   void toggleDescription() {
     _isDescriptionExpanded = !_isDescriptionExpanded;
+    notifyListeners();
+  }
+  void updateProduct(MarketplaceModel product) {
+    _product = product;
+    _isFavorite = product.isFavorite;
     notifyListeners();
   }
 
@@ -175,9 +180,11 @@ class ProductController extends ChangeNotifier {
       AppToast.showError(_mapDioError(error));
     } catch (error) {
       _isFavorite = previousState;
-      AppToast.showError(error.toString().isNotEmpty
-          ? error.toString()
-          : 'Failed to update favorite status.');
+      AppToast.showError(
+        error.toString().isNotEmpty
+            ? error.toString()
+            : 'Failed to update favorite status.',
+      );
     } finally {
       _setFavoriteLoading(false);
     }
@@ -187,14 +194,14 @@ class ProductController extends ChangeNotifier {
   Future<void> shareProduct(BuildContext context) async {
     try {
       final shareText =
-      '''
+          '''
 $productTitle
 Price: $formattedPrice
 Location: $locationSummary
 
 Check out this amazing product on BazzarHub!
       '''
-          .trim();
+              .trim();
 
       await Share.share(shareText, subject: productTitle);
     } catch (e) {

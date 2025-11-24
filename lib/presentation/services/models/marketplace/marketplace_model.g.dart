@@ -25,6 +25,7 @@ MarketplaceModel _$MarketplaceModelFromJson(Map<String, dynamic> json) =>
       views: (json['views'] as num?)?.toInt() ?? 0,
       favoritesCount: (json['favoritesCount'] as num?)?.toInt() ?? 0,
       favorites: (json['favorites'] as num?)?.toInt() ?? 0,
+      isFavorite: json['isFavorite'] as bool? ?? false,
       isActive: json['isActive'] as bool? ?? false,
       location: json['location'] == null
           ? null
@@ -58,6 +59,7 @@ Map<String, dynamic> _$MarketplaceModelToJson(MarketplaceModel instance) =>
       'views': instance.views,
       'favoritesCount': instance.favoritesCount,
       'favorites': instance.favorites,
+      'isFavorite': instance.isFavorite,
       'isActive': instance.isActive,
       'location': instance.location,
       'contactInfo': instance.contactInfo,
