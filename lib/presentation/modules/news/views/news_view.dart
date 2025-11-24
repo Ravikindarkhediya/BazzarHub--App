@@ -132,7 +132,7 @@ class _NewsViewState extends State<NewsView>
                     }
 
                     // 4) SHOW LIST
-                    return ListView.builder(
+                    return ListView.separated(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 8),
                       itemCount: _newsController.newsList.length,
@@ -149,6 +149,15 @@ class _NewsViewState extends State<NewsView>
                           );
                         }
                       },
+                      separatorBuilder: (BuildContext context, int index) {
+                       return const Divider(
+                        color: Colors.grey,
+                        thickness: 0.5,
+                        height: 1,
+                        indent: 0,
+                        endIndent: 0,
+                      );
+                    },
                     );
                   }),
                 )

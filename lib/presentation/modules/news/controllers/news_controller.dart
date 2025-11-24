@@ -53,7 +53,7 @@ class NewsController extends GetxController {
 
   Map<String, dynamic> prepareLocationQuery(int position) {
     queryParams.remove('village');
-    queryParams.remove('taluka');
+    queryParams.remove('taluko');
     queryParams.remove('district');
     queryParams.remove('state');
 
@@ -71,7 +71,7 @@ class NewsController extends GetxController {
 
       case 1:
         if (talukaValue != null && talukaValue.isNotEmpty) {
-          queryParams['taluka'] = talukaValue;
+          queryParams['taluko'] = talukaValue;
         }
         break;
 

@@ -37,143 +37,133 @@ class CompactNewsCard extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      child: Column(
-        children:[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Thumbnail with Play Button
-              Stack(
-                children: [
-                  Container(
-                    width: 120,
-                    height: 90,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      color: Colors.grey[300],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: imageUrl.isNotEmpty
-                          ? Image.network(
-                        imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: Colors.grey[300],
-                            child: const Center(
-                              child: Icon(
-                                Icons.broken_image,
-                                size: 30,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          );
-                        },
-                      )
-                          : const Center(
-                        child: Icon(
-                          Icons.video_library,
-                          size: 30,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  // Play Button
-                  if(isVideo)
-                    Positioned.fill(
-                    child: Center(
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.6),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.play_arrow,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(width: 12),
-
-              // Content
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12.0),
+        child: Column(
+          children:[
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Thumbnail with Play Button
+                Stack(
                   children: [
-
-                    if(!Utils.isEmpty(newsCategory))
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 3,
-                      ),
+                      width: 120,
+                      height: 90,
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.grey[300],
                       ),
-                      child: Text(
-                        newsCategory,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: imageUrl.isNotEmpty
+                            ? Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey[300],
+                              child: const Center(
+                                child: Icon(
+                                  Icons.broken_image,
+                                  size: 30,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            );
+                          },
+                        )
+                            : const Center(
+                          child: Icon(
+                            Icons.video_library,
+                            size: 30,
+                            color: Colors.grey,
+                          ),
                         ),
                       ),
                     ),
 
-                    // Title
-                    Text(
-                      title,
-                      style: AppTextStyles.newsTitle.copyWith(
-                        fontSize: AppResponsiveSize.isMobile(context)
-                            ? 15
-                            : 16,
+                    // Play Button
+                    if(isVideo)
+                      Positioned.fill(
+                      child: Center(
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.6),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.play_arrow,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
                       ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-
-                    const SizedBox(height: 6),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        if (villageName!.isNotEmpty) ...[
-                          _buildButton(icon: Icons.location_on_outlined, text: villageName)
-                        ],
-                        _buildButton(icon: Icons.access_time, text: createdAt.isNotEmpty ? Utils.getTimeAgo(createdAt) : '')
-                      ],
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
 
-          // Padding(padding: EdgeInsets.symmetric(vertical: 10)),
+                const SizedBox(width: 12),
 
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: const Divider(
-              color: Colors.grey,
-              thickness: 0.5,
-              height: 1,
-              indent: 0,
-              endIndent: 0,
+                // Content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+
+                      if(!Utils.isEmpty(newsCategory))
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.7),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          newsCategory,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+
+                      // Title
+                      Text(
+                        title,
+                        style: AppTextStyles.newsTitle.copyWith(
+                          fontSize: AppResponsiveSize.isMobile(context)
+                              ? 15
+                              : 16,
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+
+                      const SizedBox(height: 6),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          if (villageName!.isNotEmpty) ...[
+                            _buildButton(icon: Icons.location_on_outlined, text: villageName)
+                          ],
+                          _buildButton(icon: Icons.access_time, text: createdAt.isNotEmpty ? Utils.getTimeAgo(createdAt) : '')
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ),
-        ]
+          ]
+        ),
       ),
     );
   }

@@ -831,24 +831,35 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 fontSize: 15,
                 color: AppColors.textPrimary,
               ),
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: AppColors.primary),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(
-                    color: AppColors.primary,
-                    width: 2,
-                  ),
-                ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                focusedErrorBorder: InputBorder.none,
                 isDense: true,
+                contentPadding: EdgeInsets.zero,
               ),
+
+              // decoration: InputDecoration(
+              //   border: OutlineInputBorder(
+              //     borderRadius: BorderRadius.circular(8),
+              //     borderSide: const BorderSide(color: AppColors.primary),
+              //   ),
+              //   focusedBorder: OutlineInputBorder(
+              //     borderRadius: BorderRadius.circular(8),
+              //     borderSide: const BorderSide(
+              //       color: AppColors.primary,
+              //       width: 2,
+              //     ),
+              //   ),
+              //   contentPadding: const EdgeInsets.symmetric(
+              //     horizontal: 12,
+              //     vertical: 8,
+              //   ),
+              //   isDense: true,
+              // ),
               validator: validator,
             )
                 : GestureDetector(

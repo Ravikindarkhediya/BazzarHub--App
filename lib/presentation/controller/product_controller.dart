@@ -15,7 +15,8 @@ import '../services/models/user/user_model.dart';
 class ProductController extends ChangeNotifier {
   ProductController({required MarketplaceModel product})
     : _product = product,
-      _isFavorite = product.favorites > 0 || product.favoritesCount > 0;
+      // _isFavorite = product.favorites > 0 || product.favoritesCount > 0;
+      _isFavorite = product.isFavorite;
 
   // State Variables
   MarketplaceModel _product;
