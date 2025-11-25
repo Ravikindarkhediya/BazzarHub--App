@@ -38,53 +38,6 @@ class _FeaturedNewsCardState extends State<FeaturedNewsCard> {
     _isFavorite = widget.isFavorite;
   }
 
-  Future<void> _handleFavoriteTap() async {
-    if (_isFavoriteLoading) return;
-
-    final newsId = widget.newsData.id;
-    if (newsId.isEmpty) {
-      AppToast.showError('News information unavailable.');
-      return;
-    }
-
-    final previousState = _isFavorite;
-    final nextState = !previousState;
-
-    setState(() {
-      _isFavoriteLoading = true;
-      _isFavorite = nextState;
-    });
-
-    try {
-      final services = await getApiClient();
-      final response = await services.addToFavoriteNews(newsId);
-
-      if (!response.data.status) {
-        throw Exception(response.data.message ?? 'Failed to update favorite status');
-      }
-
-      widget.onFavoriteToggle?.call(_isFavorite);
-      final message = response.data.message ??
-          (_isFavorite ? 'Added to favorites' : 'Removed from favorites');
-      AppToast.showSuccess(message);
-    } catch (error) {
-      print(error);
-      setState(() => _isFavorite = previousState);
-      final errorMessage = error.toString().isNotEmpty
-          ? error.toString()
-          : 'Failed to update favorite status';
-      AppToast.showError(errorMessage);
-      Get.snackbar(
-        'Error',
-        errorMessage,
-        snackPosition: SnackPosition.BOTTOM,
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isFavoriteLoading = false);
-      }
-    }
-  }
 
 
   @override
@@ -162,43 +115,6 @@ class _FeaturedNewsCardState extends State<FeaturedNewsCard> {
                               color: Colors.grey,
                             ),
                           ),
-                  ),
-                ),
-
-                // Favorite Button
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: GestureDetector(
-                    onTap: _handleFavoriteTap,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: _isFavoriteLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-                              ),
-                            )
-                          : Icon(
-                              _isFavorite ? Icons.favorite_border : Icons.favorite,
-                              color: _isFavorite ? AppColors.textPrimary : Colors.red,
-                              size: 20,
-                            ),
-                    ),
                   ),
                 ),
 
@@ -282,13 +198,6 @@ class _FeaturedNewsCardState extends State<FeaturedNewsCard> {
               ),
             ),
 
-            const Divider(
-              color: Colors.grey,
-              thickness: 0.5,
-              height: 1,
-              indent: 0,
-              endIndent: 0,
-            ),
           ],
         ),
       ),
