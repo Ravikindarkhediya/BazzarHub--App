@@ -9,6 +9,7 @@ import '../widgets/compact_news_card.dart';
 import '../controllers/news_controller.dart';
 import '../widgets/featured_news_card.dart';
 import '../widgets/news_category_selector.dart';
+import 'news_detail_view.dart';
 
 class NewsView extends StatefulWidget {
 
@@ -138,14 +139,26 @@ class _NewsViewState extends State<NewsView>
                       itemCount: _newsController.newsList.length,
                       itemBuilder: (context, index) {
                         if (index == 0) {
+                          final news = _newsController.newsList[index];
                           return FeaturedNewsCard(
-                            newsData: _newsController.newsList[index],
-                            onTap: () {},
+                            newsData: news,
+                            onTap: () => Get.to(
+                              () => NewsDetailView(
+                                newsId: news.id!,
+                                initialData: news.toJson(),
+                              ),
+                            ),
                           );
                         } else {
+                          final news = _newsController.newsList[index];
                           return CompactNewsCard(
-                            newsData: _newsController.newsList[index],
-                            onTap: () {},
+                            newsData: news,
+                            onTap: () => Get.to(
+                              () => NewsDetailView(
+                                newsId: news.id!,
+                                initialData: news.toJson(),
+                              ),
+                            ),
                           );
                         }
                       },

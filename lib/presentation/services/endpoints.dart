@@ -44,6 +44,7 @@ class Endpoints {
   static const String NEWS_FAVORITES_LIST = "/api/news/favorites";
 
   static const String NEWS_VIEW_LOG = "/api/news/view/log";
+  static const String NEWS_REPORT = "/api/news/report";
 
   static const String MY_NEWS = "/api/news/my-news";
 

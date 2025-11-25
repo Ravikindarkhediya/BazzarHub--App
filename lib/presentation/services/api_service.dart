@@ -61,6 +61,11 @@ Dio getDioClient(String baseUrl) {
 class VersionInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    // Skip adding version if the path already includes a version
+    if (options.path.startsWith('/v1/')) {
+      return super.onRequest(options, handler);
+    }
+    
     // Get the version from the extra field or default to 'v1'
     final version = options.extra['version'] ?? 'v1';
     // Ensure the path starts with a slash and insert the version
@@ -175,6 +180,12 @@ abstract class ApiServices{
   @POST("${Endpoints.NEWS}/{id}/favorite")
   Future<HttpResponse<BaseModel<dynamic>>> addToFavoriteNews(
     @Path("id") String id,
+  );
+
+  @POST("${Endpoints.NEWS}/{id}/report")
+  Future<HttpResponse<BaseModel<dynamic>>> reportNews(
+    @Path("id") String newsId,
+    @Body() Map<String, dynamic> body,
   );
 
   @GET(Endpoints.NEWS_FAVORITES_LIST)
