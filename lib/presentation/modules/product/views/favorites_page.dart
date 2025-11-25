@@ -2,14 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:get/get.dart';
+
 import '../../../../app/core/utils/app_spacing.dart';
+import '../../../../app/core/utils/app_language.dart';
+import '../../../../app/core/utils/utils.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
 import '../../../commons/dialogs/app_toasts.dart';
 import '../../../services/api_service.dart';
 import '../../../services/models/marketplace/marketplace_model.dart';
+import '../../../services/models/news/news_model.dart';
 import '../../../modules/home/widgets/product_grid_widget.dart';
+import '../../news/widgets/compact_news_card.dart';
 import '../../product/views/product_detail_page.dart';
+import '../../news/views/news_detail_view.dart';
 
 class FavoritesPage extends StatefulWidget {
   const FavoritesPage({super.key});
@@ -19,7 +26,7 @@ class FavoritesPage extends StatefulWidget {
 }
 
 class _FavoritesPageState extends State<FavoritesPage>
-     with TickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late TabController _tabController;
 
   late AnimationController _animationController;
@@ -33,16 +40,35 @@ class _FavoritesPageState extends State<FavoritesPage>
   int _marketplacePage = 1;
   final int _marketplaceLimit = 10;
 
+  // News state variables
+  List<NewsModel> _favoriteNews = [];
+  bool _isLoadingNews = false;
+  bool _hasMoreNews = true;
+  int _newsPage = 1;
+  final int _newsLimit = 10;
+
   @override
   void initState() {
     super.initState();
 
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(() {
-      if (_tabController.index == 1 && _favoriteMarketplaces.isEmpty) {
+      if (_tabController.indexIsChanging) return;
+
+      if (_tabController.index == 0 && _favoriteNews.isEmpty) {
+        _getFavoriteNews();
+      } else if (_tabController.index == 1 &&
+          _favoriteMarketplaces.isEmpty) {
         _getFavoriteMarketplaces();
       }
       setState(() {});
+    });
+
+    // Load news tab content initially since it's the default tab (index 0)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_tabController.index == 0) {
+        _getFavoriteNews();
+      }
     });
 
     _animationController = AnimationController(
@@ -62,7 +88,16 @@ class _FavoritesPageState extends State<FavoritesPage>
   }
 
   void _scrollListener() {
-    if (_tabController.index == 1) {
+    if (!_scrollController.hasClients) return;
+
+    if (_tabController.index == 0) {
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent * 0.8) {
+        if (!_isLoadingNews && _hasMoreNews) {
+          _getFavoriteNews();
+        }
+      }
+    } else if (_tabController.index == 1) {
       if (_scrollController.position.pixels >=
           _scrollController.position.maxScrollExtent * 0.8) {
         if (!_isLoadingMarketplaces && _hasMoreMarketplaces) {
@@ -80,6 +115,95 @@ class _FavoritesPageState extends State<FavoritesPage>
     super.dispose();
   }
 
+  Future<void> _getFavoriteNews({bool isRefresh = false}) async {
+    if (_isLoadingNews) return;
+
+    setState(() {
+      _isLoadingNews = true;
+      if (isRefresh) {
+        _newsPage = 1;
+        _hasMoreNews = true;
+        _favoriteNews.clear();
+      }
+    });
+
+    try {
+      final services = await getApiClient();
+
+      final queryParams = {
+        'page': _newsPage.toString(),
+        'limit': _newsLimit.toString(),
+      };
+
+      print('Fetching favorite news with params: $queryParams');
+      final response = await services.getFavoriteNews(queryParams);
+      
+      // Debug print the raw response
+      print('Favorite news response: ${response.data}');
+      print('Response type: ${response.runtimeType}');
+
+      final baseListModel = response.data;
+      print('BaseListModel status: ${baseListModel.status}');
+      print('BaseListModel message: ${baseListModel.message}');
+      print('BaseListModel data length: ${baseListModel.data?.length ?? 0}');
+
+      // Check if the request was successful
+      if (!baseListModel.status) {
+        final errorMsg = baseListModel.message ?? 'Failed to load favorite news';
+        print('Error: $errorMsg');
+        throw Exception(errorMsg);
+      }
+
+      // Get the list of news items from the response
+      final newsItems = baseListModel.data ?? [];
+
+      // Since we already have a typed list of NewsModel, we can use it directly
+      final List<NewsModel> newNews = newsItems;
+
+      // Update state
+      if (mounted) {
+        setState(() {
+          if (isRefresh) {
+            _favoriteNews = newNews;
+          } else {
+            _favoriteNews.addAll(newNews);
+          }
+
+          // Update pagination
+          _hasMoreNews = newNews.length >= _newsLimit;
+          if (!isRefresh && newNews.isNotEmpty) {
+            _newsPage++;
+          } else if (newNews.isEmpty) {
+            _hasMoreNews = false;
+          }
+        });
+      }
+    } on DioException catch (e) {
+      String errorMsg = 'Network error occurred';
+      if (e.response?.data is Map) {
+        errorMsg = e.response?.data['message']?.toString() ?? errorMsg;
+      } else if (e.message != null) {
+        errorMsg = e.message!;
+      }
+      if (mounted) {
+        AppToast.showError(errorMsg);
+      }
+      debugPrint('DioError in _getFavoriteNews: $e');
+    } catch (e, stackTrace) {
+      debugPrint('Error in _getFavoriteNews: $e');
+      debugPrint('Stack trace: $stackTrace');
+      if (mounted) {
+        AppToast.showError('Failed to load favorite news. Please try again.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingNews = false;
+        });
+      }
+    }
+  }
+
   Future<void> _getFavoriteMarketplaces({bool isRefresh = false}) async {
     if (_isLoadingMarketplaces) return;
 
@@ -93,16 +217,16 @@ class _FavoritesPageState extends State<FavoritesPage>
     });
 
     try {
-      var services = await getApiClient();
-      var queryParams = {
+      final services = await getApiClient();
+      final queryParams = {
         'page': _marketplacePage.toString(),
         'limit': _marketplaceLimit.toString(),
       };
 
-      var response = await services.getFavoriteMarketplaces(queryParams);
+      final response = await services.getFavoriteMarketplaces(queryParams);
 
-      if (response.data.status) {
-        List<MarketplaceModel>? newMarketplaces = response.data.data;
+      if (response.data.status == true) {
+        final List<MarketplaceModel>? newMarketplaces = response.data.data;
 
         if (newMarketplaces != null) {
           setState(() {
@@ -115,7 +239,9 @@ class _FavoritesPageState extends State<FavoritesPage>
             _hasMoreMarketplaces =
                 newMarketplaces.length == _marketplaceLimit;
 
-            if (!isRefresh) _marketplacePage++;
+            if (!isRefresh && newMarketplaces.isNotEmpty) {
+              _marketplacePage++;
+            }
           });
         }
       } else {
@@ -126,10 +252,24 @@ class _FavoritesPageState extends State<FavoritesPage>
     } on DioException catch (e) {
       AppToast.showError('Network error: ${e.message}');
     } finally {
-      setState(() {
-        _isLoadingMarketplaces = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingMarketplaces = false;
+        });
+      }
     }
+  }
+
+  void _handleNewsTap(NewsModel news) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => NewsDetailView(
+          newsId: news.id,
+        ),
+      ),
+    );
+    _getFavoriteNews(isRefresh: true);
   }
 
   void _handleProductTap(MarketplaceModel product) async {
@@ -176,7 +316,7 @@ class _FavoritesPageState extends State<FavoritesPage>
           child: SafeArea(
             child: Column(
               children: [
-                // TITLE + BACK BUTTON
+                // Title + Back button
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.md,
@@ -192,18 +332,21 @@ class _FavoritesPageState extends State<FavoritesPage>
                         ),
                       Expanded(
                         child: Center(
-                          child: Text(
-                            'Favourite',
-                            style: AppTextStyles.h4.copyWith(
-                              color: AppColors.primary,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                            ),
-                          )
-                              .animate()
-                              .fadeIn(duration: 600.ms)
-                              .slideY(begin: -0.3, end: 0),
+                          child: FadeTransition(
+                            opacity: _fadeAnimation,
+                            child: Text(
+                              'Favourite',
+                              style: AppTextStyles.h4.copyWith(
+                                color: AppColors.primary,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            )
+                                .animate()
+                                .fadeIn(duration: 600.ms)
+                                .slideY(begin: -0.3, end: 0),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 48),
@@ -211,7 +354,7 @@ class _FavoritesPageState extends State<FavoritesPage>
                   ),
                 ),
 
-                // PROPER MATERIAL TABBAR
+                // TabBar
                 SizedBox(
                   height: 50,
                   child: TabBar(
@@ -237,9 +380,7 @@ class _FavoritesPageState extends State<FavoritesPage>
             ),
           ),
         ),
-
         backgroundColor: AppColors.background,
-
         body: TabBarView(
           controller: _tabController,
           children: [
@@ -252,14 +393,78 @@ class _FavoritesPageState extends State<FavoritesPage>
   }
 
   Widget _buildNewsContent() {
-    return const Center(
-      child: Text(
-        'News content will be displayed here',
-        style: TextStyle(
-          fontSize: 16,
-          color: Colors.grey,
+    if (_isLoadingNews && _favoriteNews.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
+    }
+
+    if (_favoriteNews.isEmpty && !_isLoadingNews) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.favorite_border,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No favorite news yet',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Start adding news to your favorites',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[500],
+              ),
+            ),
+          ],
         ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => _getFavoriteNews(isRefresh: true),
+      child: ListView.builder(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        itemCount:
+        _favoriteNews.length + (_isLoadingNews && _hasMoreNews ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index == _favoriteNews.length) {
+            return const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: CircularProgressIndicator(
+                  color: AppColors.primary,
+                ),
+              ),
+            );
+          }
+
+          final news = _favoriteNews[index];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12.0),
+            child: _buildNewsCard(news),
+          );
+        },
       ),
+    );
+  }
+
+  Widget _buildNewsCard(NewsModel news) {
+    return CompactNewsCard(
+      newsData: news,
+      onTap: () => _handleNewsTap(news),
     );
   }
 
@@ -277,8 +482,11 @@ class _FavoritesPageState extends State<FavoritesPage>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.favorite_border,
-                size: 64, color: Colors.grey[400]),
+            Icon(
+              Icons.favorite_border,
+              size: 64,
+              color: Colors.grey[400],
+            ),
             const SizedBox(height: 16),
             Text(
               'No favorite marketplaces yet',
