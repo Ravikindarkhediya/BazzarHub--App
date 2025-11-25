@@ -1,73 +1,22 @@
 import 'dart:io';
+import 'package:bazzar_hub_app/presentation/controller/location_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:path_provider/path_provider.dart';
-
 import 'package:dio/dio.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../commons/dialogs/app_toasts.dart';
+import '../modules/product/widgets/image_upload_section.dart';
 import '../services/api_service.dart';
 import '../services/models/categorie/categorie_model.dart';
 import '../services/models/Common/coordinates_model.dart';
 import '../services/models/marketplace/marketplace_model.dart';
-import 'location_repository.dart';
-
-/// Image/Video Upload State
-class ProductImage {
-  final String id;
-  final File? file; // Nullable for network images
-  final String? networkUrl; // For existing images from server
-  final bool isVideo;
-  final File? thumbnailFile;
-  double uploadProgress;
-  bool isCompressing;
-  bool isUploaded;
-  String? uploadedUrl;
-  String? uploadError;
-
-  ProductImage({
-    required this.id,
-    this.file,
-    this.networkUrl,
-    this.isVideo = false,
-    this.thumbnailFile,
-    this.uploadProgress = 0.0,
-    this.isCompressing = false,
-    this.isUploaded = false,
-    this.uploadedUrl,
-    this.uploadError,
-  });
-
-  bool get isNetworkImage => networkUrl != null && file == null;
-
-  ProductImage copyWith({
-    double? uploadProgress,
-    bool? isCompressing,
-    bool? isUploaded,
-    File? thumbnailFile,
-    String? uploadedUrl,
-    String? uploadError,
-  }) {
-    return ProductImage(
-      id: id,
-      file: file,
-      networkUrl: networkUrl,
-      isVideo: isVideo,
-      thumbnailFile: thumbnailFile ?? this.thumbnailFile,
-      uploadProgress: uploadProgress ?? this.uploadProgress,
-      isCompressing: isCompressing ?? this.isCompressing,
-      isUploaded: isUploaded ?? this.isUploaded,
-      uploadedUrl: uploadedUrl ?? this.uploadedUrl,
-      uploadError: uploadError ?? this.uploadError,
-    );
-  }
-}
 
 /// Sell Product Controller with Edit Mode Support
-class SellProductController extends ChangeNotifier {
+class SellProductController extends ChangeNotifier implements ImageUploadController {
   final List<TextEditingController> _allControllers = [];
 
   final titleController = TextEditingController();
@@ -108,13 +57,22 @@ class SellProductController extends ChangeNotifier {
 
   bool _showSubDistrict = false;
 
-  static const int maxImages = 6;
+  static const int maxImagesConst = 6;
   static const List<String> conditions = ['Used', 'New'];
 
   // Getters
+  @override
   List<ProductImage> get images => _images;
+
+  @override
+  int get maxImages => maxImagesConst;
+
+  @override
   int get imageCount => _images.length;
+
+  @override
   bool get canAddMoreImages => _images.length < maxImages;
+
   List<CategoryModel> get categories => _categories;
   String? get selectedCategoryId => _selectedCategoryId;
   String get selectedCondition => _selectedCondition;
@@ -185,6 +143,7 @@ class SellProductController extends ChangeNotifier {
         networkUrl: url,
         isVideo: isVideo,
         isUploaded: true,
+
         uploadedUrl: url,
         uploadProgress: 1.0,
       );
@@ -323,6 +282,7 @@ class SellProductController extends ChangeNotifier {
     notifyListeners();
   }
 
+  @override
   Future<void> pickFromCamera(BuildContext context, {String mediaType = 'photo'}) async {
     try {
       if (!canAddMoreImages) {
@@ -345,6 +305,7 @@ class SellProductController extends ChangeNotifier {
     }
   }
 
+  @override
   Future<void> pickFromGallery(BuildContext context, {String mediaType = 'photo'}) async {
     try {
       if (!canAddMoreImages) {
@@ -498,17 +459,17 @@ class SellProductController extends ChangeNotifier {
     }
   }
 
+  @override
   void removeImage(String imageId) {
-    HapticFeedback.lightImpact();
     _images.removeWhere((img) => img.id == imageId);
     notifyListeners();
   }
 
+  @override
   void reorderImages(int oldIndex, int newIndex) {
-    if (newIndex > oldIndex) newIndex -= 1;
+    if (oldIndex < newIndex) newIndex--;
     final item = _images.removeAt(oldIndex);
     _images.insert(newIndex, item);
-    HapticFeedback.mediumImpact();
     notifyListeners();
   }
 

@@ -359,7 +359,9 @@ class _SellProductPageState extends State<SellProductPage> {
   Widget _buildImageStep() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [ImageUploadSection(controller: _controller)],
+        children: [ImageUploadSection(controller: _controller,
+          title: 'News Images',
+          subtitle: 'Add up to 6 photos/videos. First will be cover.',)],
     ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
   }
 

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -6,18 +8,95 @@ import 'package:video_player/video_player.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
-import '../../../controller/sell_product_controller.dart';
 import 'package:photo_view/photo_view.dart';
 
-class ImageUploadSection extends StatelessWidget {
-  final SellProductController controller;
+// Generic Product Image class
+class ProductImage {
+  final String id;
+  final File? file;
+  final String? networkUrl;
+  final bool isVideo;
+  final File? thumbnailFile;
+  double uploadProgress;
+  bool isCompressing;
+  bool isUploaded;
 
-  const ImageUploadSection({Key? key, required this.controller}) : super(key: key);
+  String? uploadedUrl;
+  String? uploadError;
+
+  bool get isNetworkImage => networkUrl != null && file == null;
+
+  ProductImage({
+    required this.id,
+    this.file,
+    this.networkUrl,
+    this.isVideo = false,
+    this.thumbnailFile,
+    this.uploadProgress = 0.0,
+    this.isCompressing = false,
+    this.isUploaded = false,
+    this.uploadedUrl,
+    this.uploadError,
+  });
+
+  ProductImage copyWith({
+    String? id,
+    File? file,
+    String? networkUrl,
+    bool? isVideo,
+    File? thumbnailFile,
+    bool? isCompressing,
+    double? uploadProgress,
+    bool? isUploaded,
+    String? uploadedUrl,
+    String? uploadError,
+  }) {
+    return ProductImage(
+      id: id ?? this.id,
+      file: file ?? this.file,
+      networkUrl: networkUrl ?? this.networkUrl,
+      isVideo: isVideo ?? this.isVideo,
+      thumbnailFile: thumbnailFile ?? this.thumbnailFile,
+      isCompressing: isCompressing ?? this.isCompressing,
+      uploadProgress: uploadProgress ?? this.uploadProgress,
+      isUploaded: isUploaded ?? this.isUploaded,
+      uploadedUrl: uploadedUrl ?? this.uploadedUrl,
+      uploadError: uploadError ?? this.uploadError,
+    );
+  }
+
+}
+
+// Interface for controllers that support image upload
+abstract class ImageUploadController {
+  List<ProductImage> get images;
+  int get imageCount;
+  bool get canAddMoreImages;
+  int get maxImages;
+
+  void removeImage(String imageId);
+  void reorderImages(int oldIndex, int newIndex);
+  Future<void> pickFromCamera(BuildContext context, {required String mediaType});
+  Future<void> pickFromGallery(BuildContext context, {required String mediaType});
+}
+
+class ImageUploadSection extends StatelessWidget {
+  final ImageUploadController controller;
+  final String title;
+  final String subtitle;
+
+  const ImageUploadSection({
+    Key? key,
+    required this.controller,
+    this.title = 'Product Images',
+    this.subtitle = 'Add up to 6 photos. First photo will be cover image.',
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: controller,
+    // Use AnimatedBuilder for ChangeNotifier controllers
+    return AnimatedBuilder(
+      animation: controller as Listenable,
       builder: (context, _) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -25,12 +104,34 @@ class ImageUploadSection extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Product Images', style: TextStyle(decoration: TextDecoration.none, fontSize: 20, fontWeight: FontWeight.w600, color: CupertinoColors.black)),
-                Text('${controller.imageCount}/${SellProductController.maxImages}', style: const TextStyle(decoration: TextDecoration.none, fontSize: 14, color: CupertinoColors.systemGrey)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    decoration: TextDecoration.none,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: CupertinoColors.black,
+                  ),
+                ),
+                Text(
+                  '${controller.imageCount}/${controller.maxImages}',
+                  style: const TextStyle(
+                    decoration: TextDecoration.none,
+                    fontSize: 14,
+                    color: CupertinoColors.systemGrey,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 8),
-            const Text('Add up to 6 photos. First photo will be cover image.', style: TextStyle(decoration: TextDecoration.none, fontSize: 13, color: CupertinoColors.systemGrey)),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                decoration: TextDecoration.none,
+                fontSize: 13,
+                color: CupertinoColors.systemGrey,
+              ),
+            ),
             const SizedBox(height: 16),
             _buildImageGrid(context),
           ],
@@ -56,7 +157,12 @@ class ImageUploadSection extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (context) => FullScreenMediaViewer(productImage: image)));
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => FullScreenMediaViewer(productImage: image),
+          ),
+        );
       },
       child: Container(
         width: size,
@@ -67,7 +173,11 @@ class ImageUploadSection extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                decoration: BoxDecoration(color: CupertinoColors.systemGrey6, borderRadius: BorderRadius.circular(12), border: Border.all(color: CupertinoColors.systemGrey5, width: 1)),
+                decoration: BoxDecoration(
+                  color: CupertinoColors.systemGrey6,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: CupertinoColors.systemGrey5, width: 1),
+                ),
                 child: _buildImageContent(image),
               ),
             ),
@@ -75,17 +185,31 @@ class ImageUploadSection extends StatelessWidget {
             if (image.isCompressing)
               Positioned.fill(
                 child: Container(
-                  decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(12)),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: const Center(
-                    child: Column(mainAxisSize: MainAxisSize.min, children: [
-                      CupertinoActivityIndicator(color: Colors.white),
-                      SizedBox(height: 8),
-                      Text('Compressing...', style: TextStyle(decoration: TextDecoration.none, color: Colors.white, fontSize: 11, fontWeight: FontWeight.w500)),
-                    ]),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CupertinoActivityIndicator(color: Colors.white),
+                        SizedBox(height: 8),
+                        Text(
+                          'Compressing...',
+                          style: TextStyle(
+                            decoration: TextDecoration.none,
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            // Upload Progress Bar (only for new local images, not network images)
+            // Upload Progress Bar
             if (!image.isCompressing && !image.isUploaded && !image.isNetworkImage)
               Positioned(
                 left: 0,
@@ -93,11 +217,19 @@ class ImageUploadSection extends StatelessWidget {
                 bottom: 0,
                 child: Container(
                   height: 4,
-                  decoration: BoxDecoration(color: Colors.black26, borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12))),
+                  decoration: const BoxDecoration(
+                    color: Colors.black26,
+                    borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
+                  ),
                   child: FractionallySizedBox(
                     widthFactor: image.uploadProgress,
                     alignment: Alignment.centerLeft,
-                    child: Container(decoration: const BoxDecoration(color: CupertinoColors.activeBlue, borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)))),
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: CupertinoColors.activeBlue,
+                        borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -112,7 +244,11 @@ class ImageUploadSection extends StatelessWidget {
                 child: Container(
                   width: 28,
                   height: 28,
-                  decoration: BoxDecoration(color: Colors.black54, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 1.5)),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 1.5),
+                  ),
                   child: const Icon(CupertinoIcons.xmark, size: 14, color: Colors.white),
                 ),
               ),
@@ -123,7 +259,10 @@ class ImageUploadSection extends StatelessWidget {
               left: 4,
               child: Container(
                 padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(6)),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(6),
+                ),
                 child: const Icon(CupertinoIcons.move, size: 16, color: Colors.white),
               ),
             ),
@@ -134,8 +273,20 @@ class ImageUploadSection extends StatelessWidget {
                 left: 4,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(color: CupertinoColors.activeBlue, borderRadius: BorderRadius.circular(6)),
-                  child: const Text('COVER', style: TextStyle(decoration: TextDecoration.none, color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
+                  decoration: BoxDecoration(
+                    color: CupertinoColors.activeBlue,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text(
+                    'COVER',
+                    style: TextStyle(
+                      decoration: TextDecoration.none,
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
                 ),
               ),
           ],
@@ -146,30 +297,47 @@ class ImageUploadSection extends StatelessWidget {
 
   Widget _buildImageContent(ProductImage image) {
     if (image.isVideo) {
-      return Stack(fit: StackFit.expand, children: [
-        if (image.isNetworkImage)
-        // Network video thumbnail - show placeholder or first frame
-          Container(
-            color: Colors.black87,
-            child: CachedNetworkImage(
-              imageUrl: image.networkUrl!,
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          if (image.isNetworkImage)
+            Container(
+              color: Colors.black87,
+              child: CachedNetworkImage(
+                imageUrl: image.networkUrl!,
+                fit: BoxFit.cover,
+                placeholder: (_, __) => Container(
+                  color: Colors.black87,
+                  child: const Center(child: CupertinoActivityIndicator()),
+                ),
+                errorWidget: (_, __, ___) => Container(color: Colors.black87),
+              ),
+            )
+          else if (image.thumbnailFile != null)
+            Image.file(
+              image.thumbnailFile!,
               fit: BoxFit.cover,
-              placeholder: (_, __) => Container(color: Colors.black87, child: const Center(child: CupertinoActivityIndicator())),
-              errorWidget: (_, __, ___) => Container(color: Colors.black87),
+              width: double.infinity,
+              height: double.infinity,
+            )
+          else
+            Container(color: Colors.black87),
+          Center(
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                CupertinoIcons.play_fill,
+                size: 32,
+                color: Colors.white,
+              ),
             ),
-          )
-        else if (image.thumbnailFile != null)
-          Image.file(image.thumbnailFile!, fit: BoxFit.cover, width: double.infinity, height: double.infinity)
-        else
-          Container(color: Colors.black87),
-        Center(
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
-            child: Icon(CupertinoIcons.play_fill, size: 32, color: Colors.white),
           ),
-        ),
-      ]);
+        ],
+      );
     }
 
     // Image (network or local)
@@ -180,10 +348,18 @@ class ImageUploadSection extends StatelessWidget {
         width: double.infinity,
         height: double.infinity,
         placeholder: (_, __) => const Center(child: CupertinoActivityIndicator()),
-        errorWidget: (_, __, ___) => const Icon(Icons.broken_image, color: CupertinoColors.systemGrey),
+        errorWidget: (_, __, ___) => const Icon(
+          Icons.broken_image,
+          color: CupertinoColors.systemGrey,
+        ),
       );
     } else {
-      return Image.file(image.file!, fit: BoxFit.cover, width: double.infinity, height: double.infinity);
+      return Image.file(
+        image.file!,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      );
     }
   }
 
@@ -194,12 +370,27 @@ class ImageUploadSection extends StatelessWidget {
       child: Container(
         width: size,
         height: size,
-        decoration: BoxDecoration(color: CupertinoColors.systemGrey6, borderRadius: BorderRadius.circular(12), border: Border.all(color: CupertinoColors.systemGrey4, width: 2)),
-        child: const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(CupertinoIcons.add, size: 32, color: CupertinoColors.systemGrey),
-          SizedBox(height: 4),
-          Text('Add Photo', style: TextStyle(decoration: TextDecoration.none, fontSize: 12, color: CupertinoColors.systemGrey, fontWeight: FontWeight.w500)),
-        ]),
+        decoration: BoxDecoration(
+          color: CupertinoColors.systemGrey6,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: CupertinoColors.systemGrey4, width: 2),
+        ),
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(CupertinoIcons.add, size: 32, color: CupertinoColors.systemGrey),
+            SizedBox(height: 4),
+            Text(
+              'Add Photo',
+              style: TextStyle(
+                decoration: TextDecoration.none,
+                fontSize: 12,
+                color: CupertinoColors.systemGrey,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -208,26 +399,98 @@ class ImageUploadSection extends StatelessWidget {
     showCupertinoModalPopup(
       context: context,
       builder: (BuildContext context) => CupertinoActionSheet(
-        title: Padding(padding: AppSpacing.paddingXS, child: Text('Add Media', style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.w600))),
+        title: Padding(
+          padding: AppSpacing.paddingXS,
+          child: Text(
+            'Add Media',
+            style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ),
         message: Text('Choose a source', style: AppTextStyles.bodySmall),
         actions: [
           CupertinoActionSheetAction(
-            onPressed: () { Navigator.pop(context); controller.pickFromCamera(context, mediaType: 'photo'); },
-            child: Padding(padding: EdgeInsets.symmetric(vertical: AppSpacing.sm), child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(CupertinoIcons.camera, color: AppColors.primary, size: AppSpacing.iconMD), SizedBox(width: AppSpacing.sm), Text('Photo (Camera)', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.primary))])),
+            onPressed: () {
+              Navigator.pop(context);
+              controller.pickFromCamera(context, mediaType: 'photo');
+            },
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    CupertinoIcons.camera,
+                    color: AppColors.primary,
+                    size: AppSpacing.iconMD,
+                  ),
+                  SizedBox(width: AppSpacing.sm),
+                  Text(
+                    'Photo (Camera)',
+                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.primary),
+                  ),
+                ],
+              ),
+            ),
           ),
           CupertinoActionSheetAction(
-            onPressed: () { Navigator.pop(context); controller.pickFromCamera(context, mediaType: 'video'); },
-            child: Padding(padding: EdgeInsets.symmetric(vertical: AppSpacing.sm), child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(CupertinoIcons.video_camera, color: AppColors.primary, size: AppSpacing.iconMD), SizedBox(width: AppSpacing.sm), Text('Video (Camera)', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.primary))])),
+            onPressed: () {
+              Navigator.pop(context);
+              controller.pickFromCamera(context, mediaType: 'video');
+            },
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    CupertinoIcons.video_camera,
+                    color: AppColors.primary,
+                    size: AppSpacing.iconMD,
+                  ),
+                  SizedBox(width: AppSpacing.sm),
+                  Text(
+                    'Video (Camera)',
+                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.primary),
+                  ),
+                ],
+              ),
+            ),
           ),
           CupertinoActionSheetAction(
-            onPressed: () { Navigator.pop(context); controller.pickFromGallery(context, mediaType: 'all'); },
-            child: Padding(padding: EdgeInsets.symmetric(vertical: AppSpacing.sm), child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(CupertinoIcons.photo_on_rectangle, color: AppColors.primary, size: AppSpacing.iconMD), SizedBox(width: AppSpacing.sm), Text('Gallery (Photos & Videos)', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.primary))])),
+            onPressed: () {
+              Navigator.pop(context);
+              controller.pickFromGallery(context, mediaType: 'all');
+            },
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    CupertinoIcons.photo_on_rectangle,
+                    color: AppColors.primary,
+                    size: AppSpacing.iconMD,
+                  ),
+                  SizedBox(width: AppSpacing.sm),
+                  Text(
+                    'Gallery (Photos & Videos)',
+                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.primary),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
         cancelButton: CupertinoActionSheetAction(
           isDestructiveAction: true,
           onPressed: () => Navigator.pop(context),
-          child: Padding(padding: EdgeInsets.symmetric(vertical: AppSpacing.sm), child: Text('Cancel', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error))),
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+            child: Text(
+              'Cancel',
+              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
+            ),
+          ),
         ),
       ),
     );
@@ -239,7 +502,13 @@ class ReorderableWrap extends StatelessWidget {
   final double spacing, runSpacing;
   final Function(int, int)? onReorder;
 
-  const ReorderableWrap({Key? key, required this.children, this.spacing = 0, this.runSpacing = 0, this.onReorder}) : super(key: key);
+  const ReorderableWrap({
+    Key? key,
+    required this.children,
+    this.spacing = 0,
+    this.runSpacing = 0,
+    this.onReorder,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -264,7 +533,9 @@ class _FullScreenMediaViewerState extends State<FullScreenMediaViewer> {
     super.initState();
     if (widget.productImage.isVideo) {
       if (widget.productImage.isNetworkImage) {
-        _videoController = VideoPlayerController.networkUrl(Uri.parse(widget.productImage.networkUrl!));
+        _videoController = VideoPlayerController.networkUrl(
+          Uri.parse(widget.productImage.networkUrl!),
+        );
       } else {
         _videoController = VideoPlayerController.file(widget.productImage.file!);
       }
@@ -285,15 +556,30 @@ class _FullScreenMediaViewerState extends State<FullScreenMediaViewer> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(backgroundColor: Colors.black, elevation: 0, iconTheme: const IconThemeData(color: Colors.white)),
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
       body: Center(
         child: widget.productImage.isVideo
             ? (_videoController != null && _videoController!.value.isInitialized)
-            ? AspectRatio(aspectRatio: _videoController!.value.aspectRatio, child: VideoPlayer(_videoController!))
+            ? AspectRatio(
+          aspectRatio: _videoController!.value.aspectRatio,
+          child: VideoPlayer(_videoController!),
+        )
             : const CircularProgressIndicator()
             : widget.productImage.isNetworkImage
-            ? PhotoView(imageProvider: CachedNetworkImageProvider(widget.productImage.networkUrl!), backgroundDecoration: const BoxDecoration(color: Colors.black))
-            : PhotoView(imageProvider: FileImage(widget.productImage.file!), backgroundDecoration: const BoxDecoration(color: Colors.black)),
+            ? PhotoView(
+          imageProvider: CachedNetworkImageProvider(
+            widget.productImage.networkUrl!,
+          ),
+          backgroundDecoration: const BoxDecoration(color: Colors.black),
+        )
+            : PhotoView(
+          imageProvider: FileImage(widget.productImage.file!),
+          backgroundDecoration: const BoxDecoration(color: Colors.black),
+        ),
       ),
       floatingActionButton: widget.productImage.isVideo
           ? FloatingActionButton(
@@ -307,12 +593,82 @@ class _FullScreenMediaViewerState extends State<FullScreenMediaViewer> {
             }
           });
         },
-        child: Icon(_videoController!.value.isPlaying ? Icons.pause : Icons.play_arrow, color: Colors.black),
+        child: Icon(
+          _videoController!.value.isPlaying ? Icons.pause : Icons.play_arrow,
+          color: Colors.black,
+        ),
       )
           : null,
     );
   }
 }
+
+// class FullScreenMediaViewer extends StatefulWidget {
+//   final ProductImage productImage;
+//
+//   const FullScreenMediaViewer({super.key, required this.productImage});
+//
+//   @override
+//   State<FullScreenMediaViewer> createState() => _FullScreenMediaViewerState();
+// }
+//
+// class _FullScreenMediaViewerState extends State<FullScreenMediaViewer> {
+//   VideoPlayerController? _videoController;
+//
+//   @override
+//   void initState() {
+//     super.initState();
+//     if (widget.productImage.isVideo) {
+//       if (widget.productImage.isNetworkImage) {
+//         _videoController = VideoPlayerController.networkUrl(Uri.parse(widget.productImage.networkUrl!));
+//       } else {
+//         _videoController = VideoPlayerController.file(widget.productImage.file!);
+//       }
+//       _videoController!.initialize().then((_) {
+//         setState(() {});
+//         _videoController!.play();
+//       });
+//     }
+//   }
+//
+//   @override
+//   void dispose() {
+//     _videoController?.dispose();
+//     super.dispose();
+//   }
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       backgroundColor: Colors.black,
+//       appBar: AppBar(backgroundColor: Colors.black, elevation: 0, iconTheme: const IconThemeData(color: Colors.white)),
+//       body: Center(
+//         child: widget.productImage.isVideo
+//             ? (_videoController != null && _videoController!.value.isInitialized)
+//             ? AspectRatio(aspectRatio: _videoController!.value.aspectRatio, child: VideoPlayer(_videoController!))
+//             : const CircularProgressIndicator()
+//             : widget.productImage.isNetworkImage
+//             ? PhotoView(imageProvider: CachedNetworkImageProvider(widget.productImage.networkUrl!), backgroundDecoration: const BoxDecoration(color: Colors.black))
+//             : PhotoView(imageProvider: FileImage(widget.productImage.file!), backgroundDecoration: const BoxDecoration(color: Colors.black)),
+//       ),
+//       floatingActionButton: widget.productImage.isVideo
+//           ? FloatingActionButton(
+//         backgroundColor: Colors.white70,
+//         onPressed: () {
+//           setState(() {
+//             if (_videoController!.value.isPlaying) {
+//               _videoController!.pause();
+//             } else {
+//               _videoController!.play();
+//             }
+//           });
+//         },
+//         child: Icon(_videoController!.value.isPlaying ? Icons.pause : Icons.play_arrow, color: Colors.black),
+//       )
+//           : null,
+//     );
+//   }
+// }
 
 class FullScreenNetworkImageViewer extends StatelessWidget {
   final String imageUrl;

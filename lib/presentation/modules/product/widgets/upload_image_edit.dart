@@ -6,7 +6,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
-import '../../../controller/product_image_controller.dart';
+import '../../../controller/product_image_controller.dart' hide ProductImage;
 import '../../../controller/sell_product_controller.dart' hide ProductImage;
 import 'image_upload_section.dart';
 
@@ -57,7 +57,7 @@ class ImageUploadSectionGeneric<T extends ProductImageController>
           ),
         ),
         Text(
-          '${controller.imageCount}/${SellProductController.maxImages}', // Use maxImages from any concrete controller or pass as param
+          '${controller.imageCount}/${SellProductController.maxImagesConst}', // Use maxImages from any concrete controller or pass as param
           style: const TextStyle(
             decoration: TextDecoration.none,
             fontSize: 14,
@@ -82,7 +82,7 @@ class ImageUploadSectionGeneric<T extends ProductImageController>
         ),
         // Newly added images showing files and video thumbnails
         ...controller.images.map(
-          (image) => _buildNewImageTile(context, image, size),
+          (image) => _buildNewImageTile(context, image as ProductImage, size),
         ),
         if (controller.canAddMoreImages) _buildAddButton(context, size),
       ],
@@ -243,7 +243,7 @@ class ImageUploadSectionGeneric<T extends ProductImageController>
                       ],
                     )
                   : Image.file(
-                      image.file,
+                      image.file!,
                       fit: BoxFit.cover,
                       width: double.infinity,
                       height: double.infinity,

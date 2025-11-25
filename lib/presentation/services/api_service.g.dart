@@ -636,6 +636,37 @@ class _ApiServices implements ApiServices {
   }
 
   @override
+  Future<HttpResponse<BaseListModel<NewsTagModel>>> getNewsTags() async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<HttpResponse<BaseListModel<NewsTagModel>>>(
+      Options(method: 'GET', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            'api/news/tags',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
+    late BaseListModel<NewsTagModel> _value;
+    try {
+      _value = BaseListModel<NewsTagModel>.fromJson(
+        _result.data!,
+        (json) => NewsTagModel.fromJson(json as Map<String, dynamic>),
+      );
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options);
+      rethrow;
+    }
+    final httpResponse = HttpResponse(_value, _result);
+    return httpResponse;
+  }
+
+  @override
   Future<HttpResponse<BaseListModel<NewsModel>>> getNews(
     Map<String, dynamic> queryParams,
   ) async {
@@ -670,7 +701,7 @@ class _ApiServices implements ApiServices {
   }
 
   @override
-  Future<HttpResponse<BaseModel<NewsModel>>> createNews(
+  Future<HttpResponse<BaseModel<dynamic>>> createNews(
     Map<String, dynamic> body,
   ) async {
     final _extra = <String, dynamic>{};
@@ -678,7 +709,7 @@ class _ApiServices implements ApiServices {
     final _headers = <String, dynamic>{};
     final _data = <String, dynamic>{};
     _data.addAll(body);
-    final _options = _setStreamType<HttpResponse<BaseModel<NewsModel>>>(
+    final _options = _setStreamType<HttpResponse<BaseModel<dynamic>>>(
       Options(method: 'POST', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
@@ -689,11 +720,11 @@ class _ApiServices implements ApiServices {
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
     final _result = await _dio.fetch<Map<String, dynamic>>(_options);
-    late BaseModel<NewsModel> _value;
+    late BaseModel<dynamic> _value;
     try {
-      _value = BaseModel<NewsModel>.fromJson(
+      _value = BaseModel<dynamic>.fromJson(
         _result.data!,
-        (json) => NewsModel.fromJson(json as Map<String, dynamic>),
+        (json) => json as dynamic,
       );
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options);

@@ -2,6 +2,7 @@
 import 'package:bazzar_hub_app/presentation/services/endpoints.dart';
 import 'package:bazzar_hub_app/presentation/services/models/categorie/category_list_response_model.dart';
 import 'package:bazzar_hub_app/presentation/services/models/news/news_model.dart';
+import 'package:bazzar_hub_app/presentation/services/models/news/news_tags_model.dart';
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 import '../../manager/session_manager.dart';
@@ -148,11 +149,14 @@ abstract class ApiServices{
   @GET(Endpoints.NEWS_CATEGORIES)
   Future<HttpResponse<BaseListModel<CategoryModel>>> getNewsCategories();
 
+  @GET(Endpoints.NEWS_TAGS)
+  Future<HttpResponse<BaseListModel<NewsTagModel>>> getNewsTags();
+
   @GET(Endpoints.NEWS)
     Future<HttpResponse<BaseListModel<NewsModel>>> getNews(@Queries() Map<String, dynamic> queryParams);
 
   @POST(Endpoints.NEWS)
-  Future<HttpResponse<BaseModel<NewsModel>>> createNews(@Body() Map<String, dynamic> body);
+  Future<HttpResponse<BaseModel<dynamic>>> createNews(@Body() Map<String, dynamic> body);
 
   @GET("${Endpoints.NEWS}/{id}")
   Future<HttpResponse<BaseModel<NewsModel>>> getNewsById(@Path("id") String id);
