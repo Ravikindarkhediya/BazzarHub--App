@@ -242,14 +242,27 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
     _selectedDistrict = district;
     _selectedSubDistrict = null;
     _selectedVillage = null;
+
     if (_selectedState != null) {
       _showSubDistrict = _locationRepo.hasSubDistricts(_selectedState!, district);
+
       if (_showSubDistrict) {
         _subDistrictsList = _locationRepo.getSubDistricts(_selectedState!, district);
+
+        // Add the selected district itself to sub-districts list (if not already present)
+        if (!_subDistrictsList.contains(district)) {
+          _subDistrictsList = [district, ..._subDistrictsList];
+        }
+
         _villagesList = [];
       } else {
         _subDistrictsList = [];
         _villagesList = _locationRepo.getVillages(_selectedState!, district);
+
+        // Add the selected district itself to villages list for selection
+        if (!_villagesList.contains(district)) {
+          _villagesList = [district, ..._villagesList];
+        }
       }
     }
     notifyListeners();
@@ -258,11 +271,20 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
   void selectSubDistrict(String subDistrict) {
     _selectedSubDistrict = subDistrict;
     _selectedVillage = null;
+
     if (_selectedState != null && _selectedDistrict != null) {
-      _villagesList = _locationRepo.getVillages(_selectedState!, _selectedDistrict!, subDistrict);
+      List<String> villages = _locationRepo.getVillages(_selectedState!, _selectedDistrict!, subDistrict);
+
+      // Add the selected subDistrict itself to the villages list if it's not already present
+      if (!villages.contains(subDistrict)) {
+        villages = [subDistrict, ...villages];
+      }
+
+      _villagesList = villages;
     }
     notifyListeners();
   }
+
 
   void selectVillage(String village) {
     _selectedVillage = village;

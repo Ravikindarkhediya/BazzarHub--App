@@ -83,7 +83,7 @@ class _NewsDetailViewState extends State<NewsDetailView> with WidgetsBindingObse
       if (!Get.isRegistered<NewsDetailController>(tag: widget.newsId)) return;
       
       final controller = Get.find<NewsDetailController>(tag: widget.newsId);
-      await controller.checkIfNewsIsFavorite();
+      // await controller.checkIfNewsIsFavorite();
     } catch (e) {
       if (kDebugMode) {
         print("Error refreshing favorite status: $e");
@@ -644,7 +644,7 @@ iOS: [App Store URL]''';
         body: RefreshIndicator(
           onRefresh: () async {
             final controller = Get.find<NewsDetailController>(tag: widget.newsId);
-            await controller.refreshData();
+            // await controller.refreshData();
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(), // Enable pull-to-refresh

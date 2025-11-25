@@ -1,5 +1,6 @@
 import 'package:bazzar_hub_app/presentation/commons/dialogs/appDialog.dart';
 import 'package:bazzar_hub_app/presentation/commons/dialogs/app_toasts.dart';
+import 'package:bazzar_hub_app/presentation/modules/news/views/news_view.dart';
 import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
 import 'package:bazzar_hub_app/presentation/services/api_service.dart';
 import 'package:flutter/cupertino.dart';
@@ -87,7 +88,10 @@ class _AddNewsViewState extends State<AddNewsView> {
   Future<void> submitForm() async {
     final success = await _controller.submitNews(context);
     if (success && mounted) {
-      Get.offNamed(AppRoutes.newsView);
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => NewsView()),
+      );
       AppToast.showSuccess(
         isEditMode
             ? 'News updated successfully'
@@ -716,6 +720,7 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
   List<String> _availableTags = [];
   bool _isTagsLoading = false;
   late TextEditingController _searchController;
+  Set<String> _selectedTags = {};
 
   @override
   void initState() {
@@ -724,10 +729,7 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
   }
 
   Future<void> _fetchTags() async {
-    print('API Calling...........');
-    setState(() {
-      _isTagsLoading = true;
-    });
+    setState(() => _isTagsLoading = true);
     try {
       final apiService = await getApiClient();
       final response = await apiService.getNewsTags();
@@ -735,22 +737,24 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
         final tagsList = response.data.data;
         setState(() {
           _availableTags = tagsList!.map((tag) => tag.name ?? '').toList();
+          _selectedTags =
+              context.read<AddNewsController>().tagsController.text.isNotEmpty
+              ? context
+                    .read<AddNewsController>()
+                    .tagsController
+                    .text
+                    .split(',')
+                    .map((e) => e.trim())
+                    .toSet()
+              : <String>{};
         });
       } else {
-        print('API Else Part Calling...........');
-        setState(() {
-          _availableTags = [];
-        });
+        setState(() => _availableTags = []);
       }
     } catch (e) {
-      print('API Calling...........$e');
-      setState(() {
-        _availableTags = [];
-      });
+      setState(() => _availableTags = []);
     } finally {
-      setState(() {
-        _isTagsLoading = false;
-      });
+      setState(() => _isTagsLoading = false);
     }
   }
 
@@ -758,11 +762,6 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
     if (_availableTags.isEmpty && !_isTagsLoading) {
       await _fetchTags();
     }
-
-    // Initialize selectedTags from the main controller
-    Set<String> selectedTags = controller.tagsController.text.isNotEmpty
-        ? controller.tagsController.text.split(',').map((e) => e.trim()).toSet()
-        : <String>{};
 
     showModalBottomSheet(
       context: context,
@@ -819,7 +818,7 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
                         itemCount: _availableTags.length,
                         itemBuilder: (context, index) {
                           final tag = _availableTags[index];
-                          final isSelected = selectedTags.contains(tag);
+                          final isSelected = _selectedTags.contains(tag);
                           return ListTile(
                             title: Text(
                               tag,
@@ -830,26 +829,28 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
                               ),
                             ),
                             trailing: isSelected
-                                ? const Icon(Icons.check, color: AppColors.primary)
+                                ? const Icon(
+                                    Icons.check,
+                                    color: AppColors.primary,
+                                  )
                                 : null,
                             onTap: () {
                               setModalState(() {
                                 if (isSelected) {
-                                  selectedTags.remove(tag);
+                                  _selectedTags.remove(tag);
                                 } else {
-                                  selectedTags.add(tag);
+                                  _selectedTags.add(tag);
                                 }
                               });
-                              // Update the main controller immediately
-                              controller.tagsController.text =
-                                  selectedTags.join(', ');
+                              controller.tagsController.text = _selectedTags
+                                  .join(', ');
                             },
                           );
                         },
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.all(16.0),
+                      padding: const EdgeInsets.all(16),
                       child: SizedBox(
                         width: double.infinity,
                         height: 48,
@@ -886,6 +887,146 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
     );
   }
 
+  Widget _buildTagsContainer(AddNewsController controller) {
+    // All available tags fetched from API or stored in controller (make sure to set this)
+    final allTags = _availableTags;
+
+    // Tags selected by the user based on controller text (trimmed)
+    final selectedTags = controller.tagsController.text.isNotEmpty
+        ? controller.tagsController.text.split(',').map((e) => e.trim()).toSet()
+        : <String>{};
+
+    return Card(
+      elevation: 8,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: allTags.isEmpty
+            ? Center(
+                child: Text(
+                  'No tags available',
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    color: AppColors.textHint,
+                  ),
+                ),
+              )
+            : Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: allTags.map((tag) {
+                  final isSelected = selectedTags.contains(tag);
+                  return FilterChip(
+                    label: Text(
+                      tag,
+                      style: TextStyle(
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    selected: isSelected,
+                    selectedColor: AppColors.primary.withOpacity(0.2),
+                    backgroundColor: AppColors.grey100,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      side: BorderSide(
+                        color: isSelected
+                            ? AppColors.primary
+                            : Colors.transparent,
+                      ),
+                    ),
+                    onSelected: (selected) {
+                      setState(() {
+                        if (selected) {
+                          selectedTags.add(tag);
+                        } else {
+                          selectedTags.remove(tag);
+                        }
+                        controller.tagsController.text = selectedTags.join(
+                          ', ',
+                        );
+                      });
+                    },
+                  );
+                }).toList(),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    int maxLines = 1,
+    bool required = false,
+    TextInputType? keyboardType,
+  }) {
+    final displayLabel = required ? '$label' : label;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        RichText(
+          text: TextSpan(
+            text: displayLabel,
+            style: AppTextStyles.bodyMedium.copyWith(
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+            children: required
+                ? [
+                    TextSpan(
+                      text: ' *',
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ]
+                : [],
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          maxLines: maxLines,
+          keyboardType: keyboardType,
+          style: AppTextStyles.bodyMedium,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textHint,
+            ),
+            prefixIcon: Icon(icon, color: AppColors.primary),
+            filled: true,
+            fillColor: AppColors.white,
+            border: OutlineInputBorder(
+              borderRadius: AppSpacing.borderRadiusMD,
+              borderSide: const BorderSide(color: AppColors.borderLight),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: AppSpacing.borderRadiusMD,
+              borderSide: const BorderSide(color: AppColors.borderLight),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: AppSpacing.borderRadiusMD,
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -894,217 +1035,42 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AddNewsController>(
-      builder: (context, controller, _) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'News Details',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
+    final controller = context.read<AddNewsController>();
 
-            // Title Card (English + Gujarati)
-            _buildModernCard(
-              title: 'Title',
-              englishController: controller.titleEnglishController,
-              englishHint: 'e.g., New Development Plan Announced',
-              gujaratiController: controller.titleGujaratiController,
-              gujaratiHint: 'ઉદાહરણ તરીકે, નવી વિકાસ યોજનાની જાહેરાત',
-              maxLines: 2,
-              icon: Icons.title,
-            ),
-            const SizedBox(height: 24),
-
-            // Content Card (English + Gujarati)
-            _buildModernCard(
-              title: 'Content',
-              englishController: controller.contentEnglishController,
-              englishHint: 'Write your news content in English...',
-              gujaratiController: controller.contentGujaratiController,
-              gujaratiHint: 'તમારા સમાચાર સામગ્રી ગુજરાતીમાં લખો...',
-              maxLines: 2,
-              icon: Icons.description,
-            ),
-            const SizedBox(height: 24),
-
-            // Tags container with chips
-            _buildTagsContainer(controller),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildModernCard({
-    required String title,
-    required TextEditingController englishController,
-    required String englishHint,
-    required TextEditingController gujaratiController,
-    required String gujaratiHint,
-    required int maxLines,
-    required IconData icon,
-  }) {
-    return Card(
-      color: AppColors.white,
-      elevation: 8,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide.none,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Card top center title
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            alignment: Alignment.center,
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-            ),
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                fontSize: 18,
-              ),
-            ),
-          ),
-
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                TextField(
-                  controller: englishController,
-                  maxLines: maxLines,
-                  decoration: InputDecoration(
-                    isDense: true,
-                    hintText: englishHint,
-                    prefixIcon: Icon(icon, size: 24, color: AppColors.primary),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 8,
-                      horizontal: 12,
-                    ),
-                    hintStyle: TextStyle(
-                      color: Colors.grey[400],
-                      fontSize: 14,
-                    ),
-                  ),
-                  style: const TextStyle(fontSize: 16),
-                  textInputAction: TextInputAction.next,
-                ),
-                const SizedBox(height: 16),
-                const Divider(
-                  height: 1,
-                  thickness: 1,
-                  color: AppColors.primary,
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: gujaratiController,
-                  maxLines: maxLines,
-                  decoration: InputDecoration(
-                    isDense: true,
-                    hintText: gujaratiHint,
-                    prefixIcon: Icon(icon, size: 24, color: AppColors.primary),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 8,
-                      horizontal: 12,
-                    ),
-                    hintStyle: TextStyle(
-                      color: Colors.grey[400],
-                      fontSize: 14,
-                    ),
-                  ),
-                  style: const TextStyle(fontSize: 16),
-                  textInputAction: TextInputAction.next,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTagsContainer(AddNewsController controller) {
-    final tags = controller.tagsController.text.isEmpty
-        ? <String>[]
-        : controller.tagsController.text
-        .split(',')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList();
-
-    return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-        _showTagsBottomSheet(controller);
-      },
-      child: Card(
-        elevation: 8,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                offset: const Offset(0, 4),
-                blurRadius: 12,
-              ),
-            ],
-          ),
-          child: tags.isEmpty
-              ? Row(
-            children: const [
-              Icon(Icons.label, color: AppColors.primary, size: 24),
-              SizedBox(width: 8),
-              Text(
-                'Select Tags',
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          )
-              : Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: tags.map((tag) {
-              return Chip(
-                label: Text(tag),
-                backgroundColor: AppColors.primary.withOpacity(0.2),
-                labelStyle: const TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-                onDeleted: () {
-                  final updatedTags = controller.tagsController.text
-                      .split(',')
-                      .map((e) => e.trim())
-                      .where((e) => e.isNotEmpty)
-                      .toList();
-                  updatedTags.remove(tag);
-                  controller.tagsController.text = updatedTags.join(', ');
-                  // Force rebuild
-                  setState(() {});
-                },
-              );
-            }).toList(),
-          ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'News Details',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
-      ),
+        const SizedBox(height: 8),
+
+        _buildTextField(
+          controller: controller.titleEnglishController,
+          label: 'Title',
+          hint: 'e.g., New Development Plan Announced',
+          icon: Icons.title,
+          maxLines: 2,
+          required: true,
+        ),
+        const SizedBox(height: 12),
+
+        _buildTextField(
+          controller: controller.contentEnglishController,
+          label: 'Content',
+          hint: 'Write your news content in English...',
+          icon: Icons.description,
+          maxLines: 4,
+          required: true,
+        ),
+
+        const SizedBox(height: 24),
+
+        _buildTagsContainer(controller),
+      ],
     );
   }
 }

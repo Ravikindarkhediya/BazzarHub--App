@@ -379,6 +379,7 @@ class _SellProductPageState extends State<SellProductPage> {
           label: 'Product Title',
           hint: 'e.g., iPhone 13 Pro Max 256GB',
           icon: Icons.title,
+          required: true
         ),
         const SizedBox(height: 16),
         _buildTextField(
@@ -387,6 +388,7 @@ class _SellProductPageState extends State<SellProductPage> {
           hint: 'Describe your product in detail...',
           icon: Icons.description,
           maxLines: 5,
+            required: true
         ),
         const SizedBox(height: 16),
         _buildTextField(
@@ -395,6 +397,7 @@ class _SellProductPageState extends State<SellProductPage> {
           hint: 'Enter price in ₹',
           icon: Icons.currency_rupee,
           keyboardType: TextInputType.number,
+            required: true
         ),
         const SizedBox(height: 16),
         _buildConditionDropdown(),
@@ -589,16 +592,29 @@ class _SellProductPageState extends State<SellProductPage> {
     required String hint,
     required IconData icon,
     int maxLines = 1,
+    bool required = false,
     TextInputType? keyboardType,
   }) {
+    final displayLabel = required ? '$label' : label;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: AppTextStyles.bodyMedium.copyWith(
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
+        RichText(
+          text: TextSpan(
+            text: displayLabel,
+            style: AppTextStyles.bodyMedium.copyWith(
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+            children: required
+                ? [
+              TextSpan(
+                text: ' *',
+                style: const TextStyle(color: Colors.red),
+              ),
+            ]
+                : [],
           ),
         ),
         const SizedBox(height: 8),
@@ -609,9 +625,7 @@ class _SellProductPageState extends State<SellProductPage> {
           style: AppTextStyles.bodyMedium,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textHint,
-            ),
+            hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.textHint),
             prefixIcon: Icon(icon, color: AppColors.primary),
             filled: true,
             fillColor: AppColors.white,
@@ -627,15 +641,13 @@ class _SellProductPageState extends State<SellProductPage> {
               borderRadius: AppSpacing.borderRadiusMD,
               borderSide: const BorderSide(color: AppColors.primary, width: 2),
             ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           ),
         ),
       ],
     );
   }
+
 
   Widget _buildTypeDropdown() {
     return Consumer<SellProductController>(

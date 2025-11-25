@@ -167,6 +167,7 @@ import '../../product/widgets/image_upload_section.dart';
   }
 
   // Location selection methods
+
   void selectState(String state) {
     selectedState = state;
     selectedDistrict = null;
@@ -183,14 +184,27 @@ import '../../product/widgets/image_upload_section.dart';
     selectedDistrict = district;
     selectedSubDistrict = null;
     selectedVillage = null;
+
     if (selectedState != null) {
       showSubDistrict = _locationRepo.hasSubDistricts(selectedState!, district);
+
       if (showSubDistrict) {
         subDistrictsList = _locationRepo.getSubDistricts(selectedState!, district);
+
+        // Add the selected district itself to sub-districts list if not present
+        if (!subDistrictsList.contains(district)) {
+          subDistrictsList = [district, ...subDistrictsList];
+        }
+
         villagesList = [];
       } else {
         subDistrictsList = [];
         villagesList = _locationRepo.getVillages(selectedState!, district);
+
+        // Add the selected district itself to villages list if not present
+        if (!villagesList.contains(district)) {
+          villagesList = [district, ...villagesList];
+        }
       }
     }
     notifyListeners();
@@ -199,8 +213,16 @@ import '../../product/widgets/image_upload_section.dart';
   void selectSubDistrict(String subDistrict) {
     selectedSubDistrict = subDistrict;
     selectedVillage = null;
+
     if (selectedState != null && selectedDistrict != null) {
-      villagesList = _locationRepo.getVillages(selectedState!, selectedDistrict!, subDistrict);
+      List<String> villages = _locationRepo.getVillages(selectedState!, selectedDistrict!, subDistrict);
+
+      // Add the selected sub-district itself to villages list if not present
+      if (!villages.contains(subDistrict)) {
+        villages = [subDistrict, ...villages];
+      }
+
+      villagesList = villages;
     }
     notifyListeners();
   }

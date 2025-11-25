@@ -40,10 +40,10 @@ class NewsDetailController extends GetxController {
 
     // IMPORTANT: Check favorite status FIRST before loading details
     // This ensures the favorite state is available immediately when the screen loads
-    checkIfNewsIsFavorite().then((_) {
-      // Then load news details
-      fetchNewsDetail();
-    });
+    // checkIfNewsIsFavorite().then((_) {
+    //   // Then load news details
+    //   fetchNewsDetail();
+    // });
 
     trackNewsView();
   }
@@ -141,16 +141,16 @@ class NewsDetailController extends GetxController {
     }
   }
 
-  Future<void> refreshData() async {
-  // First refresh favorite status to ensure it's up-to-date
-  await checkIfNewsIsFavorite();
-  
-  // Then refresh news details
-  await fetchNewsDetail();
-  
-  // Finally check favorite status again to ensure it's synchronized
-  await checkIfNewsIsFavorite();
-}
+//   Future<void> refreshData() async {
+//   // First refresh favorite status to ensure it's up-to-date
+//   await checkIfNewsIsFavorite();
+//
+//   // Then refresh news details
+//   await fetchNewsDetail();
+//
+//   // Finally check favorite status again to ensure it's synchronized
+//   await checkIfNewsIsFavorite();
+// }
 
   // FAVORITE TOGGLE - Improved with instant feedback
   Future<void> toggleFavorite() async {
@@ -199,32 +199,32 @@ class NewsDetailController extends GetxController {
   }
 
   // CHECK IF NEWS IS FAVORITE - Improved version
-  Future<void> checkIfNewsIsFavorite() async {
-    try {
-      // Always show loading when checking favorite status
-      isFavoriteLoading.value = true;
-
-      final response = await _apiService.getFavoriteNews({});
-
-      if (response.data.status) {
-        final favorites = response.data.data ?? [];
-        final isCurrentlyFavorite = favorites.any((item) => item.id == newsId);
-
-        // Update state - this will trigger UI updates automatically
-        isFavorite.value = isCurrentlyFavorite;
-        
-        // Debug logging to help track issues
-        print("Favorite status for news $newsId: $isCurrentlyFavorite");
-      } else {
-        // If API fails, keep current state but log the error
-        print("Failed to get favorite status: ${response.data.message}");
-      }
-    } catch (e) {
-      print("Favorite check error: $e");
-      // Keep current state on error but don't show error to user
-    } finally {
-      isFavoriteLoading.value = false;
-    }
-  }
+  // Future<void> checkIfNewsIsFavorite() async {
+  //   try {
+  //     // Always show loading when checking favorite status
+  //     isFavoriteLoading.value = true;
+  //
+  //     // final response = await _apiService.getFavoriteNews({});
+  //
+  //     if (response.data.status) {
+  //       final favorites = response.data.data ?? [];
+  //       final isCurrentlyFavorite = favorites.any((item) => item.id == newsId);
+  //
+  //       // Update state - this will trigger UI updates automatically
+  //       isFavorite.value = isCurrentlyFavorite;
+  //
+  //       // Debug logging to help track issues
+  //       print("Favorite status for news $newsId: $isCurrentlyFavorite");
+  //     } else {
+  //       // If API fails, keep current state but log the error
+  //       print("Failed to get favorite status: ${response.data.message}");
+  //     }
+  //   } catch (e) {
+  //     print("Favorite check error: $e");
+  //     // Keep current state on error but don't show error to user
+  //   } finally {
+  //     isFavoriteLoading.value = false;
+  //   }
+  // }
 }
 
