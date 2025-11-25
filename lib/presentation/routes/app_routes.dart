@@ -1,3 +1,4 @@
+import 'package:bazzar_hub_app/presentation/modules/auth/views/complete_profile_view.dart';
 import 'package:bazzar_hub_app/presentation/modules/marketplace/view/marketplace_view.dart';
 import 'package:bazzar_hub_app/presentation/modules/news/views/add_news_view.dart';
 import 'package:bazzar_hub_app/presentation/modules/profile/views/your_Post_view.dart';
@@ -5,7 +6,6 @@ import 'package:bazzar_hub_app/presentation/modules/profile/views/your_Post_view
 import '../modules/auth/views/sign_in.dart';
 import '../modules/auth/views/signup_page.dart';
 import '../modules/chat/views/chat_page.dart';
-import '../modules/home/views/home_view.dart';
 import '../modules/home/views/home_wrapper_page.dart';
 import '../modules/main/view/main_page.dart';
 import '../modules/onboarding/views/onboarding_view.dart';
@@ -24,6 +24,7 @@ class AppPages {
   static final routes = [
     GetPage(name: AppRoutes.splash, page: () => const SplashView()),
     GetPage(name: AppRoutes.onboarding, page: () => const OnboardingView()),
+    GetPage(name: AppRoutes.completeProfile, page: () => const CompleteProfileView()),
     GetPage(name: AppRoutes.login, page: () => const SignInPage()),
     GetPage(name: AppRoutes.signup, page: () => const SignupPage()),
     GetPage(
@@ -64,6 +65,7 @@ class AppPages {
 class AppRoutes {
   static const splash = '/splash';
   static const onboarding = '/onboarding';
+  static const completeProfile = '/complete-profile';
   static const home = '/home';
   static const login = '/login';
   static const signup = '/signup';

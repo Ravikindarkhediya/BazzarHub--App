@@ -259,7 +259,7 @@ class SellProductController extends ChangeNotifier {
 
   Future<void> loadLocationData() async {
     try {
-      await _locationRepo.initialize();
+      // await _locationRepo.initialize();
       _statesList = _locationRepo.getStates();
       notifyListeners();
     } catch (e) {
@@ -678,6 +678,14 @@ class SellProductController extends ChangeNotifier {
       SnackBar(content: Text(message), backgroundColor: Colors.green, behavior: SnackBarBehavior.floating),
     );
   }
+
+  bool get isProfileComplete {
+    return selectedState != null &&
+        selectedDistrict != null &&
+        (selectedSubDistrict != null || !showSubDistrict) &&
+        (selectedVillage != null && selectedVillage!.isNotEmpty);
+  }
+
 
   @override
   void dispose() {

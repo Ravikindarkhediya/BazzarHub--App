@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:bazzar_hub_app/app/core/utils/utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../presentation/services/models/user/user_model.dart';
@@ -19,6 +20,7 @@ class SessionManager {
   static const String _keyToken = 'auth_token';
   static const String _keyUserId = 'user_id';
   static const String _keyUserEmail = 'user_email';
+  static const String _keyUserSelectedLang = 'user_selected_lang';
 
   /// Get the authentication token
   Future<String?> getToken() async {
@@ -30,6 +32,18 @@ class SessionManager {
   Future<bool> saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     return await prefs.setString(_keyToken, token);
+  }
+
+  /// Get the user selected lang
+  Future<String?> getSelectedLang() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_keyUserSelectedLang);
+  }
+
+  /// Save the user selected lang
+  Future<bool> saveSelectedLang(String lang) async {
+    final prefs = await SharedPreferences.getInstance();
+    return await prefs.setString(_keyUserSelectedLang, lang);
   }
 
   /// Get the user ID
@@ -94,6 +108,16 @@ class SessionManager {
       }
     }
     return userObjectModel;
+  }
+
+
+  Future<bool> isProfileComplete() async {
+    final model = await getUser();
+    bool notEmpty(String? x) => x != null && x.trim().isNotEmpty;
+    return notEmpty(model?.state) &&
+        notEmpty(model?.district) &&
+        notEmpty(model?.taluka) &&
+        notEmpty(model?.village);
   }
 
 }

@@ -29,7 +29,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _locationController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
   final TextEditingController _villageController = TextEditingController();
@@ -68,9 +67,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
         _emailController.text = user.email;
         _uploadedAvatarUrl = user.avatar;
         _phoneController.text = user.phone;
-        _locationController.text = user.location;
         _bioController.text = user.bio;
         _selectedGender = user.gender.isNotEmpty ? user.gender : null;
+        _villageController.text = user.village;
+        _talukaController.text = user.taluka;
+        _districtController.text = user.district;
+        _stateController.text = user.state;
 
         if (user.dob != null && user.dob!.isNotEmpty) {
           try {
@@ -317,7 +319,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
         'phone': _phoneController.text.trim(),
         if (_selectedGender != null) 'gender': _selectedGender!,
         if (_dobController.text.isNotEmpty) 'dob': _dobController.text.trim(),
-        'location': _locationController.text.trim(),
         'bio': _bioController.text.trim(),
       };
 
@@ -357,7 +358,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
-    _locationController.dispose();
     _bioController.dispose();
     _dobController.dispose();
     _villageController.dispose();
@@ -648,19 +648,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                               ? "Not specified"
                               : _dobController.text,
                           onTap: _selectDate,
-                        ),
-                      ),
-
-                      const Divider(height: 8),
-
-                      // Location Field - Inline Editable
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 5),
-                        child: _buildInlineEditField(
-                          fieldKey: 'location',
-                          icon: Icons.location_on_outlined,
-                          controller: _locationController,
-                          keyboardType: TextInputType.streetAddress,
                         ),
                       ),
 

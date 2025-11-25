@@ -1,3 +1,5 @@
+import 'package:bazzar_hub_app/app/core/utils/session_manager.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
@@ -8,42 +10,96 @@ import '../../../../app/core/utils/app_spacing.dart';
 import '../../../routes/app_routes.dart';
 
 class OnboardingView extends StatefulWidget {
+
   const OnboardingView({super.key});
 
   @override
   State<OnboardingView> createState() => _OnboardingViewState();
+
 }
 
 class _OnboardingViewState extends State<OnboardingView> {
+
   final PageController _pageController = PageController();
+  
   int _currentPage = 0;
+
+  String _selectedLanguage = "hi";
 
   final List<OnboardingData> _onboardingPages = [
     OnboardingData(
       image: "assets/images/onboarding_1.png",
       icon: Icons.shopping_bag_rounded,
-      title: "Welcome to ${AppConstants.appName}",
-      subtitle:
-      "Discover endless possibilities. Buy and sell anything from electronics to fashion with ease.",
+      title: {
+        "en": "Welcome to ${AppConstants.appName}",
+        "hi": "${AppConstants.appName} में आपका स्वागत है",
+        "gu": "${AppConstants.appName} માં આપનું સ્વાગત છે",
+      },
+      subtitle: {
+        "en": "Discover endless possibilities. Buy and sell anything from electronics to fashion with ease.",
+        "hi": "अनंत संभावनाओं की खोज करें। इलेक्ट्रॉनिक्स से लेकर फैशन तक, कुछ भी आसानी से खरीदें और बेचें।",
+        "gu": "અસીમ સંભાવનાઓ શોધો. ઇલેક્ટ્રોનિક્સથી લઈને ફેશન સુધી, કંઈપણ સરળતાથી ખરીદો અને વેચો.",
+      },
       color: AppColors.categoryMobiles,
     ),
+
     OnboardingData(
       image: "assets/images/onboarding_2.png",
       icon: Icons.local_offer_rounded,
-      title: "Best Deals & Offers",
-      subtitle:
-      "Get exclusive deals, compare prices, and save money on your favorite products every day.",
+      title: {
+        "en": "Best Deals & Offers",
+        "hi": "सबसे अच्छे डील और ऑफर",
+        "gu": "શ્રેષ્ઠ ડીલ્સ અને ઑફર્સ",
+      },
+      subtitle: {
+        "en": "Get exclusive deals, compare prices, and save money on your favorite products.",
+        "hi": "विशेष डील प्राप्त करें, कीमतों की तुलना करें और अपने पसंदीदा उत्पादों पर बचत करें।",
+        "gu": "વિશેષ ડીલ મેળવો, કિંમતોની તુલના કરો અને તમારા મનપસંદ ઉત્પાદનો પર બચત કરો.",
+      },
       color: AppColors.categoryProperty,
     ),
+
     OnboardingData(
       image: "assets/images/onboarding_3.png",
       icon: Icons.security_rounded,
-      title: "Safe & Secure",
-      subtitle:
-      "Shop with confidence. Protected payments, verified sellers, and secure transactions guaranteed.",
+      title: {
+        "en": "Safe & Secure",
+        "hi": "सुरक्षित और भरोसेमंद",
+        "gu": "સેફ અને સિક્યોર",
+      },
+      subtitle: {
+        "en": "Protected payments, verified sellers, and secure transactions guaranteed.",
+        "hi": "सुरक्षित भुगतान, सत्यापित विक्रेता और सुरक्षित लेनदेन की गारंटी।",
+        "gu": "સુરક્ષિત ચુકવણી, ચકાસેલા વેચનાર અને સુરક્ષિત ટ્રાન્ઝેક્શનની ખાતરી.",
+      },
       color: AppColors.success,
     ),
   ];
+
+  final Map<String, Map<String, String>> onboardingTexts = {
+    "skip": {
+      "en": "Skip",
+      "hi": "छोड़ें",
+      "gu": "છોડી દો",
+    },
+    "continue": {
+      "en": "Continue",
+      "hi": "जारी रखें",
+      "gu": "ચાલુ રાખો",
+    },
+    "getStarted": {
+      "en": "Get Started",
+      "hi": "शुरू करें",
+      "gu": "શરૂ કરો",
+    }
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    SessionManager().saveSelectedLang(_selectedLanguage);
+  }
+
 
   @override
   void dispose() {
@@ -62,14 +118,6 @@ class _OnboardingViewState extends State<OnboardingView> {
         curve: Curves.easeInOutCubic,
       );
     }
-  }
-
-  void _skipOnboarding() {
-    _pageController.animateToPage(
-      _onboardingPages.length - 1,
-      duration: AppConstants.longAnimation,
-      curve: Curves.easeInOutCubic,
-    );
   }
 
   void _finishOnboarding() {
@@ -121,13 +169,13 @@ class _OnboardingViewState extends State<OnboardingView> {
     );
   }
 
-  /// 🔝 Top Bar
   Widget _buildTopBar(bool isLastPage, bool isTablet) {
     return Padding(
-      padding: AppSpacing.horizontalMD,
+      padding: AppSpacing.horizontalXS,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          // LEFT SIDE (Logo + App Name)
           Row(
             children: [
               Container(
@@ -152,29 +200,49 @@ class _OnboardingViewState extends State<OnboardingView> {
               ),
             ],
           ),
-          if (!isLastPage)
-            TextButton(
-              onPressed: _skipOnboarding,
-              child: Row(
-                children: [
-                  Text(
-                    "Skip",
-                    style: AppTextStyles.button.copyWith(
+
+          // RIGHT SIDE (Language Icon + Skip)
+          Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(30),
+            child: InkWell(
+              onTap: () => _showLanguageBottomSheet(context),
+              borderRadius: BorderRadius.circular(30),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.textSecondary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.language,
                       color: AppColors.textSecondary,
+                      size: isTablet ? AppSpacing.iconMD : AppSpacing.iconSM,
                     ),
-                  ),
-                  AppSpacing.horizontalSpaceXS,
-                  Icon(
-                    Icons.arrow_forward_rounded,
-                    size: isTablet ? AppSpacing.iconMD : AppSpacing.iconSM,
-                  ),
-                ],
+                    SizedBox(width: 8),
+                    Text(
+                      getSelectedLang(),
+                      style: AppTextStyles.button.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
+          ),
         ],
       ),
     ).animate().fadeIn(duration: 600.ms).slideY(begin: -0.5, end: 0);
   }
+
 
   /// 📄 Each Page
   Widget _buildOnboardingPage(OnboardingData data, bool isTablet) {
@@ -190,7 +258,7 @@ class _OnboardingViewState extends State<OnboardingView> {
           _buildIconBadge(data, isTablet),
           AppSpacing.verticalSpaceMD,
           Text(
-            data.title,
+            tr(data.title),
             textAlign: TextAlign.center,
             style: AppTextStyles.h3.copyWith(
               fontWeight: FontWeight.bold,
@@ -204,7 +272,7 @@ class _OnboardingViewState extends State<OnboardingView> {
           Padding(
             padding: AppSpacing.horizontalLG,
             child: Text(
-              data.subtitle,
+              tr(data.subtitle),
               textAlign: TextAlign.center,
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
@@ -309,49 +377,185 @@ class _OnboardingViewState extends State<OnboardingView> {
 
   /// 🚀 Action Button
   Widget _buildActionButton(bool isLastPage, bool isTablet) {
-    return Padding(
-      padding: AppSpacing.horizontalLG,
-      child: SizedBox(
-        width: double.infinity,
-        height: isTablet ? AppSpacing.buttonHeightLG : AppSpacing.buttonHeightMD,
-        child: ElevatedButton(
-          onPressed: _nextPage,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            shape: const RoundedRectangleBorder(
-              borderRadius: AppSpacing.borderRadiusMD,
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                isLastPage ? 'Get Started' : 'Continue',
-                style: AppTextStyles.button.copyWith(
-                  color: AppColors.white,
-                  fontWeight: FontWeight.w600,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        /// TOP MAIN BUTTON
+        Padding(
+          padding: AppSpacing.horizontalLG,
+          child: SizedBox(
+            width: double.infinity,
+            height: isTablet ? AppSpacing.buttonHeightLG : AppSpacing
+                .buttonHeightMD,
+            child: ElevatedButton(
+              onPressed: _nextPage,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: AppSpacing.borderRadiusMD,
                 ),
               ),
-              AppSpacing.horizontalSpaceSM,
-              Icon(
-                isLastPage
-                    ? Icons.rocket_launch_rounded
-                    : Icons.arrow_forward_rounded,
-                size: isTablet ? AppSpacing.iconMD : AppSpacing.iconSM,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    isLastPage ? trButton("getStarted") : trButton("continue"),
+                    style: AppTextStyles.button.copyWith(
+                      color: AppColors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  AppSpacing.horizontalSpaceSM,
+                  Icon(
+                    isLastPage
+                        ? Icons.rocket_launch_rounded
+                        : Icons.arrow_forward_rounded,
+                    size: isTablet ? AppSpacing.iconMD : AppSpacing.iconSM,
+                    color: Colors.white,
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
-      ),
+
+        SizedBox(height: 22),
+
+        /// SKIP TEXT BUTTON BELOW (UNDERLINED)
+        Center(
+          child: TextButton(
+            onPressed: _finishOnboarding,
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              minimumSize: Size(0, 0),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              trButton("skip"),
+              style: AppTextStyles.button.copyWith(
+                decoration: TextDecoration.underline,
+                color: AppColors.textSecondary,
+              ),
+            )
+          ),
+        ),
+
+        SizedBox(height: 22),
+      ],
     );
+  }
+
+
+  void _showLanguageBottomSheet(BuildContext context) {
+    showCupertinoModalPopup<void>(
+      context: context,
+      builder: (BuildContext ctx) {
+        return SafeArea(
+          child: CupertinoActionSheet(
+            title: Padding(
+              padding: AppSpacing.paddingXS,
+              child: Text(
+                'Select Language',
+                style: AppTextStyles.bodyLarge.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+
+            actions: [
+              // HINDI
+              CupertinoActionSheetAction(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  setState(() => _selectedLanguage = "hi");
+                  SessionManager().saveSelectedLang("hi");
+                },
+                child: Text(
+                  'हिन्दी',
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+
+              // GUJARATI
+              CupertinoActionSheetAction(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  setState(() => _selectedLanguage = "gu");
+                  SessionManager().saveSelectedLang("gu");
+                },
+                child: Text(
+                  'ગુજરાતી',
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+
+              // ENGLISH
+              CupertinoActionSheetAction(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  setState(() => _selectedLanguage = "en");
+                  SessionManager().saveSelectedLang("en");
+                },
+                child: Text(
+                  'English',
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+
+            cancelButton: CupertinoActionSheetAction(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(
+                'Cancel',
+                style: AppTextStyles.bodyLarge.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  String tr(Map<String, String> textMap) {
+    return textMap[_selectedLanguage] ?? textMap["en"]!;
+  }
+
+  String trButton(String key) {
+    return onboardingTexts[key]?[_selectedLanguage] ?? onboardingTexts[key]!["en"]!;
+  }
+
+  String getSelectedLang() {
+    switch (_selectedLanguage) {
+      case "hi":
+        return "हिन्दी";
+      case "gu":
+        return "ગુજરાતી";
+      case "en":
+      default:
+        return "English";
+    }
   }
 }
 
 class OnboardingData {
   final String image;
   final IconData icon;
-  final String title;
-  final String subtitle;
+  final Map<String, String> title;
+  final Map<String, String> subtitle;
   final Color color;
 
   OnboardingData({
@@ -362,3 +566,4 @@ class OnboardingData {
     required this.color,
   });
 }
+

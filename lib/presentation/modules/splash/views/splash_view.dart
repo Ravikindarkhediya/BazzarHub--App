@@ -37,8 +37,27 @@ class _SplashViewState extends State<SplashView>
         Navigator.pushReplacementNamed(context, AppRoutes.login);
       } else {
         final hasSession = await SessionManager().isLoggedIn();
-        Navigator.pushReplacementNamed(context,
-            hasSession ? AppRoutes.homeWrapper : AppRoutes.onboarding);
+        final isProfileComplete = await SessionManager().isProfileComplete();
+
+        String route;
+
+        // 1. Not logged in + Profile not complete → onboarding
+        if (!hasSession && !isProfileComplete) {
+          route = AppRoutes.onboarding;
+        }
+
+        // 2. Logged in but profile incomplete → complete profile
+        else if (hasSession && !isProfileComplete) {
+          route = AppRoutes.completeProfile;
+        }
+
+        // 3. Logged in + profile complete → home
+        else {
+          route = AppRoutes.homeWrapper;
+        }
+
+        Navigator.pushReplacementNamed(context, route);
+
       }
     });
 

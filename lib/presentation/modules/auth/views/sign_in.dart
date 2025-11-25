@@ -18,7 +18,6 @@ import '../../../services/api_service.dart';
 import '../../../services/auth_service.dart';
 import '../widget/common_widget.dart';
 import '../../widgets/common_text_field.dart';
-import 'forgot_password_view.dart' hide CommonWidget;
 
 class SignInPage extends StatefulWidget {
   const SignInPage({super.key});
@@ -68,7 +67,10 @@ class _SignInPageState extends State<SignInPage> {
           });
         }
         if (mounted) {
-          Get.offAllNamed(AppRoutes.homeWrapper);
+          Get.offAllNamed(
+              await SessionManager().isProfileComplete()
+                  ? AppRoutes.homeWrapper
+                  : AppRoutes.completeProfile);
         }
 
       } else {
@@ -144,13 +146,13 @@ class _SignInPageState extends State<SignInPage> {
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.1),
                             blurRadius: 20,
                             spreadRadius: 0,
-                            offset: const Offset(0, 10),
+                            offset: const Offset(0, 5),
                           ),
                         ],
                       ),

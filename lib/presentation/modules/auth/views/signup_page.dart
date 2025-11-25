@@ -75,7 +75,10 @@ class _SignupPageState extends State<SignupPage> {
           });
         }
         if (mounted) {
-          Get.offAllNamed(AppRoutes.homeWrapper);
+          Get.offAllNamed(
+              await SessionManager().isProfileComplete()
+                  ? AppRoutes.homeWrapper
+                  : AppRoutes.completeProfile);
         }
 
       } else {
@@ -169,13 +172,13 @@ class _SignupPageState extends State<SignupPage> {
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withOpacity(0.1),
                             blurRadius: 20,
                             spreadRadius: 0,
-                            offset: const Offset(0, 10),
+                            offset: const Offset(0, 5),
                           ),
                         ],
                       ),

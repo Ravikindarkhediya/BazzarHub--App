@@ -21,11 +21,11 @@ class AppLanguage {
     if (model == null) return "";
 
     switch (_currentLang) {
-      case "hindi":
+      case "hi":
         return model.hindi ?? "";
-      case "gujarati":
+      case "gu":
         return model.gujarati ?? "";
-      case "english":
+      case "en":
       default:
         return model.english ?? "";
     }
