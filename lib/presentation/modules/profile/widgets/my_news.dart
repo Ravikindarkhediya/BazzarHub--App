@@ -1,3 +1,4 @@
+import 'package:bazzar_hub_app/presentation/modules/news/views/add_news_view.dart';
 import 'package:bazzar_hub_app/presentation/modules/product/widgets/custom_image_widget.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -14,18 +15,13 @@ import '../../../services/models/news/news_media_model.dart';
 import '../../../services/models/news/news_model.dart';
 
 class MyNews extends StatelessWidget {
-
   final NewsModel newsData;
   final Function(String) onTapdDelete;
 
-  const MyNews({Key? key,
-    required this.newsData,
-    required this.onTapdDelete
-  });
+  const MyNews({Key? key, required this.newsData, required this.onTapdDelete});
 
   @override
   Widget build(BuildContext context) {
-
     final title = AppLanguage.getText(newsData.title);
 
     final List<NewsMediaModel> mediaList = newsData.media;
@@ -38,7 +34,7 @@ class MyNews extends StatelessWidget {
     final String newsCategory = AppLanguage.getText(newsData.category?.name);
     final String? villageName = newsData.location?.district;
     return InkWell(
-      onTap: (){
+      onTap: () {
         // TODO Open Detail Screen
       },
       child: Container(
@@ -49,7 +45,6 @@ class MyNews extends StatelessWidget {
           children: [
             Stack(
               children: [
-
                 CustomImageWidget(
                   imageUrl: imageUrl,
                   height: 200,
@@ -63,7 +58,7 @@ class MyNews extends StatelessWidget {
                   right: 6,
                   child: GestureDetector(
                     onTap: () => {
-                      _showNewsOptionsBottomSheet(context, newsData.id, title)
+                      _showNewsOptionsBottomSheet(context, newsData.id, title),
                     },
                     child: Container(
                       padding: const EdgeInsets.all(5),
@@ -146,9 +141,7 @@ class MyNews extends StatelessWidget {
                   Text(
                     title,
                     style: AppTextStyles.newsTitle.copyWith(
-                      fontSize: AppResponsiveSize.isMobile(context)
-                          ? 15
-                          : 16,
+                      fontSize: AppResponsiveSize.isMobile(context) ? 15 : 16,
                     ),
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
@@ -161,9 +154,17 @@ class MyNews extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       if (villageName!.isNotEmpty) ...[
-                        _buildButton(icon: Icons.location_on_outlined, text: villageName)
+                        _buildButton(
+                          icon: Icons.location_on_outlined,
+                          text: villageName,
+                        ),
                       ],
-                      _buildButton(icon: Icons.access_time, text: createdAt.isNotEmpty ? Utils.getTimeAgo(createdAt) : '')
+                      _buildButton(
+                        icon: Icons.access_time,
+                        text: createdAt.isNotEmpty
+                            ? Utils.getTimeAgo(createdAt)
+                            : '',
+                      ),
                     ],
                   ),
                 ],
@@ -179,28 +180,18 @@ class MyNews extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Icon(
-          icon,
-          size: 14,
-          color: Colors.grey[600],
-        ),
+        Icon(icon, size: 14, color: Colors.grey[600]),
         const SizedBox(width: 4),
-        Text(
-          text,
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 12,
-          ),
-        ),
+        Text(text, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
       ],
     );
   }
 
   void _showNewsOptionsBottomSheet(
-      BuildContext context,
-      String newsId,
-      String title,
-      ) {
+    BuildContext context,
+    String newsId,
+    String title,
+  ) {
     showCupertinoModalPopup<void>(
       context: context,
       builder: (BuildContext ctx) {
@@ -223,7 +214,12 @@ class MyNews extends StatelessWidget {
               CupertinoActionSheetAction(
                 onPressed: () {
                   Navigator.pop(ctx);
-                  // Get.to(() => SellProductPage(product: product));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AddNewsView(news: newsData),
+                    ),
+                  );
                 },
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -250,8 +246,7 @@ class MyNews extends StatelessWidget {
                   final bool confirmed = await AppDialog.show(
                     context,
                     title: 'Delete News',
-                    message:
-                    'Are you sure you want to delete "${title}"?',
+                    message: 'Are you sure you want to delete "${title}"?',
                     confirmText: 'Delete',
                     cancelText: 'Cancel',
                   );
@@ -296,6 +291,4 @@ class MyNews extends StatelessWidget {
       },
     );
   }
-
-
 }
