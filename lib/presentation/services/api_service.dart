@@ -183,6 +183,9 @@ abstract class ApiServices{
       @Body() Map<String, dynamic> body,
       );
 
+  @GET(Endpoints.MY_NEWS)
+  Future<HttpResponse<BaseListModel<NewsModel>>> getMyNews();
+
   // Upload
   @POST(Endpoints.UPLOAD_FILE)
   @MultiPart()

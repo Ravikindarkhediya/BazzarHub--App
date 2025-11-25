@@ -33,17 +33,17 @@ class Endpoints {
 
   static const String MARKETPLACE_VIEW_LOG = "/api/marketplace/view/log";
 
-  //Marketplace
+  //News
 
   static const String NEWS_CATEGORIES = "api/news/categories";
 
   static const String NEWS = "/api/news";
 
-  static const String NEWS_FAVORITE = "/api/news/favorite";
-
   static const String NEWS_FAVORITES_LIST = "/api/news/favorites";
 
   static const String NEWS_VIEW_LOG = "/api/news/view/log";
+
+  static const String MY_NEWS = "/api/news/my-news";
 
   // Common/Upload
   static const String UPLOAD_FILE = "/common/upload";

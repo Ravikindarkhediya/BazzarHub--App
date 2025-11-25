@@ -341,19 +341,16 @@ class _YourProductGridState extends State<YourProductGrid> {
                       ),
                     ),
                     Positioned(
-                      top: 0,
-                      right: 0,
+                      top: 6,
+                      right: 6,
                       child: GestureDetector(
                         onTap: () =>
                             _showProductOptionsBottomSheet(context, product),
                         child: Container(
-                          padding: const EdgeInsets.all(6),
+                          padding: const EdgeInsets.all(5),
                           decoration: BoxDecoration(
                             color: AppColors.black.withOpacity(0.35),
-                            borderRadius: BorderRadius.only(
-                              bottomLeft: Radius.circular(20),
-                              topRight: Radius.circular(12),
-                            ),
+                            borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withOpacity(0.12),
