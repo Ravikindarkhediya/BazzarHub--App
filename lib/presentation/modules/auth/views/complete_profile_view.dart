@@ -86,10 +86,6 @@ class _CompleteProfileViewState extends State<CompleteProfileView> {
 
   @override
   Widget build(BuildContext context) {
-
-    final size = MediaQuery.of(context).size;
-    final isTablet = size.width > 600;
-
     return AnimatedBuilder(
       animation: controller,
       builder: (context, _) {
@@ -147,37 +143,6 @@ class _CompleteProfileViewState extends State<CompleteProfileView> {
         );
       },
     );
-  }
-
-
-  Widget _buildTopBar(bool isTablet) {
-    return Padding(
-      padding: AppSpacing.horizontalXS,
-      child: Row(
-        children: [
-          Container(
-            padding: EdgeInsets.all(isTablet ? AppSpacing.md : AppSpacing.sm),
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: AppSpacing.borderRadiusSM,
-            ),
-            child: Icon(
-              Icons.store_rounded,
-              color: AppColors.white,
-              size: isTablet ? AppSpacing.iconLG : AppSpacing.iconMD,
-            ),
-          ),
-          AppSpacing.horizontalSpaceSM,
-          Text(
-            AppConstants.appName,
-            style: AppTextStyles.label.copyWith(
-              color: AppColors.primary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    ).animate().fadeIn(duration: 600.ms).slideY(begin: -0.5, end: 0);
   }
 
   Widget _buildLocationUI() {
