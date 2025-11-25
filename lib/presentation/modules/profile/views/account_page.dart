@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../app/core/utils/app_spacing.dart';
-import '../../../../app/core/utils/session_manager.dart';
+import '../../../../manager/session_manager.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../services/api_service.dart';
 import '../../../services/models/user/user_model.dart';

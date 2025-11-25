@@ -1,4 +1,4 @@
-import 'package:bazzar_hub_app/app/core/utils/session_manager.dart';
+import 'package:bazzar_hub_app/manager/session_manager.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';

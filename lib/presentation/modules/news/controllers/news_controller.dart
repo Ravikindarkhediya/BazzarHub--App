@@ -1,4 +1,4 @@
-import 'package:bazzar_hub_app/app/core/utils/session_manager.dart';
+import 'package:bazzar_hub_app/manager/session_manager.dart';
 import 'package:get/get.dart';
 import 'package:bazzar_hub_app/presentation/services/api_service.dart';
 import 'package:bazzar_hub_app/presentation/services/models/news/news_model.dart';

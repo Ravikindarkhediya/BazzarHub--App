@@ -1,5 +1,5 @@
 import 'package:bazzar_hub_app/app/core/utils/app_spacing.dart';
-import 'package:bazzar_hub_app/app/core/utils/session_manager.dart';
+import 'package:bazzar_hub_app/manager/session_manager.dart';
 import 'package:bazzar_hub_app/app/core/utils/utils.dart';
 import 'package:bazzar_hub_app/app/data/constants/app_colors.dart';
 import 'package:bazzar_hub_app/presentation/commons/dialogs/app_toasts.dart';

@@ -4,7 +4,7 @@ import 'package:bazzar_hub_app/presentation/services/models/categorie/category_l
 import 'package:bazzar_hub_app/presentation/services/models/news/news_model.dart';
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
-import '../../app/core/utils/session_manager.dart';
+import '../../manager/session_manager.dart';
 import '../../app/core/utils/utils.dart';
 import 'models/base/base_list_model.dart';
 import 'models/base/base_model.dart';

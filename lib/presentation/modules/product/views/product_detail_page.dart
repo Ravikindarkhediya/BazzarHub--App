@@ -9,7 +9,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../app/core/utils/app_spacing.dart';
-import '../../../../app/core/utils/session_manager.dart';
+import '../../../../manager/session_manager.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
 import '../../../commons/dialogs/appDialog.dart';

@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../app/core/utils/responsive_size.dart';
-import '../../../../app/core/utils/session_manager.dart';
+import '../../../../manager/session_manager.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_constant.dart';
 import '../../../../app/data/constants/app_text_style.dart';

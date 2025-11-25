@@ -6,7 +6,7 @@ import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 
 import '../../../../app/core/utils/app_spacing.dart';
-import '../../../../app/core/utils/session_manager.dart';
+import '../../../../manager/session_manager.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_constant.dart';
 import '../../../../app/data/constants/app_text_style.dart';

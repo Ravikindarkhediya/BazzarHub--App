@@ -1,9 +1,8 @@
 import 'dart:convert';
 
-import 'package:bazzar_hub_app/app/core/utils/utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../presentation/services/models/user/user_model.dart';
+import '../presentation/services/models/user/user_model.dart';
 
 class SessionManager {
   static final SessionManager _instance = SessionManager._internal();

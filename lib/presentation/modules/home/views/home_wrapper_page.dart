@@ -8,6 +8,7 @@ import '../../../../app/core/manager/log_manager.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
+import '../../../../manager/firebase_manager.dart';
 import '../../../routes/app_routes.dart';
 import '../../chat/views/chat_page.dart';
 import '../../news/views/news_view.dart';
@@ -39,6 +40,7 @@ class _HomeWrapperState extends State<HomeWrapper> {
   void initState() {
     super.initState();
 
+    FirebaseManager().initNotification();
     LocationManager().requestLocation();
 
     _scrollController.addListener(() {

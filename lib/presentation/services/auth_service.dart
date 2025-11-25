@@ -2,7 +2,7 @@
   import 'package:get/get.dart';
   import 'package:google_sign_in/google_sign_in.dart';
 
-  import '../../app/core/utils/session_manager.dart';
+  import '../../manager/session_manager.dart';
   import '../../app/core/utils/utils.dart';
   import '../commons/dialogs/app_toasts.dart';
   import '../routes/app_routes.dart';

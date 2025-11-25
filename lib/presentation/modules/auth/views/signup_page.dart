@@ -7,7 +7,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/core/utils/responsive_size.dart';
-import '../../../../app/core/utils/session_manager.dart';
+import '../../../../manager/session_manager.dart';
 import '../../../../app/core/utils/utils.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';

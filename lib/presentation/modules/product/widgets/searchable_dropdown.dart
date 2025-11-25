@@ -101,7 +101,7 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
       }
     });
   }
-  
+
   Widget _buildBottomSheet() {
     final viewInsets = MediaQuery.of(context).viewInsets.bottom;
 
