@@ -162,7 +162,7 @@ abstract class ApiServices{
   Future<HttpResponse<BaseModel<NewsModel>>> getNewsById(@Path("id") String id);
 
   @PUT("${Endpoints.NEWS}/{id}")
-  Future<HttpResponse<BaseModel<NewsModel>>> updateNews(
+  Future<HttpResponse<BaseModel<dynamic>>> updateNews(
       @Path("id") String id,
       @Body() Map<String, dynamic> body,
       );

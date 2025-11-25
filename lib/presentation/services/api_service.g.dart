@@ -766,7 +766,7 @@ class _ApiServices implements ApiServices {
   }
 
   @override
-  Future<HttpResponse<BaseModel<NewsModel>>> updateNews(
+  Future<HttpResponse<BaseModel<dynamic>>> updateNews(
     String id,
     Map<String, dynamic> body,
   ) async {
@@ -775,7 +775,7 @@ class _ApiServices implements ApiServices {
     final _headers = <String, dynamic>{};
     final _data = <String, dynamic>{};
     _data.addAll(body);
-    final _options = _setStreamType<HttpResponse<BaseModel<NewsModel>>>(
+    final _options = _setStreamType<HttpResponse<BaseModel<dynamic>>>(
       Options(method: 'PUT', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
@@ -786,11 +786,11 @@ class _ApiServices implements ApiServices {
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
     final _result = await _dio.fetch<Map<String, dynamic>>(_options);
-    late BaseModel<NewsModel> _value;
+    late BaseModel<dynamic> _value;
     try {
-      _value = BaseModel<NewsModel>.fromJson(
+      _value = BaseModel<dynamic>.fromJson(
         _result.data!,
-        (json) => NewsModel.fromJson(json as Map<String, dynamic>),
+        (json) => json as dynamic,
       );
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options);
