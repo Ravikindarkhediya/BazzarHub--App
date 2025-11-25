@@ -1,6 +1,7 @@
 
 import 'package:bazzar_hub_app/presentation/services/endpoints.dart';
 import 'package:bazzar_hub_app/presentation/services/models/categorie/category_list_response_model.dart';
+import 'package:bazzar_hub_app/presentation/services/models/news/favorite_news_response.dart';
 import 'package:bazzar_hub_app/presentation/services/models/news/news_model.dart';
 import 'package:bazzar_hub_app/presentation/services/models/news/news_tags_model.dart';
 import 'package:dio/dio.dart';
@@ -189,7 +190,7 @@ abstract class ApiServices{
   );
 
   @GET(Endpoints.NEWS_FAVORITES_LIST)
-  Future<HttpResponse<BaseListModel<NewsModel>>> getFavoriteNews(
+  Future<HttpResponse<BaseModel<FavoriteNewsResponse>>> getFavoriteNews(
       @Queries() Map<String, dynamic> queryParams,
       );
 
