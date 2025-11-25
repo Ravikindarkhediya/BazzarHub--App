@@ -770,12 +770,12 @@ class _ApiServices implements ApiServices {
   }
 
   @override
-  Future<HttpResponse<BaseModel<NewsModel>>> deleteNews(String id) async {
+  Future<HttpResponse<BaseModel<dynamic>>> deleteNews(String id) async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<HttpResponse<BaseModel<NewsModel>>>(
+    final _options = _setStreamType<HttpResponse<BaseModel<dynamic>>>(
       Options(method: 'DELETE', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
@@ -786,11 +786,11 @@ class _ApiServices implements ApiServices {
           .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
     );
     final _result = await _dio.fetch<Map<String, dynamic>>(_options);
-    late BaseModel<NewsModel> _value;
+    late BaseModel<dynamic> _value;
     try {
-      _value = BaseModel<NewsModel>.fromJson(
+      _value = BaseModel<dynamic>.fromJson(
         _result.data!,
-        (json) => NewsModel.fromJson(json as Map<String, dynamic>),
+        (json) => json as dynamic,
       );
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options);

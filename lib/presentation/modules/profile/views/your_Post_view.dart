@@ -14,6 +14,8 @@ import '../../../services/api_service.dart';
 import '../../../services/models/marketplace/marketplace_model.dart';
 import 'package:get/get.dart';
 
+import '../../news/controllers/news_controller.dart';
+
 class YourPostView extends StatefulWidget {
   const YourPostView({super.key});
 
@@ -125,8 +127,9 @@ class _YourPostViewState extends State<YourPostView>
           errorMessage = e.message ?? 'Unknown network error occurred.';
       }
       AppToast.showError(errorMessage);
-    } catch (error) {
-      AppToast.showError('Error loading products: $error');
+    } catch (error,s) {
+      AppToast.showError('$error');
+      print(s);
     } finally {
       if (mounted) setState(() => _isLoadingNews = false);
     }
@@ -139,6 +142,7 @@ class _YourPostViewState extends State<YourPostView>
       var response = await services.deleteNews(id);
       if (response.data.status) {
         _displayMyNews.removeWhere((item) => item.id == id);
+        Get.find<NewsController>().removeNewsById(id);
       } else {
         AppToast.showError(
           response.data.message ?? "Something went wrong, please try again.",
@@ -167,8 +171,9 @@ class _YourPostViewState extends State<YourPostView>
           errorMessage = e.message ?? 'Unknown network error occurred.';
       }
       AppToast.showError(errorMessage);
-    } catch (error) {
-      AppToast.showError('Error loading products: $error');
+    } catch (error,s) {
+      AppToast.showError('$error');
+      print("Error When Delete $s");
     } finally {
       if (mounted) setState(() => _isLoadingNews = false);
     }

@@ -124,5 +124,9 @@ class NewsController extends GetxController {
     }
   }
 
+  void removeNewsById(String id) {
+    newsList.removeWhere((item) => item.id == id);
+  }
+
 
 }

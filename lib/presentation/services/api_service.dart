@@ -164,7 +164,7 @@ abstract class ApiServices{
       );
 
   @DELETE("${Endpoints.NEWS}/{id}")
-  Future<HttpResponse<BaseModel<NewsModel>>> deleteNews(
+  Future<HttpResponse<BaseModel<dynamic>>> deleteNews(
       @Path("id") String id,
       );
 
