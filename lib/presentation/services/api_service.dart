@@ -13,6 +13,7 @@ import 'models/base/base_model.dart';
 import 'models/categorie/categorie_model.dart';
 import 'models/marketplace/marketplace_model.dart';
 import 'models/news/favorite_news_model.dart';
+import 'models/report/report_response_model.dart';
 import 'models/upload/upload_response_model.dart';
 import 'models/user/user_model.dart';
 import 'models/user/user_token_model.dart';
@@ -116,7 +117,7 @@ abstract class ApiServices{
   @GET(Endpoints.MARKETPLACE)
   Future<HttpResponse<BaseListModel<MarketplaceModel>>> getMarketplace(@Queries() Map<String, dynamic> queryParams);
 
-  @GET(Endpoints.YOUR_MARKETPLACE)
+  @GET(Endpoints.USER_MARKETPLACE )
   Future<HttpResponse<BaseListModel<MarketplaceModel>>> getYourMarketplace(@Queries() Map<String, dynamic> queryParams);
 
   @POST(Endpoints.MARKETPLACE)
@@ -210,6 +211,7 @@ abstract class ApiServices{
   Future<HttpResponse<BaseListModel<NewsModel>>> getMyNews();
 
   // Upload
+
   @POST(Endpoints.UPLOAD_FILE)
   @MultiPart()
   Future<HttpResponse<BaseModel<UploadResponseModel>>> uploadFile(
@@ -217,4 +219,36 @@ abstract class ApiServices{
       );
 
 
+  //block / unblock
+
+  @GET(Endpoints.BLOCKED_LIST)
+  Future<HttpResponse<BaseListModel<UserModel>>> getBlockedList(@Queries() Map<String, dynamic> queryParams);
+
+  @POST(Endpoints.USER_BLOCK_UNBLOCK)
+  Future<HttpResponse<BaseModel<UserModel>>> requestBlockUser(@Body() Map<String, dynamic> body);
+
+
+  // Other user profile
+
+  @GET("${Endpoints.OTHER_USER_PROFILE}/{id}")
+  Future<HttpResponse<BaseModel<UserModel>>> getOtherUserProfile(@Path("id") String userId);
+
+  @GET("${Endpoints.OTHER_USER_CREATED_NEWS}/{id}")
+  Future<HttpResponse<BaseListModel<NewsModel>>> getOtherUserCreatedNewsList(
+      @Path("id") String userId,
+      @Queries() Map<String, dynamic> queryParams,
+      );
+
+  @GET("${Endpoints.OTHER_USER_CREATED_MARKETPLACE}/{id}")
+  Future<HttpResponse<BaseListModel<NewsModel>>> getOtherUserCreatedMarketplaceList(
+      @Path("id") String userId,
+      @Queries() Map<String, dynamic> queryParams,
+      );
+
+  // Report List
+  @GET(Endpoints.MY_MARKETPLACE_REPORT)
+  Future<HttpResponse<BaseListModel<ReportResponseModel>>> getMarketplaceReportList(@Queries() Map<String, dynamic> queryParams);
+
+  @GET(Endpoints.MY_NEWS_REPORT)
+  Future<HttpResponse<BaseListModel<ReportResponseModel>>> getNewsReportList(@Queries() Map<String, dynamic> queryParams);
 }

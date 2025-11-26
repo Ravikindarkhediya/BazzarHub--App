@@ -64,6 +64,9 @@ class UserModel {
   @JsonKey(name: '__v', defaultValue: 0)
   int version;
 
+  @JsonKey(name: 'isblock', defaultValue: false)
+  bool isblock;
+
   UserModel({
     this.name = '',
     this.email = '',
@@ -85,6 +88,7 @@ class UserModel {
     this.createdAt = '',
     this.updatedAt = '',
     this.version = 0,
+    this.isblock = false
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) =>

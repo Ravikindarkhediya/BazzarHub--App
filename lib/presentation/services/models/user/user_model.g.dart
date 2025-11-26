@@ -27,6 +27,7 @@ UserModel _$UserModelFromJson(Map<String, dynamic> json) => UserModel(
   createdAt: json['createdAt'] as String? ?? '',
   updatedAt: json['updatedAt'] as String? ?? '',
   version: (json['__v'] as num?)?.toInt() ?? 0,
+  isblock: json['isblock'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$UserModelToJson(UserModel instance) => <String, dynamic>{
@@ -50,4 +51,5 @@ Map<String, dynamic> _$UserModelToJson(UserModel instance) => <String, dynamic>{
   'createdAt': instance.createdAt,
   'updatedAt': instance.updatedAt,
   '__v': instance.version,
+  'isblock': instance.isblock,
 };
