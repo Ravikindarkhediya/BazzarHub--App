@@ -1,9 +1,10 @@
 import 'package:bazzar_hub_app/presentation/commons/dialogs/appDialog.dart';
 import 'package:bazzar_hub_app/presentation/commons/dialogs/app_toasts.dart';
 import 'package:bazzar_hub_app/presentation/modules/news/views/news_view.dart';
-import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
+// import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:bazzar_hub_app/presentation/services/api_service.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -18,6 +19,9 @@ import '../../home/widgets/auto_fit_image_widget.dart';
 import '../../product/widgets/image_upload_section.dart';
 import '../../product/widgets/searchable_dropdown.dart';
 import '../controllers/add_news_controller.dart';
+import 'package:html_editor_enhanced/html_editor.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_quill/flutter_quill.dart' as quill;
 
 class AddNewsView extends StatefulWidget {
   final NewsModel? news;
@@ -719,244 +723,106 @@ class NewsDetailsWidget extends StatefulWidget {
 class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
   List<String> _availableTags = [];
   bool _isTagsLoading = false;
-  late TextEditingController _searchController;
   Set<String> _selectedTags = {};
 
   @override
   void initState() {
     super.initState();
-    _searchController = TextEditingController();
+    _fetchTags();
   }
 
   Future<void> _fetchTags() async {
-    setState(() => _isTagsLoading = true);
+    print('API Calling...........');
+    setState(() {
+      _isTagsLoading = true;
+    });
     try {
       final apiService = await getApiClient();
       final response = await apiService.getNewsTags();
+      print('^^^^^^^^^ : ${response.data.data?.first.name}');
       if (response.response.statusCode == 200) {
         final tagsList = response.data.data;
         setState(() {
           _availableTags = tagsList!.map((tag) => tag.name ?? '').toList();
-          _selectedTags =
-              context.read<AddNewsController>().tagsController.text.isNotEmpty
-              ? context
-                    .read<AddNewsController>()
-                    .tagsController
-                    .text
-                    .split(',')
-                    .map((e) => e.trim())
-                    .toSet()
-              : <String>{};
         });
       } else {
-        setState(() => _availableTags = []);
+        print('API Else Part Calling...........');
+        setState(() {
+          _availableTags = [];
+        });
       }
     } catch (e) {
-      setState(() => _availableTags = []);
+      print('API Calling...........$e');
+      setState(() {
+        _availableTags = [];
+      });
     } finally {
-      setState(() => _isTagsLoading = false);
+      setState(() {
+        _isTagsLoading = false;
+      });
     }
   }
 
-  void _showTagsBottomSheet(AddNewsController controller) async {
-    if (_availableTags.isEmpty && !_isTagsLoading) {
-      await _fetchTags();
-    }
+  void _toggleTag(String tag, AddNewsController controller) {
+    setState(() {
+      if (_selectedTags.contains(tag)) {
+        _selectedTags.remove(tag);
+      } else {
+        _selectedTags.add(tag);
+      }
+      controller.tagsController.text = _selectedTags.join(', ');
+    });
+  }
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (BuildContext ctx) {
-        if (_isTagsLoading) {
-          return const Center(child: CircularProgressIndicator());
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AddNewsController>(
+      builder: (context, controller, _) {
+        // Initialize selected tags from controller
+        if (_selectedTags.isEmpty &&
+            controller.tagsController.text.isNotEmpty) {
+          _selectedTags = controller.tagsController.text
+              .split(',')
+              .map((e) => e.trim())
+              .where((e) => e.isNotEmpty)
+              .toSet();
         }
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(ctx).viewInsets.bottom,
-              ),
-              child: Container(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(ctx).size.height * 0.85,
-                ),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                ),
-                child: Column(
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.only(top: 12, bottom: 8),
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(50),
-                      ),
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(
-                        vertical: 16.0,
-                        horizontal: 24,
-                      ),
-                      child: Center(
-                        child: Text(
-                          'Select Tags',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: ListView.builder(
-                        itemCount: _availableTags.length,
-                        itemBuilder: (context, index) {
-                          final tag = _availableTags[index];
-                          final isSelected = _selectedTags.contains(tag);
-                          return ListTile(
-                            title: Text(
-                              tag,
-                              style: TextStyle(
-                                fontWeight: isSelected
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                              ),
-                            ),
-                            trailing: isSelected
-                                ? const Icon(
-                                    Icons.check,
-                                    color: AppColors.primary,
-                                  )
-                                : null,
-                            onTap: () {
-                              setModalState(() {
-                                if (isSelected) {
-                                  _selectedTags.remove(tag);
-                                } else {
-                                  _selectedTags.add(tag);
-                                }
-                              });
-                              controller.tagsController.text = _selectedTags
-                                  .join(', ');
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 4,
-                          ),
-                          onPressed: () {
-                            FocusScope.of(context).unfocus();
-                            Navigator.of(ctx).pop();
-                          },
-                          child: const Text(
-                            'Done',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'News Details',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 24),
+
+            // Title Section
+            _buildTextField(
+              controller: controller.titleEnglishController,
+              label: 'Title',
+              hint: "Enter your title",
+              icon: Icons.title,
+              required: true,
+            ),
+            const SizedBox(height: 24),
+
+            // Content Section
+            RichTextFieldWidget(
+              controller: controller.contentEnglishController,
+              label: 'Content',
+              hint: "Enter your content",
+              icon: Icons.description,
+              required: true,
+            ),
+
+            const SizedBox(height: 24),
+
+            // Tags Section
+            _buildTagsSection(controller),
+          ],
         );
       },
-    );
-  }
-
-  Widget _buildTagsContainer(AddNewsController controller) {
-    // All available tags fetched from API or stored in controller (make sure to set this)
-    final allTags = _availableTags;
-
-    // Tags selected by the user based on controller text (trimmed)
-    final selectedTags = controller.tagsController.text.isNotEmpty
-        ? controller.tagsController.text.split(',').map((e) => e.trim()).toSet()
-        : <String>{};
-
-    return Card(
-      elevation: 8,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: allTags.isEmpty
-            ? Center(
-                child: Text(
-                  'No tags available',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    color: AppColors.textHint,
-                  ),
-                ),
-              )
-            : Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: allTags.map((tag) {
-                  final isSelected = selectedTags.contains(tag);
-                  return FilterChip(
-                    label: Text(
-                      tag,
-                      style: TextStyle(
-                        color: isSelected
-                            ? AppColors.primary
-                            : AppColors.textPrimary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    selected: isSelected,
-                    selectedColor: AppColors.primary.withOpacity(0.2),
-                    backgroundColor: AppColors.grey100,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      side: BorderSide(
-                        color: isSelected
-                            ? AppColors.primary
-                            : Colors.transparent,
-                      ),
-                    ),
-                    onSelected: (selected) {
-                      setState(() {
-                        if (selected) {
-                          selectedTags.add(tag);
-                        } else {
-                          selectedTags.remove(tag);
-                        }
-                        controller.tagsController.text = selectedTags.join(
-                          ', ',
-                        );
-                      });
-                    },
-                  );
-                }).toList(),
-              ),
-      ),
     );
   }
 
@@ -1027,49 +893,274 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
     );
   }
 
+  Widget _buildTagsSection(AddNewsController controller) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Select Tags',
+          style: AppTextStyles.bodyMedium.copyWith(
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        AppSpacing.verticalSpaceSM,
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                offset: const Offset(0, 4),
+                blurRadius: 12,
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Tags Container
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: _isTagsLoading
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(24.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    : _availableTags.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.all(24.0),
+                        child: Center(
+                          child: Text(
+                            'No tags available',
+                            style: TextStyle(color: Colors.grey, fontSize: 14),
+                          ),
+                        ),
+                      )
+                    : Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _availableTags.map((tag) {
+                          final isSelected = _selectedTags.contains(tag);
+                          return FilterChip(
+                            label: Text(tag),
+                            selected: isSelected,
+                            onSelected: (selected) {
+                              _toggleTag(tag, controller);
+                            },
+                            backgroundColor: Colors.grey[200],
+                            selectedColor: AppColors.primary.withOpacity(0.3),
+                            checkmarkColor: AppColors.primary,
+                            labelStyle: TextStyle(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : Colors.black87,
+                              fontWeight: isSelected
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(30),
+                              side: BorderSide(
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : Colors.transparent,
+                                width: isSelected ? 1.5 : 0,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class RichTextFieldWidget extends StatefulWidget {
+  final TextEditingController controller;
+  final String label;
+  final String hint;
+  final IconData icon;
+  final int maxLines;
+  final bool required;
+
+  const RichTextFieldWidget({
+    Key? key,
+    required this.controller,
+    required this.label,
+    required this.hint,
+    required this.icon,
+    this.maxLines = 6,
+    this.required = false,
+  }) : super(key: key);
+
+  @override
+  State<RichTextFieldWidget> createState() => _RichTextFieldWidgetState();
+}
+
+class _RichTextFieldWidgetState extends State<RichTextFieldWidget> {
+  late QuillController _quillController;
+  final FocusNode _focusNode = FocusNode();
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeEditor();
+  }
+
+  void _initializeEditor() {
+    final doc = Document();
+    if (widget.controller.text.isNotEmpty) {
+      doc.insert(0, widget.controller.text);
+    }
+
+    _quillController = QuillController(
+      document: doc,
+      selection: const TextSelection.collapsed(offset: 0),
+    );
+
+    _quillController.addListener(_syncToController);
+  }
+
+  void _syncToController() {
+    final plainText = _quillController.document.toPlainText();
+    if (widget.controller.text != plainText) {
+      widget.controller.text = plainText;
+    }
+  }
+
   @override
   void dispose() {
-    _searchController.dispose();
+    _quillController.removeListener(_syncToController);
+    _quillController.dispose();
+    _focusNode.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.read<AddNewsController>();
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'News Details',
-          style: Theme.of(
-            context,
-          ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+        // Label
+        RichText(
+          text: TextSpan(
+            text: widget.label,
+            style: AppTextStyles.bodyMedium.copyWith(
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+            children: widget.required
+                ? [
+                    const TextSpan(
+                      text: ' *',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ]
+                : [],
+          ),
         ),
         const SizedBox(height: 8),
 
-        _buildTextField(
-          controller: controller.titleEnglishController,
-          label: 'Title',
-          hint: 'e.g., New Development Plan Announced',
-          icon: Icons.title,
-          maxLines: 2,
-          required: true,
+        // Editor Container
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.white,
+            borderRadius: AppSpacing.borderRadiusMD,
+            border: Border.all(color: AppColors.borderLight),
+          ),
+          child: Column(
+            children: [
+              // Toolbar
+              Container(
+                decoration: BoxDecoration(
+                  color:AppColors.white,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(12),
+                  ),
+                ),
+                child: QuillSimpleToolbar(
+                  controller: _quillController,
+                  config: const QuillSimpleToolbarConfig(
+
+                    showAlignmentButtons: true,
+                    showBackgroundColorButton: true,
+                    showBoldButton: true,
+                    showCenterAlignment: true,
+                    showClearFormat: true,
+                    showCodeBlock: true,
+                    showColorButton: true,
+                    showDirection: false,
+                    showDividers: true,
+                    showFontFamily: false,
+                    showFontSize: false,
+                    showHeaderStyle: true,
+                    showIndent: true,
+                    showInlineCode: true,
+                    showItalicButton: true,
+                    showJustifyAlignment: true,
+                    showLeftAlignment: true,
+                    showLink: true,
+                    showListBullets: true,
+                    showListCheck: true,
+                    showListNumbers: true,
+                    showQuote: true,
+                    showRedo: true,
+                    showRightAlignment: true,
+                    showSearchButton: false,
+                    showSmallButton: false,
+                    showStrikeThrough: true,
+                    showSubscript: false,
+                    showSuperscript: false,
+                    showUnderLineButton: true,
+                    showUndo: true,
+                    multiRowsDisplay: false,
+                  ),
+                ),
+              ),
+
+              // Editor
+              Container(
+                constraints: BoxConstraints(
+                  minHeight: 120,
+                  maxHeight: widget.maxLines * 40.0,
+                ),
+                padding: const EdgeInsets.all(16),
+                child: QuillEditor.basic(
+                  controller: _quillController,
+                  focusNode: _focusNode,
+                  config: QuillEditorConfig(
+                    placeholder: widget.hint,
+                    padding: EdgeInsets.zero,
+                    scrollable: true,
+                    autoFocus: false,
+                    expands: false,
+                    customStyles: DefaultStyles(
+                      placeHolder: DefaultTextBlockStyle(
+                        AppTextStyles.bodyMedium.copyWith(
+                          color: AppColors.textHint,
+                        ),
+                        const HorizontalSpacing(0, 0),
+                        const VerticalSpacing(0, 0),
+                        const VerticalSpacing(0, 0),
+                        null,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 12),
-
-        _buildTextField(
-          controller: controller.contentEnglishController,
-          label: 'Content',
-          hint: 'Write your news content in English...',
-          icon: Icons.description,
-          maxLines: 4,
-          required: true,
-        ),
-
-        const SizedBox(height: 24),
-
-        _buildTagsContainer(controller),
       ],
     );
   }
