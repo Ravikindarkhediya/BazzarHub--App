@@ -13,7 +13,8 @@ import '../../../services/models/categorie/categorie_model.dart';
 import '../../../services/models/news/news_model.dart';
 import '../../product/widgets/image_upload_section.dart';
 
- class AddNewsController extends ChangeNotifier implements ImageUploadController {
+class AddNewsController extends ChangeNotifier
+    implements ImageUploadController {
   // State variables
   @override
   final List<ProductImage> images = [];
@@ -27,8 +28,10 @@ import '../../product/widgets/image_upload_section.dart';
   // Text Controllers
   final TextEditingController titleEnglishController = TextEditingController();
   final TextEditingController titleGujaratiController = TextEditingController();
-  final TextEditingController contentEnglishController = TextEditingController();
-  final TextEditingController contentGujaratiController = TextEditingController();
+  final TextEditingController contentEnglishController =
+      TextEditingController();
+  final TextEditingController contentGujaratiController =
+      TextEditingController();
   final TextEditingController tagsController = TextEditingController();
 
   // Location
@@ -46,11 +49,17 @@ import '../../product/widgets/image_upload_section.dart';
   bool showSubDistrict = false;
 
   bool isLocationDataReady = false;
-  bool get canSelectDistrict => selectedState != null && districtsList.isNotEmpty;
-  bool get canSelectSubDistrict => selectedDistrict != null && subDistrictsList.isNotEmpty;
-  bool get canSelectVillage => (selectedSubDistrict != null || selectedDistrict != null) && villagesList.isNotEmpty;
-  bool get hasSubDistrict  => selectedDistrict != null && subDistrictsList.isNotEmpty;
-  bool get allowManualVillageEntry => selectedDistrict != null || selectedSubDistrict != null;
+  bool get canSelectDistrict =>
+      selectedState != null && districtsList.isNotEmpty;
+  bool get canSelectSubDistrict =>
+      selectedDistrict != null && subDistrictsList.isNotEmpty;
+  bool get canSelectVillage =>
+      (selectedSubDistrict != null || selectedDistrict != null) &&
+      villagesList.isNotEmpty;
+  bool get hasSubDistrict =>
+      selectedDistrict != null && subDistrictsList.isNotEmpty;
+  bool get allowManualVillageEntry =>
+      selectedDistrict != null || selectedSubDistrict != null;
   final LocationRepository _locationRepo = LocationRepository.instance;
 
   @override
@@ -95,6 +104,7 @@ import '../../product/widgets/image_upload_section.dart';
       rethrow;
     }
   }
+
   // Initialize for edit mode
   Future<void> initializeForEdit(NewsModel news) async {
     editingNews = news;
@@ -119,19 +129,23 @@ import '../../product/widgets/image_upload_section.dart';
     // Load images
     for (var media in news.media) {
       if (media.type == 'image') {
-        images.add(ProductImage(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          networkUrl: media.url,
-          isVideo: false,
-          isUploaded: true,
-        ));
+        images.add(
+          ProductImage(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            networkUrl: media.url,
+            isVideo: false,
+            isUploaded: true,
+          ),
+        );
       } else if (media.type == 'video') {
-        images.add(ProductImage(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          networkUrl: media.url,
-          isVideo: true,
-          isUploaded: true,
-        ));
+        images.add(
+          ProductImage(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            networkUrl: media.url,
+            isVideo: true,
+            isUploaded: true,
+          ),
+        );
       }
     }
 
@@ -189,7 +203,10 @@ import '../../product/widgets/image_upload_section.dart';
       showSubDistrict = _locationRepo.hasSubDistricts(selectedState!, district);
 
       if (showSubDistrict) {
-        subDistrictsList = _locationRepo.getSubDistricts(selectedState!, district);
+        subDistrictsList = _locationRepo.getSubDistricts(
+          selectedState!,
+          district,
+        );
 
         // Add the selected district itself to sub-districts list if not present
         if (!subDistrictsList.contains(district)) {
@@ -215,7 +232,11 @@ import '../../product/widgets/image_upload_section.dart';
     selectedVillage = null;
 
     if (selectedState != null && selectedDistrict != null) {
-      List<String> villages = _locationRepo.getVillages(selectedState!, selectedDistrict!, subDistrict);
+      List<String> villages = _locationRepo.getVillages(
+        selectedState!,
+        selectedDistrict!,
+        subDistrict,
+      );
 
       // Add the selected sub-district itself to villages list if not present
       if (!villages.contains(subDistrict)) {
@@ -234,7 +255,10 @@ import '../../product/widgets/image_upload_section.dart';
 
   // Image picking methods
   @override
-  Future<void> pickFromCamera(BuildContext context, {required String mediaType}) async {
+  Future<void> pickFromCamera(
+    BuildContext context, {
+    required String mediaType,
+  }) async {
     try {
       final picker = ImagePicker();
       XFile? pickedFile;
@@ -254,7 +278,10 @@ import '../../product/widgets/image_upload_section.dart';
   }
 
   @override
-  Future<void> pickFromGallery(BuildContext context, {required String mediaType}) async {
+  Future<void> pickFromGallery(
+    BuildContext context, {
+    required String mediaType,
+  }) async {
     try {
       final picker = ImagePicker();
       if (mediaType == 'all') {
@@ -262,7 +289,8 @@ import '../../product/widgets/image_upload_section.dart';
         if (pickedFiles.isNotEmpty) {
           for (var file in pickedFiles) {
             if (images.length >= maxImages) break;
-            final isVideo = file.path.toLowerCase().endsWith('.mp4') ||
+            final isVideo =
+                file.path.toLowerCase().endsWith('.mp4') ||
                 file.path.toLowerCase().endsWith('.mov');
             await _processPickedFile(file, isVideo: isVideo);
           }
@@ -273,7 +301,10 @@ import '../../product/widgets/image_upload_section.dart';
     }
   }
 
-  Future<void> _processPickedFile(XFile pickedFile, {required bool isVideo}) async {
+  Future<void> _processPickedFile(
+    XFile pickedFile, {
+    required bool isVideo,
+  }) async {
     if (images.length >= maxImages) {
       AppToast.showError('Maximum $maxImages images allowed');
       return;
@@ -283,12 +314,14 @@ import '../../product/widgets/image_upload_section.dart';
 
     if (isVideo) {
       // Add video with compressing state
-      images.add(ProductImage(
-        id: imageId,
-        file: File(pickedFile.path),
-        isVideo: true,
-        isCompressing: true,
-      ));
+      images.add(
+        ProductImage(
+          id: imageId,
+          file: File(pickedFile.path),
+          isVideo: true,
+          isCompressing: true,
+        ),
+      );
       notifyListeners();
 
       // Generate thumbnail
@@ -305,12 +338,14 @@ import '../../product/widgets/image_upload_section.dart';
       }
     } else {
       // Add image with compressing state
-      images.add(ProductImage(
-        id: imageId,
-        file: File(pickedFile.path),
-        isVideo: false,
-        isCompressing: true,
-      ));
+      images.add(
+        ProductImage(
+          id: imageId,
+          file: File(pickedFile.path),
+          isVideo: false,
+          isCompressing: true,
+        ),
+      );
       notifyListeners();
 
       // Compress image
@@ -345,7 +380,8 @@ import '../../product/widgets/image_upload_section.dart';
   Future<File> _compressImage(File file) async {
     try {
       final dir = await getTemporaryDirectory();
-      final targetPath = '${dir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final targetPath =
+          '${dir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg';
 
       final result = await FlutterImageCompress.compressAndGetFile(
         file.absolute.path,
@@ -402,11 +438,17 @@ import '../../product/widgets/image_upload_section.dart';
           'gujarati': contentGujaratiController.text.trim(),
         },
         'category': selectedCategoryId,
-        'media': uploadedUrls.map((url) => {
-          'type': url.contains('.mp4') || url.contains('.mov') ? 'video' : 'image',
-          'url': url,
-          'thumbnail': url,
-        }).toList(),
+        'media': uploadedUrls
+            .map(
+              (url) => {
+            'type': url.contains('.mp4') || url.contains('.mov')
+                ? 'video'
+                : 'image',
+            'url': url,
+            'thumbnail': url,
+          },
+        )
+            .toList(),
         'tags': tagsController.text
             .split(',')
             .map((tag) => tag.trim())
@@ -424,36 +466,60 @@ import '../../product/widgets/image_upload_section.dart';
       final apiService = await getApiClient();
 
       if (isEditMode) {
+        debugPrint('🔧 Updating news with ID: ${editingNews!.id}');
+
         // Update existing news
-        final response = await apiService.updateNews(
-          editingNews!.id,
-          newsData,
-        );
+        final response = await apiService.updateNews(editingNews!.id, newsData);
 
         if (response.data.status) {
           isLoading = false;
           notifyListeners();
+
+          debugPrint('✅ News updated successfully');
+
+          AppToast.showSuccess('News updated successfully');
+
+          // ✅ Pop with true
+          Navigator.of(context).pop(true);
+
           return true;
+        } else {
+          debugPrint('❌ Update failed: ${response.data.message}');
         }
       } else {
+        debugPrint('📝 Creating new news...');
+
         // Create new news
         final response = await apiService.createNews(newsData);
 
         if (response.data.status) {
           isLoading = false;
           notifyListeners();
+
+          debugPrint('✅ News created successfully');
+
+          AppToast.showSuccess('News added successfully');
+
+          // ✅ Pop with true
+          Navigator.of(context).pop(true);
+
           return true;
+        } else {
+          debugPrint('❌ Creation failed: ${response.data.message}');
         }
       }
 
       isLoading = false;
       notifyListeners();
+      AppToast.showError('Failed to submit news');
       return false;
-    } catch (e) {
+
+    } catch (e, s) {
       isLoading = false;
       notifyListeners();
       AppToast.showError('Failed to submit news: ${e.toString()}');
-      print('Submit Exception: ${e.toString()}');
+      debugPrint('❌ Submit Exception: $e');
+      debugPrint('Stack: $s');
       return false;
     }
   }
@@ -523,6 +589,4 @@ import '../../product/widgets/image_upload_section.dart';
     tagsController.dispose();
     super.dispose();
   }
-
-
 }

@@ -2,17 +2,14 @@ import 'package:bazzar_hub_app/app/core/manager/location_manager.dart';
 import 'package:bazzar_hub_app/presentation/modules/marketplace/view/marketplace_view.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:get/get.dart';
-import '../../../../app/core/manager/log_manager.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
 import '../../../../manager/firebase_manager.dart';
 import '../../../routes/app_routes.dart';
-import '../../chat/views/chat_page.dart';
+import '../../news/controllers/news_controller.dart';
 import '../../news/views/news_view.dart';
-import '../../product/views/sell_product_page.dart';
 import '../../profile/views/account_page.dart';
 import '../widgets/bottom_navbar_widget.dart';
 import 'home_view.dart';
@@ -26,8 +23,7 @@ class HomeWrapper extends StatefulWidget {
 
 class _HomeWrapperState extends State<HomeWrapper> {
   int _currentIndex = 0;
-  bool _isVisible = true;
-  final ScrollController _scrollController = ScrollController();
+  // ✅ Removed _isVisible and _scrollController - not needed anymore
 
   final List<Widget> _pages = [
     const HomeView(),
@@ -39,24 +35,14 @@ class _HomeWrapperState extends State<HomeWrapper> {
   @override
   void initState() {
     super.initState();
-
     FirebaseManager().initNotification();
     LocationManager().requestLocation();
-
-    _scrollController.addListener(() {
-      if (_scrollController.position.userScrollDirection ==
-          ScrollDirection.reverse) {
-        if (_isVisible) setState(() => _isVisible = false);
-      } else if (_scrollController.position.userScrollDirection ==
-          ScrollDirection.forward) {
-        if (!_isVisible) setState(() => _isVisible = true);
-      }
-    });
+    // ✅ Removed scroll listener
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    // ✅ No scroll controller to dispose
     super.dispose();
   }
 
@@ -64,6 +50,20 @@ class _HomeWrapperState extends State<HomeWrapper> {
 
   void _onSellTap() {
     _showSellOptionsSheet(context);
+  }
+
+  void _refreshNews() {
+    try {
+      if (Get.isRegistered<NewsController>()) {
+        Get.find<NewsController>().fetchNews();
+      }
+
+      if (_currentIndex == 1) {
+        setState(() {});
+      }
+    } catch (e) {
+      debugPrint('Error refreshing news: $e');
+    }
   }
 
   void _showSellOptionsSheet(BuildContext context) {
@@ -76,7 +76,6 @@ class _HomeWrapperState extends State<HomeWrapper> {
             color: AppColors.textPrimary,
           ),
         ),
-
         message: Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.sm),
           child: Text(
@@ -86,13 +85,13 @@ class _HomeWrapperState extends State<HomeWrapper> {
             ),
           ),
         ),
-
         actions: [
           /// ------------------- Ads Button -------------------
           CupertinoActionSheetAction(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              Get.toNamed(AppRoutes.sellProductPage);
+              final result = await Get.toNamed(AppRoutes.sellProductPage);
+              // Add refresh logic if needed
             },
             child: Text(
               "Ads",
@@ -104,9 +103,13 @@ class _HomeWrapperState extends State<HomeWrapper> {
 
           /// ------------------- News Button -------------------
           CupertinoActionSheetAction(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              Get.toNamed(AppRoutes.addNewsView);
+              final result = await Get.toNamed(AppRoutes.addNewsView);
+
+              if (result == true) {
+                _refreshNews();
+              }
             },
             child: Text(
               "News",
@@ -133,50 +136,19 @@ class _HomeWrapperState extends State<HomeWrapper> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // ❌ remove bottomNavigationBar property
-      body: Stack(
-        children: [
-          // 🔹 main content
-          NotificationListener<UserScrollNotification>(
-            onNotification: (notification) {
-              if (notification.direction == ScrollDirection.reverse &&
-                  _isVisible) {
-                setState(() => _isVisible = false);
-              } else if (notification.direction == ScrollDirection.forward &&
-                  !_isVisible) {
-                setState(() => _isVisible = true);
-              }
-              return true;
-            },
-            // child: _pages[_currentIndex],
-            child: IndexedStack(
-              index: _currentIndex,
-              children: _pages,
-            ),
-
-          ),
-
-          // 🔹 bottom nav (animated overlay)
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 300),
-            bottom: _isVisible ? 0 : -100, // hides complete area
-            left: 0,
-            right: 0,
-            child: AnimatedOpacity(
-              opacity: _isVisible ? 1 : 0,
-              duration: const Duration(milliseconds: 300),
-              child: BottomNavBarWidget(
-                currentIndex: _currentIndex,
-                onTap: _onItemTapped,
-                onSellTap: _onSellTap,
-              ),
-            ),
-          ),
-        ],
+      extendBody: false,
+      // ✅ Use bottomNavigationBar instead of Stack
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _pages,
+      ),
+      bottomNavigationBar: BottomNavBarWidget(
+        currentIndex: _currentIndex,
+        onTap: _onItemTapped,
+        onSellTap: _onSellTap,
       ),
     );
   }

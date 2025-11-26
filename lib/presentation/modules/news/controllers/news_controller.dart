@@ -1,4 +1,5 @@
 import 'package:bazzar_hub_app/manager/session_manager.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:bazzar_hub_app/presentation/services/api_service.dart';
 import 'package:bazzar_hub_app/presentation/services/models/news/news_model.dart';
@@ -29,7 +30,86 @@ class NewsController extends GetxController {
     userModel = await SessionManager().getUser();
     queryParams.addAll(prepareLocationQuery(0));
     fetchNewsCategories();
-    fetchNews();
+    await fetchNews();
+  }
+
+
+  Future<void> refreshAfterEdit() async {
+    try {
+      debugPrint('🔄 Refreshing after edit - removing location filters...');
+
+      final originalParams = Map<String, dynamic>.from(queryParams);
+
+      queryParams.clear();
+      queryParams.addAll({
+        "page": 1,
+        "limit": 50,
+        "_t": DateTime.now().millisecondsSinceEpoch,
+      });
+
+      if (originalParams.containsKey("category")) {
+        queryParams["category"] = originalParams["category"];
+      }
+
+      debugPrint('Fetching with params: $queryParams');
+
+      isLoading(true);
+      errorMessage('');
+
+      final response = await _apiService.getNews(queryParams);
+
+      if (response.data.status) {
+        final tempList = response.data.data ?? [];
+        newsList.clear();
+        newsList.value = tempList;
+        newsList.refresh();
+
+        // ✅ Force GetBuilder to rebuild
+        update(['news_list']);
+
+        debugPrint('✅ Fetched ${newsList.length} news items after edit');
+        if (newsList.isNotEmpty) {
+          debugPrint('First news title: ${newsList.first.title?.english}');
+        }
+      }
+
+      queryParams.clear();
+      queryParams.addAll(originalParams);
+
+    } catch (e, s) {
+      debugPrint('❌ Error: $e');
+      errorMessage('Failed to refresh news');
+    } finally {
+      isLoading(false);
+    }
+  }
+
+  Future<void> refreshNews() async {
+    try {
+      debugPrint('🔄 Refreshing news...');
+      debugPrint('Current queryParams: $queryParams');
+
+      final tempParams = Map<String, dynamic>.from(queryParams);
+      tempParams['_t'] = DateTime.now().millisecondsSinceEpoch;
+
+      isLoading(true);
+      errorMessage('');
+
+      final response = await _apiService.getNews(tempParams);
+
+      if (response.data.status) {
+        newsList.clear();
+        newsList.value = response.data.data ?? [];
+        newsList.refresh();
+
+        debugPrint('✅ News refreshed successfully. Count: ${newsList.length}');
+      }
+    } catch (e, s) {
+      debugPrint('❌ Error refreshing news: $e');
+      errorMessage('Failed to refresh news');
+    } finally {
+      isLoading(false);
+    }
   }
 
   Future<void> callNewApi(bool isForCategory, int position) async {
@@ -97,13 +177,23 @@ class NewsController extends GetxController {
       isLoading(true);
       errorMessage('');
 
+      debugPrint('📡 Fetching news with params: $queryParams');
+
       final response = await _apiService.getNews(queryParams);
+
       if (response.data.status) {
+        newsList.clear();
         newsList.value = response.data.data ?? [];
+        newsList.refresh();
+
+        // ✅ Force GetBuilder to rebuild
+        update(['news_list']);
+
+        debugPrint('✅ Fetched ${newsList.length} news items');
       }
     } catch (e, s) {
       errorMessage('Failed to load news: ${e.toString()}');
-      print(s);
+      debugPrint('❌ Error: $e');
     } finally {
       isLoading(false);
     }
@@ -114,18 +204,22 @@ class NewsController extends GetxController {
       errorMessage('');
       final response = await _apiService.getNewsCategories();
       if (response.data.status) {
+        newsCategories.clear();  // ✅ Add this
         newsCategories.value = response.data.data ?? [];
+        newsCategories.refresh();
       }
     } catch (e, s) {
-      errorMessage('Failed to load news: ${e.toString()}');
-      print(s);
-    } finally {
-      isLoading(false);
+      errorMessage('Failed to load categories: ${e.toString()}');
+      debugPrint('❌ Error: $e');
     }
   }
 
+
   void removeNewsById(String id) {
+    debugPrint('🗑️ Removing news with id: $id');
     newsList.removeWhere((item) => item.id == id);
+    newsList.refresh();  // ✅ Fixed
+    debugPrint('✅ Remaining: ${newsList.length}');
   }
 
 

@@ -12,7 +12,6 @@ import '../widgets/news_category_selector.dart';
 import 'news_detail_view.dart';
 
 class NewsView extends StatefulWidget {
-
   const NewsView({super.key});
 
   @override
@@ -20,16 +19,19 @@ class NewsView extends StatefulWidget {
 }
 
 class _NewsViewState extends State<NewsView>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late TabController _tabController;
-
-  final NewsController _newsController = Get.put(NewsController());
+  late NewsController _newsController;
 
   int _selectedCategoryIndex = 0;
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   void initState() {
     super.initState();
+    _newsController = Get.put(NewsController(), permanent: true);
     _tabController = TabController(
       length: Utils.newsLocationCategories.length,
       vsync: this,
@@ -54,11 +56,12 @@ class _NewsViewState extends State<NewsView>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-
           // Header
           HeaderWidget(
             isFromNewsTab: true,
@@ -68,7 +71,7 @@ class _NewsViewState extends State<NewsView>
               setState(() {
                 _selectedCategoryIndex = index;
                 _tabController.index = index;
-                _newsController.callNewApi(false,index);
+                _newsController.callNewApi(false, index);
               });
             },
           ),
@@ -77,7 +80,6 @@ class _NewsViewState extends State<NewsView>
           Expanded(
             child: Column(
               children: [
-
                 // CATEGORY SELECTOR
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
@@ -90,94 +92,113 @@ class _NewsViewState extends State<NewsView>
                       categories: _newsController.newsCategories,
                       selectedIndex: _newsController.selectedSubCatIndex.value,
                       onSelect: (index) {
-                        _newsController.callNewApi(true,index);
+                        _newsController.callNewApi(true, index);
                       },
                     );
                   }),
                 ),
 
-
-                // MAIN CONTENT AREA
+                // MAIN CONTENT AREA - ✅ CHANGED TO GetBuilder
                 Expanded(
-                  child: Obx(() {
-                    // 1) LOADING
-                    if (_newsController.isLoading.value) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
+                  child: GetBuilder<NewsController>(
+                    id: 'news_list', // ✅ Unique ID for targeted rebuild
+                    builder: (controller) {
+                      debugPrint('🔄 GetBuilder rebuilding. Count: ${controller.newsList.length}');
 
-                    // 2) ERROR + EMPTY
-                    if (_newsController.errorMessage.value.isNotEmpty &&
-                        _newsController.newsList.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(_newsController.errorMessage.value),
-                            const SizedBox(height: 16),
-                            ElevatedButton(
-                              onPressed: _newsController.fetchNews,
-                              child: const Text('Retry'),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
+                      if (controller.newsList.isNotEmpty) {
+                        debugPrint('📰 First news: ${controller.newsList.first.title?.english}');
+                      }
 
-                    // 3) EMPTY LIST NO ERROR
-                    if (_newsController.newsList.isEmpty) {
-                      return SizedBox.expand(
-                        child: Center(
-                          child: EmptyStateWidget.news(),
-                        ),
-                      );
-                    }
+                      // 1) LOADING
+                      if (controller.isLoading.value) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
 
-                    // 4) SHOW LIST
-                    return ListView.separated(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      itemCount: _newsController.newsList.length,
-                      itemBuilder: (context, index) {
-                        if (index == 0) {
-                          final news = _newsController.newsList[index];
-                          return FeaturedNewsCard(
-                            newsData: news,
-                            onTap: () => Get.to(
-                              () => NewsDetailView(
-                                newsId: news.id!,
-                                initialData: news.toJson(),
+                      // 2) ERROR + EMPTY
+                      if (controller.errorMessage.value.isNotEmpty &&
+                          controller.newsList.isEmpty) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(controller.errorMessage.value),
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: controller.fetchNews,
+                                child: const Text('Retry'),
                               ),
-                            ),
-                          );
-                        } else {
-                          final news = _newsController.newsList[index];
-                          return CompactNewsCard(
-                            newsData: news,
-                            onTap: () => Get.to(
-                              () => NewsDetailView(
-                                newsId: news.id!,
-                                initialData: news.toJson(),
-                              ),
-                            ),
-                          );
-                        }
-                      },
-                      separatorBuilder: (BuildContext context, int index) {
-                       return const Divider(
-                        color: Colors.grey,
-                        thickness: 0.5,
-                        height: 1,
-                        indent: 0,
-                        endIndent: 0,
+                            ],
+                          ),
+                        );
+                      }
+
+                      // 3) EMPTY LIST NO ERROR
+                      if (controller.newsList.isEmpty) {
+                        return SizedBox.expand(
+                          child: Center(
+                            child: EmptyStateWidget.news(),
+                          ),
+                        );
+                      }
+
+                      // 4) SHOW LIST WITH REFRESH INDICATOR
+                      return RefreshIndicator(
+                        onRefresh: () => controller.refreshNews(),
+                        color: AppColors.primary,
+                        child: ListView.builder(
+                          // ✅ Removed ValueKey from ListView - not needed with GetBuilder
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          itemCount: controller.newsList.length + controller.newsList.length - 1, // items + separators
+                          itemBuilder: (context, index) {
+                            // Handle separators
+                            if (index.isOdd) {
+                              return const Divider(
+                                color: Colors.grey,
+                                thickness: 0.5,
+                                height: 1,
+                                indent: 0,
+                                endIndent: 0,
+                              );
+                            }
+
+                            final newsIndex = index ~/ 2;
+                            final news = controller.newsList[newsIndex];
+
+                            // First item - Featured
+                            if (newsIndex == 0) {
+                              return FeaturedNewsCard(
+                                newsData: news,
+                                onTap: () => Get.to(
+                                      () => NewsDetailView(
+                                    newsId: news.id!,
+                                    initialData: news.toJson(),
+                                  ),
+                                ),
+                              );
+                            } else {
+                              return CompactNewsCard(
+                                newsData: news,
+                                onTap: () => Get.to(
+                                      () => NewsDetailView(
+                                    newsId: news.id!,
+                                    initialData: news.toJson(),
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                        ),
                       );
                     },
-                    );
-                  }),
+                  ),
                 )
               ],
             ),
           )
-
         ],
       ),
     );

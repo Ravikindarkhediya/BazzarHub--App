@@ -3,8 +3,6 @@ import 'package:bazzar_hub_app/presentation/modules/product/widgets/custom_image
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
-
 import '../../../../app/core/utils/app_language.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/core/utils/responsive_size.dart';
@@ -14,32 +12,45 @@ import '../../../../app/data/constants/app_text_style.dart';
 import '../../../commons/dialogs/appDialog.dart';
 import '../../../services/models/news/news_media_model.dart';
 import '../../../services/models/news/news_model.dart';
+import '../../news/controllers/news_controller.dart';
 
 class MyNews extends StatelessWidget {
   final NewsModel newsData;
   final Function(String) onTapdDelete;
   final bool hideActionButton;
+  final VoidCallback? onNewsUpdated;
 
-  const MyNews({Key? key, required this.newsData, required this.onTapdDelete,this.hideActionButton = false});
+  const MyNews({
+    Key? key,
+    required this.newsData,
+    required this.onTapdDelete,
+    this.hideActionButton = false,
+    this.onNewsUpdated,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final title = AppLanguage.getText(newsData.title);
+    // ✅ Get fresh data from controller to ensure we always show updated values
+    final controller = Get.find<NewsController>();
 
-    final List<NewsMediaModel> mediaList = newsData.media;
+    // ✅ Find current news in controller's list (it might be updated)
+    final currentNews = controller.newsList.firstWhereOrNull(
+          (news) => news.id == newsData.id,
+    ) ?? newsData;
+
+    final title = AppLanguage.getText(currentNews.title);
+    final List<NewsMediaModel> mediaList = currentNews.media;
     final imageUrl = mediaList.isNotEmpty ? mediaList.first.thumbnail : '';
-    final bool isVideo = mediaList.isNotEmpty
-        ? mediaList.first.type == "video"
-        : false;
+    final bool isVideo = mediaList.isNotEmpty ? mediaList.first.type == "video" : false;
+    final createdAt = currentNews.createdAt;
+    final String newsCategory = AppLanguage.getText(currentNews.category?.name);
+    final String? villageName = currentNews.location?.district;
 
-    final createdAt = newsData.createdAt;
-    final String newsCategory = AppLanguage.getText(newsData.category?.name);
-    final String? villageName = newsData.location?.district;
     return InkWell(
       onTap: () {
         Get.toNamed(
           '/news-detail',
-          parameters: {'newsId': newsData.id},
+          parameters: {'newsId': currentNews.id},
         );
       },
       child: Container(
@@ -58,39 +69,39 @@ class MyNews extends StatelessWidget {
                 ),
 
                 // Action Button
-                if(!hideActionButton)
-                Positioned(
-                  top: 6,
-                  right: 6,
-                  child: GestureDetector(
-                    onTap: () => {
-                      _showNewsOptionsBottomSheet(context, newsData.id, title),
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(5),
-                      decoration: BoxDecoration(
-                        color: AppColors.black.withOpacity(0.35),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.12),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
+                if (!hideActionButton)
+                  Positioned(
+                    top: 6,
+                    right: 6,
+                    child: GestureDetector(
+                      onTap: () {
+                        _showNewsOptionsBottomSheet(context, currentNews.id, title);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          color: AppColors.black.withOpacity(0.35),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.12),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                          border: Border.all(
+                            color: AppColors.white.withOpacity(0.4),
+                            width: 1.5,
                           ),
-                        ],
-                        border: Border.all(
-                          color: AppColors.white.withOpacity(0.4),
-                          width: 1.5,
                         ),
-                      ),
-                      child: Icon(
-                        Icons.more_vert,
-                        color: AppColors.white,
-                        size: AppSpacing.iconMD,
+                        child: Icon(
+                          Icons.more_vert,
+                          color: AppColors.white,
+                          size: AppSpacing.iconMD,
+                        ),
                       ),
                     ),
                   ),
-                ),
 
                 // Play Button Overlay
                 if (isVideo)
@@ -155,11 +166,11 @@ class MyNews extends StatelessWidget {
 
                   const SizedBox(height: 8),
 
-                  // Time and  Village Name
+                  // Time and Village Name
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      if (villageName!.isNotEmpty) ...[
+                      if (villageName != null && villageName.isNotEmpty) ...[
                         _buildButton(
                           icon: Icons.location_on_outlined,
                           text: villageName,
@@ -194,10 +205,10 @@ class MyNews extends StatelessWidget {
   }
 
   void _showNewsOptionsBottomSheet(
-    BuildContext context,
-    String newsId,
-    String title,
-  ) {
+      BuildContext context,
+      String newsId,
+      String title,
+      ) {
     showCupertinoModalPopup<void>(
       context: context,
       builder: (BuildContext ctx) {
@@ -217,15 +228,46 @@ class MyNews extends StatelessWidget {
               ),
             ),
             actions: [
+              // ✅ EDIT ACTION
               CupertinoActionSheetAction(
-                onPressed: () {
+                onPressed: () async {
                   Navigator.pop(ctx);
-                  Navigator.push(
+
+                  debugPrint('🔧 Opening edit page for news: $newsId');
+
+                  // Navigate to edit page
+                  final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => AddNewsView(news: newsData),
                     ),
                   );
+
+                  debugPrint('📢 Edit result: $result');
+
+                  if (result == true) {
+                    debugPrint('✅ News edited successfully');
+
+                    // Small delay for backend
+                    await Future.delayed(Duration(milliseconds: 500));
+
+                    // ✅ Refresh controller
+                    if (Get.isRegistered<NewsController>()) {
+                      final controller = Get.find<NewsController>();
+                      await controller.refreshAfterEdit();
+
+                      // ✅ Force parent widget to rebuild
+                      if (context.mounted) {
+                        // This ensures the widget tree rebuilds
+                        (context as Element).markNeedsBuild();
+                      }
+
+                      debugPrint('✅ Refresh complete');
+                    }
+
+                    // Callback
+                    onNewsUpdated?.call();
+                  }
                 },
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -246,18 +288,33 @@ class MyNews extends StatelessWidget {
                   ],
                 ),
               ),
+
+              // ✅ DELETE ACTION
               CupertinoActionSheetAction(
                 onPressed: () async {
                   Navigator.pop(ctx);
+
                   final bool confirmed = await AppDialog.show(
                     context,
                     title: 'Delete News',
-                    message: 'Are you sure you want to delete "${title}"?',
+                    message: 'Are you sure you want to delete "$title"?',
                     confirmText: 'Delete',
                     cancelText: 'Cancel',
                   );
+
                   if (confirmed) {
+                    debugPrint('🗑️ Deleting news: $newsId');
+
+                    // Delete
                     onTapdDelete(newsId);
+
+                    // Refresh
+                    if (Get.isRegistered<NewsController>()) {
+                      await Get.find<NewsController>().refreshNews();
+                    }
+
+                    // Callback
+                    onNewsUpdated?.call();
                   }
                 },
                 isDestructiveAction: true,

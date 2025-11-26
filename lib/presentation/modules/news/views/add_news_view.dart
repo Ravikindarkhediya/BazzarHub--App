@@ -86,13 +86,10 @@ class _AddNewsViewState extends State<AddNewsView> {
     }
   }
 
+
   Future<void> submitForm() async {
     final success = await _controller.submitNews(context);
     if (success && mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => NewsView()),
-      );
       AppToast.showSuccess(
         isEditMode
             ? 'News updated successfully'
@@ -159,6 +156,7 @@ class _AddNewsViewState extends State<AddNewsView> {
           return shouldPop;
         },
         child: Scaffold(
+          resizeToAvoidBottomInset: false,
           backgroundColor: AppColors.background,
           appBar: AppBar(
             backgroundColor: AppColors.white,
@@ -730,6 +728,8 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
 
   Future<void> _fetchTags() async {
     print('API Calling...........');
+    if (!mounted) return;
+
     setState(() {
       _isTagsLoading = true;
     });
@@ -737,6 +737,8 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
       final apiService = await getApiClient();
       final response = await apiService.getNewsTags();
       print('^^^^^^^^^ : ${response.data.data?.first.name}');
+      if (!mounted) return;
+
       if (response.response.statusCode == 200) {
         final tagsList = response.data.data;
         setState(() {
@@ -750,10 +752,13 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
       }
     } catch (e) {
       print('API Calling...........$e');
+      if (!mounted) return;
+
       setState(() {
         _availableTags = [];
       });
     } finally {
+      if (!mounted) return;
       setState(() {
         _isTagsLoading = false;
       });
@@ -761,6 +766,8 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
   }
 
   void _toggleTag(String tag, AddNewsController controller) {
+    if (!mounted) return;
+
     setState(() {
       if (_selectedTags.contains(tag)) {
         _selectedTags.remove(tag);
@@ -1070,6 +1077,10 @@ class _RichTextFieldWidgetState extends State<RichTextFieldWidget> {
 
         // Editor Container
         Container(
+          constraints: BoxConstraints(
+            minHeight: 200,
+            maxHeight: widget.maxLines * 60.0,
+          ),
           decoration: BoxDecoration(
             color: AppColors.white,
             borderRadius: AppSpacing.borderRadiusMD,
@@ -1079,6 +1090,7 @@ class _RichTextFieldWidgetState extends State<RichTextFieldWidget> {
             children: [
               // Toolbar
               Container(
+
                 decoration: BoxDecoration(
                   color:AppColors.white,
                   borderRadius: const BorderRadius.vertical(
