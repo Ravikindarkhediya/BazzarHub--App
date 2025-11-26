@@ -36,7 +36,7 @@ class NewsController extends GetxController {
 
   Future<void> refreshAfterEdit() async {
     try {
-      debugPrint('🔄 Refreshing after edit - removing location filters...');
+      debugPrint('Refreshing after edit - removing location filters...');
 
       final originalParams = Map<String, dynamic>.from(queryParams);
 
@@ -64,10 +64,9 @@ class NewsController extends GetxController {
         newsList.value = tempList;
         newsList.refresh();
 
-        // ✅ Force GetBuilder to rebuild
+        //  Force GetBuilder to rebuild
         update(['news_list']);
 
-        debugPrint('✅ Fetched ${newsList.length} news items after edit');
         if (newsList.isNotEmpty) {
           debugPrint('First news title: ${newsList.first.title?.english}');
         }
@@ -177,7 +176,6 @@ class NewsController extends GetxController {
       isLoading(true);
       errorMessage('');
 
-      debugPrint('📡 Fetching news with params: $queryParams');
 
       final response = await _apiService.getNews(queryParams);
 
@@ -186,10 +184,9 @@ class NewsController extends GetxController {
         newsList.value = response.data.data ?? [];
         newsList.refresh();
 
-        // ✅ Force GetBuilder to rebuild
+        // Force GetBuilder to rebuild
         update(['news_list']);
 
-        debugPrint('✅ Fetched ${newsList.length} news items');
       }
     } catch (e, s) {
       errorMessage('Failed to load news: ${e.toString()}');
@@ -204,7 +201,7 @@ class NewsController extends GetxController {
       errorMessage('');
       final response = await _apiService.getNewsCategories();
       if (response.data.status) {
-        newsCategories.clear();  // ✅ Add this
+        newsCategories.clear();
         newsCategories.value = response.data.data ?? [];
         newsCategories.refresh();
       }
@@ -216,10 +213,8 @@ class NewsController extends GetxController {
 
 
   void removeNewsById(String id) {
-    debugPrint('🗑️ Removing news with id: $id');
     newsList.removeWhere((item) => item.id == id);
     newsList.refresh();  // ✅ Fixed
-    debugPrint('✅ Remaining: ${newsList.length}');
   }
 
 

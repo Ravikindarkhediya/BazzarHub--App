@@ -30,10 +30,8 @@ class MyNews extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ Get fresh data from controller to ensure we always show updated values
     final controller = Get.find<NewsController>();
 
-    // ✅ Find current news in controller's list (it might be updated)
     final currentNews = controller.newsList.firstWhereOrNull(
           (news) => news.id == newsData.id,
     ) ?? newsData;
@@ -228,12 +226,11 @@ class MyNews extends StatelessWidget {
               ),
             ),
             actions: [
-              // ✅ EDIT ACTION
+              //  EDIT ACTION
               CupertinoActionSheetAction(
                 onPressed: () async {
                   Navigator.pop(ctx);
 
-                  debugPrint('🔧 Opening edit page for news: $newsId');
 
                   // Navigate to edit page
                   final result = await Navigator.push(
@@ -243,20 +240,16 @@ class MyNews extends StatelessWidget {
                     ),
                   );
 
-                  debugPrint('📢 Edit result: $result');
 
                   if (result == true) {
-                    debugPrint('✅ News edited successfully');
 
                     // Small delay for backend
                     await Future.delayed(Duration(milliseconds: 500));
 
-                    // ✅ Refresh controller
                     if (Get.isRegistered<NewsController>()) {
                       final controller = Get.find<NewsController>();
                       await controller.refreshAfterEdit();
 
-                      // ✅ Force parent widget to rebuild
                       if (context.mounted) {
                         // This ensures the widget tree rebuilds
                         (context as Element).markNeedsBuild();
@@ -289,7 +282,7 @@ class MyNews extends StatelessWidget {
                 ),
               ),
 
-              // ✅ DELETE ACTION
+              //  DELETE ACTION
               CupertinoActionSheetAction(
                 onPressed: () async {
                   Navigator.pop(ctx);

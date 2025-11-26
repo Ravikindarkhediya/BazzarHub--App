@@ -98,10 +98,10 @@ class _NewsViewState extends State<NewsView>
                   }),
                 ),
 
-                // MAIN CONTENT AREA - ✅ CHANGED TO GetBuilder
+                // MAIN CONTENT AREA -
                 Expanded(
                   child: GetBuilder<NewsController>(
-                    id: 'news_list', // ✅ Unique ID for targeted rebuild
+                    id: 'news_list',
                     builder: (controller) {
                       debugPrint('🔄 GetBuilder rebuilding. Count: ${controller.newsList.length}');
 
@@ -146,7 +146,6 @@ class _NewsViewState extends State<NewsView>
                         onRefresh: () => controller.refreshNews(),
                         color: AppColors.primary,
                         child: ListView.builder(
-                          // ✅ Removed ValueKey from ListView - not needed with GetBuilder
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,

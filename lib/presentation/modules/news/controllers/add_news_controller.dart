@@ -475,11 +475,9 @@ class AddNewsController extends ChangeNotifier
           isLoading = false;
           notifyListeners();
 
-          debugPrint('✅ News updated successfully');
 
           AppToast.showSuccess('News updated successfully');
 
-          // ✅ Pop with true
           Navigator.of(context).pop(true);
 
           return true;
@@ -496,11 +494,9 @@ class AddNewsController extends ChangeNotifier
           isLoading = false;
           notifyListeners();
 
-          debugPrint('✅ News created successfully');
 
           AppToast.showSuccess('News added successfully');
 
-          // ✅ Pop with true
           Navigator.of(context).pop(true);
 
           return true;
