@@ -20,5 +20,5 @@ class BaseModel<T> {
   });
 
   factory BaseModel.fromJson(Map<String, dynamic> map, T Function(dynamic json) param1) => _$BaseModelFromJson(map, param1);
-  Map<String, dynamic> toJson() => _$BaseModelToJson(this, T as Object? Function(dynamic value));
+  Map<String, dynamic> toJson() => _$BaseModelToJson(this, (value) => value);
 }

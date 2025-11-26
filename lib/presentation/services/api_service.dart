@@ -1,7 +1,7 @@
 
 import 'package:bazzar_hub_app/presentation/services/endpoints.dart';
 import 'package:bazzar_hub_app/presentation/services/models/categorie/category_list_response_model.dart';
-// import 'package:bazzar_hub_app/presentation/services/models/news/favorite_news_response.dart';
+// import 'package:bazzar_hub_app/presentation/services/models/news/favorite_news_model.dart';
 import 'package:bazzar_hub_app/presentation/services/models/news/news_model.dart';
 import 'package:bazzar_hub_app/presentation/services/models/news/news_tags_model.dart';
 import 'package:dio/dio.dart';
@@ -12,6 +12,7 @@ import 'models/base/base_list_model.dart';
 import 'models/base/base_model.dart';
 import 'models/categorie/categorie_model.dart';
 import 'models/marketplace/marketplace_model.dart';
+import 'models/news/favorite_news_model.dart';
 import 'models/upload/upload_response_model.dart';
 import 'models/user/user_model.dart';
 import 'models/user/user_token_model.dart';
@@ -195,10 +196,10 @@ abstract class ApiServices{
     @Body() Map<String, dynamic> body,
   );
 
-  // @GET(Endpoints.NEWS_FAVORITES_LIST)
-  // Future<HttpResponse<BaseModel<FavoriteNewsResponse>>> getFavoriteNews(
-  //     @Queries() Map<String, dynamic> queryParams,
-  //     );
+  @GET(Endpoints.NEWS_FAVORITES_LIST)
+  Future<HttpResponse<BaseModel<FavoriteNewsListResponse>>> getFavoriteNews(
+      @Queries() Map<String, dynamic> queryParams,
+      );
 
   @POST(Endpoints.NEWS_VIEW_LOG)
   Future<HttpResponse<BaseModel<dynamic>>> trackNewsView(
