@@ -33,6 +33,8 @@ class Endpoints {
 
   static const String MARKETPLACE_VIEW_LOG = "/api/marketplace/view/log";
 
+  static const String REPORT_MARKETPLACE = "/api/marketplace";
+
   //News
 
   static const String NEWS_CATEGORIES = "api/news/categories";

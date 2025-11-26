@@ -150,6 +150,12 @@ abstract class ApiServices{
       @Body() Map<String, dynamic> body,
       );
 
+  @POST("${Endpoints.REPORT_MARKETPLACE}/report/{id}")
+  Future<HttpResponse<BaseModel<dynamic>>> reportMarketPlace(
+      @Path("id") String id,
+      @Body() Map<String, dynamic> body,
+      );
+
   //News
 
   @GET(Endpoints.NEWS_CATEGORIES)
@@ -183,7 +189,7 @@ abstract class ApiServices{
     @Path("id") String id,
   );
 
-  @POST("${Endpoints.NEWS}/{id}/report")
+  @POST("${Endpoints.NEWS}/report/{id}")
   Future<HttpResponse<BaseModel<dynamic>>> reportNews(
     @Path("id") String newsId,
     @Body() Map<String, dynamic> body,

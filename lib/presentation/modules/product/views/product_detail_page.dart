@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:bazzar_hub_app/app/core/manager/log_manager.dart';
 import 'package:bazzar_hub_app/presentation/commons/dialogs/app_toasts.dart';
+import 'package:bazzar_hub_app/presentation/commons/widgets/report_bottom_sheet.dart';
 import 'package:bazzar_hub_app/presentation/modules/marketplace/view/marketplace_view.dart';
 import 'package:bazzar_hub_app/presentation/modules/product/views/sell_product_page.dart';
 import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
@@ -439,8 +440,14 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         ),
         const SizedBox(width: AppSpacing.md),
         _buildAppbarIcon(
-          icon: Icons.share_rounded,
-          onTap: () => controller.shareProduct(context),
+          icon: Icons.more_vert,
+          onTap: () => {
+            ReportBottomSheet.show(
+                context: context,
+                type: "marketplace",
+                id: widget.productId
+            )
+          },
           background: AppColors.primary,
           iconColor: AppColors.white,
         ),

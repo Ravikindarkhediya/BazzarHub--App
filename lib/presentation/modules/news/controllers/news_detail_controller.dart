@@ -38,6 +38,8 @@ class NewsDetailController extends GetxController {
 
     _initializeWithInitialData();
 
+      fetchNewsDetail();
+
     // IMPORTANT: Check favorite status FIRST before loading details
     // This ensures the favorite state is available immediately when the screen loads
     // checkIfNewsIsFavorite().then((_) {
