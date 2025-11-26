@@ -157,10 +157,10 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
               ],
             ),
           ),
-        )
-        .animate()
-        .fadeIn(duration: 600.ms, delay: (50 * index).ms)
-        .scale(delay: (50 * index).ms, duration: 400.ms);
+        );
+        // .animate()
+        // .fadeIn(duration: 600.ms, delay: (50 * index).ms)
+        // .scale(delay: (50 * index).ms, duration: 400.ms);
   }
 
   Widget _buildProductImage(MarketplaceModel product) {

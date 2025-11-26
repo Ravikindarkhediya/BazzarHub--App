@@ -165,19 +165,13 @@ class _FavoritesPageState extends State<FavoritesPage>
   Future<void> _handleFavoriteToggle(MarketplaceModel product, bool isFavorite) async {
     try {
       var services = await getApiClient();
-
-      // Call the addToFavorite endpoint with the product ID to toggle favorite status
-      await services.addToFavorite({
-        'marketplaceId': product.id,
-        'isFavorite': false // Set to false to remove from favorites
-      });
-
-      // Update local state
-      setState(() {
-        _favoriteMarketplaces.removeWhere((item) => item.id == product.id);
-      });
-
-      AppToast.showSuccess('Removed from favorites');
+      final response = await services.addToFavorite({'listingId':  product.id});
+      if (response.data.status) {
+        AppToast.showSuccess('Removed from favorites');
+        setState(() {
+          _favoriteMarketplaces.removeWhere((item) => item.id == product.id);
+        });
+      }
     } catch (e) {
       if (mounted) {
         AppToast.showError('Failed to update favorites');

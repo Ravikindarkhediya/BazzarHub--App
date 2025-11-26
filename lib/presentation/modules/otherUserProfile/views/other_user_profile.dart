@@ -58,165 +58,123 @@ class _OtherUserProfileState extends State<OtherUserProfile> with SingleTickerPr
           ),
         ],
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        body: DefaultTabController(
+          length: 2,
+          child: NestedScrollView(
+            headerSliverBuilder: (context, innerBoxIsScrolled) {
+              return [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Obx(() {
+                      if (_profileController.isLoading.value) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
 
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 8.0,
-            ),
-            child: Obx(() {
+                      if (_profileController.errorMessage.value.isNotEmpty) {
+                        return Center(child: Text(_profileController.errorMessage.value));
+                      }
 
-              if (_profileController.isLoading.value) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              if (_profileController.errorMessage.value.isNotEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(_profileController.errorMessage.value),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _profileController.getOtherUserProfile,
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                );
-              }
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // PROFILE IMAGE CENTERED
-                  Center(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(60),
-                      child: (_profileController.userModel.value?.avatar != null)
-                          ? Image.network(
-                        _profileController.userModel.value!.avatar,
-                        width: 120,
-                        height: 120,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return _buildPlaceholder();
-                        },
-                      )
-                          : _buildPlaceholder(),
-                    ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // NAME
-                  Text(
-                    _profileController.userModel.value?.name ?? '',
-                    style: AppTextStyles.h4.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-
-                  const SizedBox(height: 4),
-
-                  // EMAIL
-                  Text(
-                    _profileController.userModel.value?.email ?? '',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // BIO
-                  Text(
-                    _profileController.userModel.value?.bio ?? '',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              );
-
-            }),
-          ),
-          
-          const SizedBox(height: 24),
-
-          TabBar(
-            controller: _tabController,
-            labelColor: AppColors.primary,
-            indicatorColor: AppColors.primary,
-            unselectedLabelColor: AppColors.textSecondary,
-            labelStyle: AppTextStyles.bodyLarge.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-            unselectedLabelStyle: AppTextStyles.bodyLarge.copyWith(
-              fontWeight: FontWeight.w500,
-            ),
-            indicatorWeight: 3,
-            tabs: const [
-              Tab(text: 'Products'),
-              Tab(text: 'News'),
-            ],
-          ),
-
-          Expanded(
-            child: Obx(() {
-              return TabBarView(
-                controller: _tabController,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    child: ProductGridWidget(
-                      products: _profileController.productList.value,
-                      isLoading: _profileController.isMarketPlaceLoading.value,
-                      onProductTap: (selectedProduct) {
-                        Get.to(
-                              () => ProductDetailPage(
-                            productId: selectedProduct.id,
-                            product: selectedProduct,
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Center(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(60),
+                              child: (_profileController.userModel.value?.avatar != null)
+                                  ? Image.network(
+                                _profileController.userModel.value!.avatar,
+                                width: 120,
+                                height: 120,
+                                fit: BoxFit.cover,
+                              )
+                                  : _buildPlaceholder(),
+                            ),
                           ),
-                        );
-                      },
-                      onFavoriteToggle: null,
-                      showHeartIcon: false,
-                    ),
-                  ),
+                          const SizedBox(height: 12),
 
-                  _profileController.isNewsListLoading.value
-                      ? const Center(child: CircularProgressIndicator())
-                      : ListView.separated(
-                    padding: AppSpacing.horizontalMD,
-                    itemCount: _profileController.newsList.length,
-                    separatorBuilder: (_, __) => const Divider(
-                      color: Colors.grey,
-                      thickness: 0.5,
-                    ),
-                    itemBuilder: (context, index) {
-                      return MyNews(
-                        newsData: _profileController.newsList[index],
-                        onTapdDelete: (index) {},
-                        hideActionButton: true,
+                          Text(
+                            _profileController.userModel.value?.name ?? "",
+                            style: AppTextStyles.h4.copyWith(fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
+                          ),
+
+                          const SizedBox(height: 4),
+
+                          Text(
+                            _profileController.userModel.value?.email ?? "",
+                            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                            textAlign: TextAlign.center,
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          Text(
+                            _profileController.userModel.value?.bio ?? "",
+                            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                            textAlign: TextAlign.center,
+                          ),
+
+                          const SizedBox(height: 20),
+                        ],
                       );
-                    },
+                    }),
                   ),
-                ],
-              );
-            }),
+                ),
+
+                // --- PINNED TAB BAR ---
+                SliverPersistentHeader(
+                  pinned: true,
+                    delegate: _SliverTabBarDelegate(
+                    TabBar(
+                      controller: _tabController,
+                      labelColor: AppColors.primary,
+                      indicatorColor: AppColors.primary,
+                      unselectedLabelColor: AppColors.textSecondary,
+                      tabs: const [
+                        Tab(text: "Products"),
+                        Tab(text: "News"),
+                      ],
+                    ),
+                  ),
+                ),
+              ];
+            },
+
+            body: TabBarView(
+              controller: _tabController,
+              children: [
+                Obx(() => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 22.0),
+                  child: ProductGridWidget(
+                    products: _profileController.productList.value,
+                    isLoading: _profileController.isMarketPlaceLoading.value,
+                    onProductTap: (p) => Get.to(() => ProductDetailPage(productId: p.id)),
+                    onFavoriteToggle: null,
+                    showHeartIcon: false,
+                  ),
+                )),
+
+
+                Obx(() => _profileController.isNewsListLoading.value
+                    ? const Center(child: CircularProgressIndicator())
+                    : ListView.separated(
+                  padding: AppSpacing.horizontalMD,
+                  itemCount: _profileController.newsList.length,
+                  separatorBuilder: (_, __) => const Divider(color: Colors.grey),
+                  itemBuilder: (context, index) {
+                    return MyNews(
+                      newsData: _profileController.newsList[index],
+                      hideActionButton: true,
+                      onTapdDelete: (i) {},
+                    );
+                  },
+                )),
+              ],
+            ),
           ),
+        )
 
-
-
-        ],
-      ),
     );
 
   }
@@ -245,5 +203,28 @@ class _OtherUserProfileState extends State<OtherUserProfile> with SingleTickerPr
   }
 
 
+}
+
+class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar tabBar;
+
+  _SliverTabBarDelegate(this.tabBar);
+
+  @override
+  double get minExtent => tabBar.preferredSize.height;
+
+  @override
+  double get maxExtent => tabBar.preferredSize.height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      color: Colors.white,
+      child: tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(SliverPersistentHeaderDelegate oldDelegate) => false;
 }
 
