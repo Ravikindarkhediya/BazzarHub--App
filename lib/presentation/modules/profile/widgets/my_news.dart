@@ -2,6 +2,7 @@ import 'package:bazzar_hub_app/presentation/modules/news/views/add_news_view.dar
 import 'package:bazzar_hub_app/presentation/modules/product/widgets/custom_image_widget.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 
 import '../../../../app/core/utils/app_language.dart';
@@ -35,7 +36,10 @@ class MyNews extends StatelessWidget {
     final String? villageName = newsData.location?.district;
     return InkWell(
       onTap: () {
-        // TODO Open Detail Screen
+        Get.toNamed(
+          '/news-detail',
+          parameters: {'newsId': newsData.id},
+        );
       },
       child: Container(
         color: Colors.transparent,

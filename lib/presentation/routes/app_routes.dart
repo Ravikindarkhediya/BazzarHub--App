@@ -19,6 +19,7 @@ import '../modules/search/view/search_page.dart';
 import '../modules/splash/views/splash_view.dart';
 import 'package:get/get.dart';
 
+import '../modules/news/views/news_detail_view.dart';
 import '../notification/view/notification_page.dart';
 
 class AppPages {
@@ -50,14 +51,33 @@ class AppPages {
     GetPage(name: AppRoutes.addNewsView, page: () => const AddNewsView()),
     GetPage(name: AppRoutes.newsView, page: () => const NewsView()),
     GetPage(
+      name: AppRoutes.newsDetail,
+      page: () {
+        final newsId = Get.parameters['newsId'] ?? '';
+        return NewsDetailView(newsId: newsId);
+      },
+    ),
+    GetPage(
       name: ProductDetailPage.routeName,
       page: () {
-        final args = Get.arguments as ProductPageArguments;
-        return ProductDetailPage(
-          productId: args.productId,
-          product: args.product,
-          currentLocation: args.currentLocation,
-        );
+        if (Get.arguments is ProductPageArguments) {
+          final args = Get.arguments as ProductPageArguments;
+          return ProductDetailPage(
+            productId: args.productId,
+            product: args.product,
+            currentLocation: args.currentLocation,
+          );
+        } else if (Get.parameters.containsKey('productId')) {
+          // Handle direct navigation with productId in parameters
+          return ProductDetailPage(
+            productId: Get.parameters['productId']!,
+          );
+        } else {
+          // Fallback with empty product
+          return const ProductDetailPage(
+            productId: '',
+          );
+        }
       },
     ),
   ];
@@ -84,5 +104,6 @@ class AppRoutes {
   static const marketPlace = '/marketPlace';
   static const addNewsView = '/addNews';
   static const newsView = '/newsView';
+  static const newsDetail = '/news-detail';
 
 }

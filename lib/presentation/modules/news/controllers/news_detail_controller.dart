@@ -39,15 +39,13 @@ class NewsDetailController extends GetxController {
 
     _initializeWithInitialData();
 
-      fetchNewsDetail();
+    // First check favorite status (fast)
+    checkIfNewsIsFavorite();
 
-    // IMPORTANT: Check favorite status FIRST before loading details
-    // This ensures the favorite state is available immediately when the screen loads
-    checkIfNewsIsFavorite().then((_) {
-      // Then load news details
-      fetchNewsDetail();
-    });
+    // Then load news detail
+    fetchNewsDetail();
 
+    // Track view
     trackNewsView();
   }
 
@@ -57,14 +55,18 @@ class NewsDetailController extends GetxController {
     super.onClose();
   }
 
-  // Load initial cached data
   void _initializeWithInitialData() {
     if (initialData != null) {
       try {
         newsDetail.value = NewsModel.fromJson(initialData!);
         hasInitialData.value = true;
+
+        // If initial data has isFavorite field, use it
+        if (initialData!.containsKey('isFavorite')) {
+          isFavorite.value = initialData!['isFavorite'] == true;
+        }
       } catch (e) {
-        print("Initial data parse error: $e");
+        if (kDebugMode) print("Initial data parse error: $e");
       }
     }
   }
@@ -83,9 +85,8 @@ class NewsDetailController extends GetxController {
         {'reason': reason},
       );
 
-      if (response.response.statusCode == 200) {
+      if (response.response.statusCode == 200 || response.data.status == true) {
         reportSuccess.value = true;
-
         Get.snackbar(
           'Success',
           'Report submitted successfully',
@@ -98,6 +99,7 @@ class NewsDetailController extends GetxController {
       }
     } catch (e) {
       reportError.value = e.toString().replaceAll("Exception: ", "");
+      Get.snackbar('Error', 'Failed to submit report', backgroundColor: Colors.red, colorText: Colors.white);
     } finally {
       isReporting.value = false;
     }
@@ -115,12 +117,12 @@ class NewsDetailController extends GetxController {
       if (responseData.status == true) {
         newsDetail.value = responseData.data;
       } else {
-        throw Exception(responseData.message ?? "Failed to load");
+        throw Exception(responseData.message ?? "Failed to load news");
       }
     } catch (e) {
       isError.value = true;
-      errorMessage.value = "Failed to load news. Try again.";
-      print("Fetch detail error: $e");
+      errorMessage.value = "Failed to load news. Please try again.";
+      if (kDebugMode) print("Fetch detail error: $e");
     } finally {
       isLoading.value = false;
     }
@@ -131,7 +133,6 @@ class NewsDetailController extends GetxController {
     try {
       final sessionManager = Get.find<SessionManager>();
       final user = await sessionManager.getUser();
-
       if (user != null) {
         await _apiService.trackNewsView({
           "newsId": newsId,
@@ -140,102 +141,87 @@ class NewsDetailController extends GetxController {
         });
       }
     } catch (e) {
-      print("View track error: $e");
+      if (kDebugMode) print("View track error: $e");
     }
   }
 
   Future<void> refreshData() async {
-  // First refresh favorite status to ensure it's up-to-date
-  await checkIfNewsIsFavorite();
+    await checkIfNewsIsFavorite();
+    await fetchNewsDetail();
+    await checkIfNewsIsFavorite(); // Double check for accuracy
+  }
 
-  // Then refresh news details
-  await fetchNewsDetail();
-
-  // Finally check favorite status again to ensure it's synchronized
-  await checkIfNewsIsFavorite();
-}
-
-  // FAVORITE TOGGLE - Improved with instant feedback
+  // FAVORITE TOGGLE - Optimistic UI + Safe
   Future<void> toggleFavorite() async {
     if (isFavoriteLoading.value) return;
 
     final oldState = isFavorite.value;
     final newState = !oldState;
 
-    // Optimistic UI update - instant visual feedback
+    // Optimistic UI
     isFavorite.value = newState;
     isFavoriteLoading.value = true;
+    update(['favorite_button']); // Force update favorite icon
 
     try {
       final response = await _apiService.addToFavoriteNews(newsId);
 
-      if (!response.data.status) {
-        // Revert on failure
-        isFavorite.value = oldState;
-        throw Exception(response.data.message ?? "Failed to update favorite status");
+      if (response.data.status != true) {
+        isFavorite.value = oldState; // Revert
+        throw Exception(response.data.message ?? "Failed");
       }
 
-      // Success message
       Get.snackbar(
         "Success",
-        response.data.message ??
-            (newState ? "Added to favorites" : "Removed from favorites"),
+        newState ? "Added to favorites" : "Removed from favorites",
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green,
         colorText: Colors.white,
         duration: const Duration(seconds: 2),
       );
-
     } catch (e) {
-      // Already reverted above if API failed
-      Get.snackbar(
-        "Error",
-        e.toString().replaceAll("Exception: ", ""),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 2),
-      );
+      isFavorite.value = oldState;
+      Get.snackbar("Error", e.toString().replaceAll("Exception: ", ""),
+          backgroundColor: Colors.red, colorText: Colors.white);
     } finally {
       isFavoriteLoading.value = false;
+      update(['favorite_button']); // Final update
     }
   }
 
-  // Check if current news is in user's favorites
+  // CHECK IF NEWS IS FAVORITE
   Future<void> checkIfNewsIsFavorite() async {
-    try {
-      isFavoriteLoading.value = true;
+    // Avoid multiple calls
+    if (isFavoriteLoading.value) return;
 
-      // Fetch first page of favorites
+    isFavoriteLoading.value = true;
+    update(['favorite_button']);
+
+    try {
       final response = await _apiService.getFavoriteNews({
         'page': 1,
-        'limit': 20, // Adjust limit as needed
+        'limit': 50,
       });
 
-      if (response.data.status) {
+      if (response.data.status == true) {
         final favorites = response.data.data?.favorites ?? [];
-
-        // Check if current news exists in favorites
-        final isCurrentlyFavorite = favorites.any((news) => news.id == newsId);
-
-        // Update the favorite status
-        isFavorite.value = isCurrentlyFavorite;
-
-        if (kDebugMode) {
-          print('Favorite status for news $newsId: $isCurrentlyFavorite');
-        }
-      } else {
-        if (kDebugMode) {
-          print('Failed to fetch favorites: ${response.data.message}');
-        }
+        final bool isFav = favorites.any((news) => news.id == newsId);
+        isFavorite.value = isFav;
       }
     } catch (e) {
-      if (kDebugMode) {
-        print('Error checking favorite status: $e');
-      }
+      if (kDebugMode) print("Favorite check error: $e");
     } finally {
       isFavoriteLoading.value = false;
+      update(['favorite_button']);
+    }
+  }
+
+  // THIS IS THE MAGIC METHOD
+  // Call this when BottomSheet closes to stop any accidental loader
+  void forceStopFavoriteLoading() {
+    if (isFavoriteLoading.value) {
+      isFavoriteLoading.value = false;
+      update(['favorite_button']); // This forces the favorite icon to rebuild
     }
   }
 }
-
