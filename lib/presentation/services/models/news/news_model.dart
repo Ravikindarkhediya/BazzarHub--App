@@ -49,6 +49,9 @@ class NewsModel {
   @JsonKey(name: 'relatedNews', defaultValue: <RelatedNewsModel>[])
   final List<RelatedNewsModel> relatedNews;
 
+  @JsonKey(name: 'isFavorite', defaultValue: false)
+  final bool isFavorite;
+
   const NewsModel({
     this.title,
     this.content,
@@ -63,12 +66,47 @@ class NewsModel {
     this.createdAt = '',
     this.updatedAt = '',
     this.relatedNews = const [],
+    this.isFavorite = false,
   });
 
   factory NewsModel.fromJson(Map<String, dynamic> json) =>
       _$NewsModelFromJson(json);
 
   Map<String, dynamic> toJson() => _$NewsModelToJson(this);
+
+  NewsModel copyWith({
+    MultiLangTextModel? title,
+    MultiLangTextModel? content,
+    LocationModel? location,
+    String? id,
+    List<NewsMediaModel>? media,
+    CategoryModel? category,
+    List<String>? tags,
+    UserModel? createdBy,
+    int? views,
+    bool? isActive,
+    String? createdAt,
+    String? updatedAt,
+    List<RelatedNewsModel>? relatedNews,
+    bool? isFavorite,
+  }) {
+    return NewsModel(
+      title: title ?? this.title,
+      content: content ?? this.content,
+      location: location ?? this.location,
+      id: id ?? this.id,
+      media: media ?? this.media,
+      category: category ?? this.category,
+      tags: tags ?? this.tags,
+      createdBy: createdBy ?? this.createdBy,
+      views: views ?? this.views,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      relatedNews: relatedNews ?? this.relatedNews,
+      isFavorite: isFavorite ?? this.isFavorite,
+    );
+  }
 }
 
 @JsonSerializable()

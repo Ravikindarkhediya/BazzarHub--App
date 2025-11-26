@@ -84,7 +84,7 @@ class _NewsDetailViewState extends State<NewsDetailView> with WidgetsBindingObse
       if (!Get.isRegistered<NewsDetailController>(tag: widget.newsId)) return;
       
       final controller = Get.find<NewsDetailController>(tag: widget.newsId);
-      // await controller.checkIfNewsIsFavorite();
+      await controller.checkIfNewsIsFavorite();
     } catch (e) {
       if (kDebugMode) {
         print("Error refreshing favorite status: $e");
@@ -125,6 +125,18 @@ class _NewsDetailViewState extends State<NewsDetailView> with WidgetsBindingObse
     }
     
     final controller = Get.find<NewsDetailController>(tag: widget.newsId);
+    
+    // Update the news model with favorite status from controller
+    final news = controller.newsDetail.value;
+    if (news != null) {
+      // Create a new NewsModel with updated isFavorite status
+      final updatedNews = news.copyWith(isFavorite: controller.isFavorite.value);
+      if (controller.newsDetail.value != updatedNews) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          controller.newsDetail.value = updatedNews;
+        });
+      }
+    }
 
     return Obx(() {
       final isLoading = controller.isLoading.value;
@@ -224,40 +236,7 @@ class _NewsDetailViewState extends State<NewsDetailView> with WidgetsBindingObse
             padding: const EdgeInsets.only(left: 12),
             child: roundedIconButton(Icons.arrow_back, () => Get.back()),
           ),
-          actions: [
-            // Favorite button with proper state management
-            Obx(() {
-              return controller.isFavoriteLoading.value
-                  ? const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 12.0),
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
-                        ),
-                      ),
-                    )
-                  : IconButton(
-                      icon: Icon(
-                        controller.isFavorite.value ? Icons.favorite : Icons.favorite_border,
-                        color: controller.isFavorite.value ? Colors.red : null,
-                        size: 24,
-                      ),
-                      onPressed: () async {
-                        await controller.toggleFavorite();
-                      },
-                    );
-            }),
-            Padding(
-              padding: const EdgeInsets.only(right: 12.0),
-              child: roundedIconButton(
-                Icons.more_vert,
-                () => _showOptionsBottomSheet(context),
-              ),
-            ),
-          ],
+          actions: _buildAppBarActions(controller),
         ),
 
 
@@ -322,6 +301,34 @@ class _NewsDetailViewState extends State<NewsDetailView> with WidgetsBindingObse
         ),
       );
     });
+  }
+
+  List<Widget> _buildAppBarActions(NewsDetailController controller) {
+    return [
+      // Favorite Button
+      Obx(() => IconButton(
+            icon: controller.isFavoriteLoading.value
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(
+                    controller.isFavorite.value
+                        ? Icons.favorite
+                        : Icons.favorite_border,
+                    color: controller.isFavorite.value ? Colors.red : null,
+                  ),
+            onPressed: controller.toggleFavorite,
+          )),
+      Padding(
+        padding: const EdgeInsets.only(right: 12.0),
+        child: roundedIconButton(
+          Icons.more_vert,
+          () => _showOptionsBottomSheet(context),
+        ),
+      ),
+    ];
   }
 
   // Build Tags Section

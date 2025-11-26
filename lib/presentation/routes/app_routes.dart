@@ -43,13 +43,12 @@ class AppPages {
     ),
     GetPage(name: AppRoutes.chatPage, page: () => const ChatPage()),
     GetPage(name: AppRoutes.marketPlace, page: () => const MarketplaceView()),
-    // GetPage(name: AppRoutes.favoritesPage, page: () => const FavoritesPage()),
+    GetPage(name: AppRoutes.favoritesPage, page: () => const FavoritesPage()),
     GetPage(name: AppRoutes.mainPage, page: () => const MainScreen()),
     GetPage(name: AppRoutes.homeWrapper, page: () => const HomeWrapper()),
     GetPage(name: AppRoutes.yourPost, page: () => const YourPostView()),
     GetPage(name: AppRoutes.addNewsView, page: () => const AddNewsView()),
     GetPage(name: AppRoutes.newsView, page: () => const NewsView()),
-
     GetPage(
       name: ProductDetailPage.routeName,
       page: () {

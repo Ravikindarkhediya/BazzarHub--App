@@ -39,6 +39,7 @@ NewsModel _$NewsModelFromJson(Map<String, dynamic> json) => NewsModel(
           ?.map((e) => RelatedNewsModel.fromJson(e as Map<String, dynamic>))
           .toList() ??
       [],
+  isFavorite: json['isFavorite'] as bool? ?? false,
 );
 
 Map<String, dynamic> _$NewsModelToJson(NewsModel instance) => <String, dynamic>{
@@ -55,6 +56,7 @@ Map<String, dynamic> _$NewsModelToJson(NewsModel instance) => <String, dynamic>{
   'createdAt': instance.createdAt,
   'updatedAt': instance.updatedAt,
   'relatedNews': instance.relatedNews,
+  'isFavorite': instance.isFavorite,
 };
 
 RelatedNewsModel _$RelatedNewsModelFromJson(
