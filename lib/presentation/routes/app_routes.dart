@@ -2,6 +2,7 @@ import 'package:bazzar_hub_app/presentation/modules/auth/views/complete_profile_
 import 'package:bazzar_hub_app/presentation/modules/marketplace/view/marketplace_view.dart';
 import 'package:bazzar_hub_app/presentation/modules/news/views/add_news_view.dart';
 import 'package:bazzar_hub_app/presentation/modules/news/views/news_view.dart';
+import 'package:bazzar_hub_app/presentation/modules/otherUserProfile/views/other_user_profile.dart';
 import 'package:bazzar_hub_app/presentation/modules/profile/views/your_Post_view.dart';
 
 import '../modules/auth/views/sign_in.dart';
@@ -57,6 +58,8 @@ class AppPages {
         return NewsDetailView(newsId: newsId);
       },
     ),
+    GetPage(name: AppRoutes.otherUserProfile, page: () => const OtherUserProfile()),
+
     GetPage(
       name: ProductDetailPage.routeName,
       page: () {
@@ -105,5 +108,6 @@ class AppRoutes {
   static const addNewsView = '/addNews';
   static const newsView = '/newsView';
   static const newsDetail = '/news-detail';
+  static const otherUserProfile = '/otherUserProfile';
 
 }

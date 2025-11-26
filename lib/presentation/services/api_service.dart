@@ -240,7 +240,7 @@ abstract class ApiServices{
       );
 
   @GET("${Endpoints.OTHER_USER_CREATED_MARKETPLACE}/{id}")
-  Future<HttpResponse<BaseListModel<NewsModel>>> getOtherUserCreatedMarketplaceList(
+  Future<HttpResponse<BaseListModel<MarketplaceModel>>> getOtherUserCreatedMarketplaceList(
       @Path("id") String userId,
       @Queries() Map<String, dynamic> queryParams,
       );

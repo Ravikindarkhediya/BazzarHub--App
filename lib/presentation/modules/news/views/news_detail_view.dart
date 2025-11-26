@@ -635,7 +635,6 @@ iOS: [App Store URL]''';
         ),
 
 
-
         /// ---------------------- BODY CONTENT ------------------------
         body: RefreshIndicator(
           onRefresh: () async {

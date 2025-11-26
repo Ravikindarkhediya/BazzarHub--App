@@ -19,9 +19,6 @@ import '../../home/widgets/auto_fit_image_widget.dart';
 import '../../product/widgets/image_upload_section.dart';
 import '../../product/widgets/searchable_dropdown.dart';
 import '../controllers/add_news_controller.dart';
-import 'package:html_editor_enhanced/html_editor.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_quill/flutter_quill.dart' as quill;
 
 class AddNewsView extends StatefulWidget {
   final NewsModel? news;

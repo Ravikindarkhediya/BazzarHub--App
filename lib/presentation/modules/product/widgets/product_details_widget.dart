@@ -7,6 +7,7 @@ import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
 import '../../../controller/product_controller.dart';
+import '../../../routes/app_routes.dart';
 import '../../../services/models/marketplace/marketplace_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -272,40 +273,45 @@ class ProductDetailsWidget extends StatelessWidget {
 
                 /// Seller Info
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        product.sellerName,
-                        style: AppTextStyles.h6.copyWith(
-                          fontWeight: FontWeight.bold,
+                  child: InkWell(
+                    onTap: () {
+                      Get.toNamed(AppRoutes.otherUserProfile);
+                    },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          product.sellerName,
+                          style: AppTextStyles.h6.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.star_rounded,
-                            size: 16,
-                            color: AppColors.accent,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            product.sellerBadge,
-                            style: AppTextStyles.caption.copyWith(
-                              color: AppColors.textSecondary,
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.star_rounded,
+                              size: 16,
+                              color: AppColors.accent,
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '• ${product.views} views',
-                            style: AppTextStyles.caption.copyWith(
-                              color: AppColors.textSecondary,
+                            const SizedBox(width: 4),
+                            Text(
+                              product.sellerBadge,
+                              style: AppTextStyles.caption.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                            const SizedBox(width: 8),
+                            Text(
+                              '• ${product.views} views',
+                              style: AppTextStyles.caption.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
 

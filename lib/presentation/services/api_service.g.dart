@@ -1214,7 +1214,7 @@ class _ApiServices implements ApiServices {
   }
 
   @override
-  Future<HttpResponse<BaseListModel<NewsModel>>>
+  Future<HttpResponse<BaseListModel<MarketplaceModel>>>
   getOtherUserCreatedMarketplaceList(
     String userId,
     Map<String, dynamic> queryParams,
@@ -1224,22 +1224,25 @@ class _ApiServices implements ApiServices {
     queryParameters.addAll(queryParams);
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<HttpResponse<BaseListModel<NewsModel>>>(
-      Options(method: 'GET', headers: _headers, extra: _extra)
-          .compose(
-            _dio.options,
-            '/api/marketplace/user/${userId}',
-            queryParameters: queryParameters,
-            data: _data,
-          )
-          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
-    );
+    final _options =
+        _setStreamType<HttpResponse<BaseListModel<MarketplaceModel>>>(
+          Options(method: 'GET', headers: _headers, extra: _extra)
+              .compose(
+                _dio.options,
+                '/api/marketplace/user/${userId}',
+                queryParameters: queryParameters,
+                data: _data,
+              )
+              .copyWith(
+                baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl),
+              ),
+        );
     final _result = await _dio.fetch<Map<String, dynamic>>(_options);
-    late BaseListModel<NewsModel> _value;
+    late BaseListModel<MarketplaceModel> _value;
     try {
-      _value = BaseListModel<NewsModel>.fromJson(
+      _value = BaseListModel<MarketplaceModel>.fromJson(
         _result.data!,
-        (json) => NewsModel.fromJson(json as Map<String, dynamic>),
+        (json) => MarketplaceModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
       errorLogger?.logError(e, s, _options);

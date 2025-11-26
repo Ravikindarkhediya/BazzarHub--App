@@ -18,8 +18,9 @@ import '../../../services/models/news/news_model.dart';
 class MyNews extends StatelessWidget {
   final NewsModel newsData;
   final Function(String) onTapdDelete;
+  final bool hideActionButton;
 
-  const MyNews({Key? key, required this.newsData, required this.onTapdDelete});
+  const MyNews({Key? key, required this.newsData, required this.onTapdDelete,this.hideActionButton = false});
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +58,7 @@ class MyNews extends StatelessWidget {
                 ),
 
                 // Action Button
+                if(!hideActionButton)
                 Positioned(
                   top: 6,
                   right: 6,
