@@ -380,6 +380,31 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                   ),
                 );
               }),
+              CupertinoActionSheetAction(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  // _showReportUserDialog(context);
+                },
+                isDestructiveAction: true,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.report_problem_outlined,
+                      color: AppColors.error,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Report User',
+                      style: AppTextStyles.bodyLarge.copyWith(
+                        color: AppColors.error,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
             cancelButton: CupertinoActionSheetAction(
               isDefaultAction: true,
