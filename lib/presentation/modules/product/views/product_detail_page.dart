@@ -9,6 +9,7 @@ import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:bazzar_hub_app/presentation/modules/profile/widgets/report_info_banner.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../manager/session_manager.dart';
 import '../../../../app/data/constants/app_colors.dart';
@@ -17,6 +18,7 @@ import '../../../commons/dialogs/appDialog.dart';
 import '../../../controller/product_controller.dart';
 import '../../../services/api_service.dart';
 import '../../../services/models/marketplace/marketplace_model.dart';
+import '../../profile/widgets/report_info_banner.dart';
 import '../widgets/product_image_carousel.dart';
 import '../widgets/product_details_widget.dart';
 
@@ -26,6 +28,9 @@ class ProductDetailPage extends StatefulWidget {
   final String? currentLocation;
   final bool showEditDeleteButtons;
   final VoidCallback? onFavoriteChanged;
+  final Map<String, dynamic>? reportInfo;
+  final bool showRelatedProducts;
+  final bool hideAppBarActions;
 
   const ProductDetailPage({
     super.key,
@@ -34,6 +39,9 @@ class ProductDetailPage extends StatefulWidget {
     this.currentLocation,
     this.showEditDeleteButtons = false,
     this.onFavoriteChanged,
+    this.reportInfo,
+    this.showRelatedProducts = true,
+    this.hideAppBarActions = false,
   });
 
   /// Named route for navigation
@@ -47,6 +55,8 @@ class ProductDetailPage extends StatefulWidget {
         productId: args.productId,
         product: args.product,
         currentLocation: args.currentLocation,
+        reportInfo: args.reportInfo,
+        showRelatedProducts: args.showRelatedProducts,
       ),
       settings: settings,
     );
@@ -380,10 +390,14 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           slivers: [
             _buildSliverAppBar(controller),
             ..._buildErrorBanner(),
+            ..._buildReportInfoBanner(),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.only(top: AppSpacing.md),
-                child: ProductDetailsWidget(controller: controller),
+                child: ProductDetailsWidget(
+                  controller: controller,
+                  showRelatedProducts: widget.showRelatedProducts,
+                ),
               ),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
@@ -421,36 +435,38 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           ),
         ),
         const Spacer(),
-        _buildAppbarIcon(
-          icon: controller.isFavorite
-              ? Icons.favorite_rounded
-              : Icons.favorite_border_rounded,
-          onTap: controller.isFavoriteLoading
-              ? null
-              : () async {
-                  final prev = controller.isFavorite;
-                  await controller.toggleFavorite(context);
-                  if (widget.onFavoriteChanged != null &&
-                      prev != controller.isFavorite) {
-                    widget.onFavoriteChanged!();
-                  }
-                },
-          background: AppColors.primary,
-          iconColor: controller.isFavorite ? AppColors.error : AppColors.white,
-        ),
-        const SizedBox(width: AppSpacing.md),
-        _buildAppbarIcon(
-          icon: Icons.more_vert,
-          onTap: () => {
-            ReportBottomSheet.show(
-                context: context,
-                type: "marketplace",
-                id: widget.productId
-            )
-          },
-          background: AppColors.primary,
-          iconColor: AppColors.white,
-        ),
+        if (!widget.hideAppBarActions) ...[          
+          _buildAppbarIcon(
+            icon: controller.isFavorite
+                ? Icons.favorite_rounded
+                : Icons.favorite_border_rounded,
+            onTap: controller.isFavoriteLoading
+                ? null
+                : () async {
+                    final prev = controller.isFavorite;
+                    await controller.toggleFavorite(context);
+                    if (widget.onFavoriteChanged != null &&
+                        prev != controller.isFavorite) {
+                      widget.onFavoriteChanged!();
+                    }
+                  },
+            background: AppColors.primary,
+            iconColor: controller.isFavorite ? AppColors.error : AppColors.white,
+          ),
+          const SizedBox(width: AppSpacing.md),
+          _buildAppbarIcon(
+            icon: Icons.more_vert,
+            onTap: () => {
+              ReportBottomSheet.show(
+                  context: context,
+                  type: "marketplace",
+                  id: widget.productId
+              )
+            },
+            background: AppColors.primary,
+            iconColor: AppColors.white,
+          ),
+        ],
         const SizedBox(width: AppSpacing.md),
       ],
       flexibleSpace: FlexibleSpaceBar(
@@ -539,6 +555,27 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     ];
   }
 
+  List<Widget> _buildReportInfoBanner() {
+    final info = widget.reportInfo;
+    if (info == null) return const [];
+
+    return [
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: AppSpacing.horizontalMD.copyWith(top: AppSpacing.sm),
+          child: ReportInfoBanner(
+            info: info,
+            title: 'Reported Listing',
+            onDelete: () {
+              // When delete is confirmed, pop back to previous screen
+              Navigator.of(context).pop();
+            },
+          ),
+        ),
+      ),
+    ];
+  }
+
   /// Helper: AppBar Action Icon Button (rounded, with ripple)
   Widget _buildAppbarIcon({
     required IconData icon,
@@ -578,11 +615,15 @@ class ProductPageArguments {
   final String productId;
   final MarketplaceModel? product;
   final String? currentLocation;
+  final Map<String, dynamic>? reportInfo;
+  final bool showRelatedProducts;
 
   ProductPageArguments({
     required this.productId,
     this.product,
     this.currentLocation,
+    this.reportInfo,
+    this.showRelatedProducts = true,
   });
 }
 
@@ -592,6 +633,8 @@ extension ProductPageNavigation on BuildContext {
     required String productId,
     MarketplaceModel? product,
     String? currentLocation,
+    Map<String, dynamic>? reportInfo,
+    bool showRelatedProducts = true,
   }) {
     return Navigator.pushNamed(
       this,
@@ -600,6 +643,8 @@ extension ProductPageNavigation on BuildContext {
         productId: productId,
         product: product,
         currentLocation: currentLocation,
+        reportInfo: reportInfo,
+        showRelatedProducts: showRelatedProducts,
       ),
     );
   }

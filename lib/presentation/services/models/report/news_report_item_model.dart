@@ -1,37 +1,33 @@
 import 'package:json_annotation/json_annotation.dart';
-
 import '../Common/multi_lang_text_model.dart';
 
-part 'report_response_item_model.g.dart';
+part 'news_report_item_model.g.dart';
 
 @JsonSerializable()
-class ReportItemModel {
+class NewsReportItemModel {
   @JsonKey(name: '_id', defaultValue: '')
   final String id;
 
   @JsonKey(name: 'title', defaultValue: '')
   final String title;
 
-  @JsonKey(
-    name: 'category',
-    fromJson: ReportItemModel._categoryFromJson,
-  )
+  @JsonKey(name: 'category', fromJson: NewsReportItemModel._categoryFromJson)
   final MultiLangTextModel? category;
 
   @JsonKey(name: 'createdBy', defaultValue: '')
   final String createdBy;
 
-  const ReportItemModel({
+  const NewsReportItemModel({
     this.id = '',
     this.title = '',
     this.category,
     this.createdBy = '',
   });
 
-  factory ReportItemModel.fromJson(Map<String, dynamic> json) =>
-      _$ReportItemModelFromJson(json);
+  factory NewsReportItemModel.fromJson(Map<String, dynamic> json) =>
+      _$NewsReportItemModelFromJson(json);
 
-  Map<String, dynamic> toJson() => _$ReportItemModelToJson(this);
+  Map<String, dynamic> toJson() => _$NewsReportItemModelToJson(this);
 
   static MultiLangTextModel? _categoryFromJson(dynamic json) {
     if (json == null || json == '') {

@@ -279,6 +279,6 @@ abstract class ApiServices {
 
   @GET(Endpoints.MY_NEWS_REPORT)
   Future<HttpResponse<BaseListModel<ReportResponseModel>>> getNewsReportList(
-    @Queries() Map<String, dynamic> queryParams,
-  );
+      @Queries() Map<String, dynamic> queryParams,
+      );
 }

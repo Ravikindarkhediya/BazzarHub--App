@@ -20,8 +20,13 @@ import '../views/product_detail_page.dart';
 /// Displays comprehensive product information
 class ProductDetailsWidget extends StatelessWidget {
   final ProductController controller;
+  final bool showRelatedProducts;
 
-  const ProductDetailsWidget({super.key, required this.controller});
+  const ProductDetailsWidget({
+    super.key,
+    required this.controller,
+    this.showRelatedProducts = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +57,9 @@ class ProductDetailsWidget extends StatelessWidget {
             _buildSellerCard(product, context),
 
             AppSpacing.verticalSpaceLG,
-            if (product.list != null && product.list!.isNotEmpty)
+            if (showRelatedProducts &&
+                product.list != null &&
+                product.list!.isNotEmpty)
               Padding(
                 padding: AppSpacing.horizontalMD,
                 child: Text(
@@ -61,7 +68,9 @@ class ProductDetailsWidget extends StatelessWidget {
                 ),
               ),
             AppSpacing.verticalSpaceSM,
-            if (product.list != null && product.list!.isNotEmpty)
+            if (showRelatedProducts &&
+                product.list != null &&
+                product.list!.isNotEmpty)
               ProductGridWidget(
                 products: product.list!,
                 onProductTap: (selectedProduct) {

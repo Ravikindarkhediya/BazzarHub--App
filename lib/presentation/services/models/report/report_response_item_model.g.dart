@@ -10,11 +10,7 @@ ReportItemModel _$ReportItemModelFromJson(Map<String, dynamic> json) =>
     ReportItemModel(
       id: json['_id'] as String? ?? '',
       title: json['title'] as String? ?? '',
-      category: json['category'] == null
-          ? null
-          : MultiLangTextModel.fromJson(
-              json['category'] as Map<String, dynamic>,
-            ),
+      category: ReportItemModel._categoryFromJson(json['category']),
       createdBy: json['createdBy'] as String? ?? '',
     );
 

@@ -181,7 +181,14 @@ class _AccountPageState extends State<AccountPage>
                               }
                             },
                           ),
-
+                          SettingsTile(
+                            icon: Icons.report_gmailerrorred,
+                            title: 'Report List ',
+                            subtitle: 'Review all reported items',
+                            onTap: () {
+                              Get.toNamed(AppRoutes.reportListView);
+                            },
+                          ),
                         ],
                       ),
 

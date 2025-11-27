@@ -12,16 +12,24 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../../../services/models/news/news_model.dart';
 import '../widgets/compact_news_card.dart';
 import '../../../../app/data/constants/app_colors.dart';
+import '../../../../app/data/constants/app_text_style.dart';
+import '../../profile/widgets/report_info_banner.dart';
 import '../controllers/news_detail_controller.dart';
 
 class NewsDetailView extends StatefulWidget {
   final String newsId;
   final Map<String, dynamic>? initialData;
+  final Map<String, dynamic>? reportInfo;
+  final bool showRelatedSection;
+  final bool hideAppBarActions;
 
   const NewsDetailView({
     super.key,
     required this.newsId,
     this.initialData,
+    this.reportInfo,
+    this.showRelatedSection = true,
+    this.hideAppBarActions = false,
   });
 
   @override
@@ -29,6 +37,8 @@ class NewsDetailView extends StatefulWidget {
 }
 
 class _NewsDetailViewState extends State<NewsDetailView> with WidgetsBindingObserver {
+  Map<String, dynamic>? _reportInfo;
+
   @override
   void initState() {
     super.initState();
@@ -44,6 +54,13 @@ class _NewsDetailViewState extends State<NewsDetailView> with WidgetsBindingObse
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshFavoriteStatus();
     });
+    // Prefer report info passed via widget. Fallback to navigation arguments.
+    final dynArgs = Get.arguments;
+    if (widget.reportInfo != null) {
+      _reportInfo = widget.reportInfo;
+    } else if (dynArgs != null && dynArgs is Map<String, dynamic>) {
+      _reportInfo = dynArgs;
+    }
   }
 
   @override
@@ -581,56 +598,58 @@ iOS: [App Store URL]''';
             child: roundedIconButton(Icons.arrow_back, () => Get.back()),
           ),
           actions: [
-            // Favorite button with loading state
-            Obx(() {
-              final isFavorite = controller.isFavorite.value;
-              final isLoading = controller.isFavoriteLoading.value;
-              
-              return Container(
-                margin: const EdgeInsets.only(right: 8.0),
-                child: GestureDetector(
-                  onTap: isLoading ? null : () => controller.toggleFavorite(),
-                  child: Container(
-                    width: 30,
-                    height: 30,
-                    decoration: const BoxDecoration(
-                      color: Colors.black45,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Favorite icon
-                        if (!isLoading)
-                          Icon(
-                            isFavorite ? Icons.favorite : Icons.favorite_border,
-                            color: isFavorite ? Colors.red : Colors.white,
-                            size: 22,
-                          ),
-                        
-                        // Loading indicator
-                        if (isLoading)
-                          const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            if (!widget.hideAppBarActions) ...[
+              // Favorite button with loading state
+              Obx(() {
+                final isFavorite = controller.isFavorite.value;
+                final isLoading = controller.isFavoriteLoading.value;
+                
+                return Container(
+                  margin: const EdgeInsets.only(right: 8.0),
+                  child: GestureDetector(
+                    onTap: isLoading ? null : () => controller.toggleFavorite(),
+                    child: Container(
+                      width: 30,
+                      height: 30,
+                      decoration: const BoxDecoration(
+                        color: Colors.black45,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Favorite icon
+                          if (!isLoading)
+                            Icon(
+                              isFavorite ? Icons.favorite : Icons.favorite_border,
+                              color: isFavorite ? Colors.red : Colors.white,
+                              size: 22,
                             ),
-                          ),
-                      ],
+                          
+                          // Loading indicator
+                          if (isLoading)
+                            const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
+                );
+              }),
+              Padding(
+                padding: const EdgeInsets.only(right: 12.0),
+                child: roundedIconButton(
+                  Icons.more_vert,
+                  () => _showOptionsBottomSheet(context),
                 ),
-              );
-            }),
-            Padding(
-              padding: const EdgeInsets.only(right: 12.0),
-              child: roundedIconButton(
-                Icons.more_vert,
-                () => _showOptionsBottomSheet(context),
               ),
-            ),
+            ],
           ],
         ),
 
@@ -649,6 +668,20 @@ iOS: [App Store URL]''';
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (_reportInfo != null)
+                  Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: ReportInfoBanner(
+                      info: _reportInfo!,
+                      title: 'Reported News',
+                      onDelete: _reportInfo?['_isDeletable'] == true
+                          ? () {
+                              // When delete is confirmed, pop back to previous screen
+                              Navigator.of(context).pop();
+                            }
+                          : null,
+                    ),
+                  ),
                 // Media Gallery Section
 
                 // Title and Meta
@@ -689,7 +722,9 @@ iOS: [App Store URL]''';
                 const SizedBox(height: 16),
 
                 // Related News Section
-                if (news.relatedNews.isNotEmpty) _buildRelatedNewsSection(news.relatedNews),
+                if (widget.showRelatedSection &&
+                    news.relatedNews.isNotEmpty)
+                  _buildRelatedNewsSection(news.relatedNews),
 
                 const SizedBox(height: 24),
               ],
@@ -865,7 +900,7 @@ iOS: [App Store URL]''';
     final authorEmail = news.createdBy!.email ?? '';
     
     return Padding(
-      padding: const EdgeInsets.only(top: 16, bottom: 8, left: 0, right: 16),
+      padding: const EdgeInsets.only(top: 10, bottom: 8, left: 0, right: 16),
       child: Row(
         children: [
           // Author Avatar
@@ -915,11 +950,11 @@ iOS: [App Store URL]''';
     if (content == null || content.isEmpty) {
       return Column(
         children: [
+          _buildAuthorProfile(),
           const Padding(
             padding: EdgeInsets.all(16.0),
             child: Text('No content available', style: TextStyle(color: Colors.grey)),
           ),
-          _buildAuthorProfile(),
         ],
       );
     }
@@ -932,7 +967,9 @@ iOS: [App Store URL]''';
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 16),
+          // Author profile moved above content
+          _buildAuthorProfile(),
+          const SizedBox(height: 13), // Reduced from 16 to 13 (20% smaller)
           SelectableText.rich(
             TextSpan(
               children: _formatContent(content),
@@ -946,8 +983,6 @@ iOS: [App Store URL]''';
             ),
             textAlign: TextAlign.justify,
           ),
-          // Add author profile below content
-          _buildAuthorProfile(),
         ],
       ),
     );
