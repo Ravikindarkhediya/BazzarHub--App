@@ -6,11 +6,14 @@ import 'package:get/get.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
+import '../../../../manager/session_manager.dart';
+import '../../../commons/dialogs/app_toasts.dart';
 import '../../../controller/product_controller.dart';
 import '../../../routes/app_routes.dart';
 import '../../../services/models/marketplace/marketplace_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../otherUserProfile/views/other_user_profile.dart';
 import '../views/product_detail_page.dart';
 
 /// Product Details Widget
@@ -274,8 +277,26 @@ class ProductDetailsWidget extends StatelessWidget {
                 /// Seller Info
                 Expanded(
                   child: InkWell(
-                    onTap: () {
-                      Get.toNamed(AppRoutes.otherUserProfile);
+                    onTap: () async {
+                      final sellerId = product.createdBy?.id;
+
+                      if (sellerId == null || sellerId.isEmpty) {
+                        AppToast.showError('Seller information not available');
+                        return;
+                      }
+
+                      // ✅ Get logged user ID
+                      final loggedUserId =
+                          (await SessionManager().getUser())?.id ?? '';
+
+                      // ✅ Check if seller is logged user
+                      if (sellerId == loggedUserId) {
+                        // Navigate to own profile
+                        Get.toNamed(AppRoutes.profilePage);
+                      } else {
+                        // Navigate to other user's profile
+                        Get.to(() => OtherUserProfile(userId: sellerId));
+                      }
                     },
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

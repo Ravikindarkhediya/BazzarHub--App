@@ -2,16 +2,19 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:get/get.dart' hide MultipartFile;
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
 import '../../../commons/dialogs/app_toasts.dart';
 import '../../../controller/location_repository.dart';
+import '../../../routes/app_routes.dart';
 import '../../../services/api_service.dart';
 import '../../../services/models/categorie/categorie_model.dart';
 import '../../../services/models/news/news_model.dart';
 import '../../product/widgets/image_upload_section.dart';
+import 'news_controller.dart';
 
 class AddNewsController extends ChangeNotifier
     implements ImageUploadController {
@@ -478,8 +481,14 @@ class AddNewsController extends ChangeNotifier
 
           AppToast.showSuccess('News updated successfully');
 
-          Navigator.of(context).pop(true);
+          if (Get.isRegistered<NewsController>()) {
+            await Get.find<NewsController>().refresh();
+          }
 
+          Get.offAllNamed(
+            AppRoutes.homeWrapper,
+            arguments: {'initialTab': 1},
+          );
           return true;
         } else {
           debugPrint('❌ Update failed: ${response.data.message}');
@@ -497,11 +506,19 @@ class AddNewsController extends ChangeNotifier
 
           AppToast.showSuccess('News added successfully');
 
-          Navigator.of(context).pop(true);
+          if (Get.isRegistered<NewsController>()) {
+            await Get.find<NewsController>().refresh();
+            debugPrint('News list refreshed after create');
+          }
+
+          Get.offAllNamed(
+            AppRoutes.homeWrapper,
+            arguments: {'initialTab': 1},
+          );
 
           return true;
         } else {
-          debugPrint('❌ Creation failed: ${response.data.message}');
+          debugPrint(' Creation failed: ${response.data.message}');
         }
       }
 

@@ -14,6 +14,7 @@ import '../../../../app/core/utils/app_language.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
+import '../../../routes/app_routes.dart';
 import '../../../services/models/news/news_model.dart';
 import '../../home/widgets/auto_fit_image_widget.dart';
 import '../../product/widgets/image_upload_section.dart';
@@ -94,6 +95,10 @@ class _AddNewsViewState extends State<AddNewsView> {
         isEditMode
             ? 'News updated successfully'
             : 'News published successfully',
+      );
+      Get.offAllNamed(
+        AppRoutes.homeWrapper,
+        arguments: {'initialTab': 1},
       );
     }
   }
@@ -1144,6 +1149,12 @@ class _RichTextFieldWidgetState extends State<RichTextFieldWidget> {
                   maxHeight: widget.maxLines * 40.0,
                 ),
                 padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(12),
+                  ),
+                ),
                 child: QuillEditor.basic(
                   controller: _quillController,
                   focusNode: _focusNode,

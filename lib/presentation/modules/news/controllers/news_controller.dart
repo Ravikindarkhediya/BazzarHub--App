@@ -33,6 +33,11 @@ class NewsController extends GetxController {
     await fetchNews();
   }
 
+  Future<void> refresh() async {
+    debugPrint('🔄 Refreshing news list...');
+    await fetchNews();
+    debugPrint('✅ News list refreshed. Count: ${newsList.length}');
+  }
 
   Future<void> refreshAfterEdit() async {
     try {

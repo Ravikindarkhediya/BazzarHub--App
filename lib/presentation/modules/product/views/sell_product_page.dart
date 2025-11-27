@@ -91,9 +91,15 @@ class _SellProductPageState extends State<SellProductPage> {
     if (success && mounted) {
       setState(() => _isSubmitted = true);
       if (isEditMode) {
-        Get.offNamed(AppRoutes.marketPlace);
+        Get.offAllNamed(
+          AppRoutes.homeWrapper,
+          arguments: {'initialTab': 2},
+        );
       } else {
-        Get.offNamed(AppRoutes.marketPlace);
+        Get.offAllNamed(
+          AppRoutes.homeWrapper,
+          arguments: {'initialTab': 2},
+        );
       }
     }
   }

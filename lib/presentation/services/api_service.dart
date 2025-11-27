@@ -1,4 +1,3 @@
-
 import 'package:bazzar_hub_app/presentation/services/endpoints.dart';
 import 'package:bazzar_hub_app/presentation/services/models/categorie/category_list_response_model.dart';
 // import 'package:bazzar_hub_app/presentation/services/models/news/favorite_news_model.dart';
@@ -23,7 +22,6 @@ part 'api_service.g.dart';
 // Development URL
 const baseUrl = 'http://192.168.2.210:3000';
 
-
 Future<ApiServices> getApiClient() async {
   var options = BaseOptions(
     baseUrl: baseUrl,
@@ -32,32 +30,34 @@ Future<ApiServices> getApiClient() async {
   );
   var token = await SessionManager().getToken();
   if (!Utils.isEmpty(token)) {
-    options.headers = { 'Authorization': 'Bearer $token'};
+    options.headers = {'Authorization': 'Bearer $token'};
   }
   options.headers = {
     if (!Utils.isEmpty(token)) 'Authorization': 'Bearer $token',
     'Accept-Encoding': 'gzip, deflate',
   };
-  Dio dio = Dio( options );
+  Dio dio = Dio(options);
   // Add interceptor to inject version into the URL
   dio.interceptors.add(VersionInterceptor());
-  dio.interceptors.add(LogInterceptor(
-    request: true,
-    requestBody: true,
-    responseBody: true,
-    responseHeader: false,
-    error: true,
-  ));
+  dio.interceptors.add(
+    LogInterceptor(
+      request: true,
+      requestBody: true,
+      responseBody: true,
+      responseHeader: false,
+      error: true,
+    ),
+  );
   return ApiServices(dio);
 }
 
 Dio getDioClient(String baseUrl) {
   return Dio(
-      BaseOptions(
-        baseUrl: baseUrl,
-        connectTimeout: const Duration(seconds: 15),
-        receiveTimeout: const Duration(seconds: 15),
-      )
+    BaseOptions(
+      baseUrl: baseUrl,
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 15),
+    ),
   );
 }
 
@@ -68,95 +68,115 @@ class VersionInterceptor extends Interceptor {
     if (options.path.startsWith('/v1/')) {
       return super.onRequest(options, handler);
     }
-    
+
     // Get the version from the extra field or default to 'v1'
     final version = options.extra['version'] ?? 'v1';
     // Ensure the path starts with a slash and insert the version
-    final path = options.path.startsWith('/') ? options.path : '/${options.path}';
+    final path = options.path.startsWith('/')
+        ? options.path
+        : '/${options.path}';
     options.path = '/$version$path';
     super.onRequest(options, handler);
   }
 }
 
 @RestApi()
-abstract class ApiServices{
-
+abstract class ApiServices {
   /// REST Api with Authorization header has been added at Injection Container
   factory ApiServices(Dio dio) = _ApiServices;
 
   @POST(Endpoints.USER_LOGIN)
-  Future<HttpResponse<BaseModel<UserTokenModel>>> requestLogin(@Body() Map<String, dynamic> params);
+  Future<HttpResponse<BaseModel<UserTokenModel>>> requestLogin(
+    @Body() Map<String, dynamic> params,
+  );
 
   @POST(Endpoints.USER_REGISTER)
-  Future<HttpResponse<BaseModel<UserTokenModel>>> requestNewRegister(@Body() Map<String, dynamic> params);
+  Future<HttpResponse<BaseModel<UserTokenModel>>> requestNewRegister(
+    @Body() Map<String, dynamic> params,
+  );
 
   @POST(Endpoints.GOOGLE_LOGIN_ENDPOINT)
-  Future<HttpResponse<BaseModel<UserTokenModel>>> requestGoogleLogin(@Body() Map<String, dynamic> params);
+  Future<HttpResponse<BaseModel<UserTokenModel>>> requestGoogleLogin(
+    @Body() Map<String, dynamic> params,
+  );
 
   @POST(Endpoints.USER_UPDATE)
-  Future<HttpResponse<BaseModel<UserModel>>> updateUserProfile(@Body() Map<String, dynamic> params);
+  Future<HttpResponse<BaseModel<UserModel>>> updateUserProfile(
+    @Body() Map<String, dynamic> params,
+  );
 
   @POST(Endpoints.USER_DELETE)
   Future<HttpResponse<BaseModel<dynamic>>> deleteAccount();
 
   @POST(Endpoints.USER_CHANGE_PASSWORD)
-  Future<HttpResponse<BaseModel<UserModel>>> updateChangePassword(@Body() Map<String, dynamic> params);
+  Future<HttpResponse<BaseModel<UserModel>>> updateChangePassword(
+    @Body() Map<String, dynamic> params,
+  );
 
   @POST(Endpoints.USER_FORGOT_PASSWORD)
-  Future<HttpResponse<BaseModel<dynamic>>> sendForgotPasswordOtp(@Body() Map<String, dynamic> params);
-
+  Future<HttpResponse<BaseModel<dynamic>>> sendForgotPasswordOtp(
+    @Body() Map<String, dynamic> params,
+  );
 
   // Categories
 
   @GET(Endpoints.GET_ALL_CATEGORIES)
-  Future<HttpResponse<BaseModel<CategoryListResponseModel>>> requestAllCategories();
-
+  Future<HttpResponse<BaseModel<CategoryListResponseModel>>>
+  requestAllCategories();
 
   //Marketplace
 
   @GET(Endpoints.MARKETPLACE)
-  Future<HttpResponse<BaseListModel<MarketplaceModel>>> getMarketplace(@Queries() Map<String, dynamic> queryParams);
+  Future<HttpResponse<BaseListModel<MarketplaceModel>>> getMarketplace(
+    @Queries() Map<String, dynamic> queryParams,
+  );
 
-  @GET(Endpoints.USER_MARKETPLACE )
-  Future<HttpResponse<BaseListModel<MarketplaceModel>>> getYourMarketplace(@Queries() Map<String, dynamic> queryParams);
+  @GET(Endpoints.USER_MARKETPLACE)
+  Future<HttpResponse<BaseListModel<MarketplaceModel>>> getYourMarketplace(
+    @Queries() Map<String, dynamic> queryParams,
+  );
 
   @POST(Endpoints.MARKETPLACE)
-  Future<HttpResponse<BaseModel<MarketplaceModel>>> createMarketplace(@Body() Map<String, dynamic> body);
+  Future<HttpResponse<BaseModel<MarketplaceModel>>> createMarketplace(
+    @Body() Map<String, dynamic> body,
+  );
 
   @GET("${Endpoints.MARKETPLACE}/{id}")
-  Future<HttpResponse<BaseModel<MarketplaceModel>>> getMarketplaceById(@Path("id") String id);
+  Future<HttpResponse<BaseModel<MarketplaceModel>>> getMarketplaceById(
+    @Path("id") String id,
+  );
 
   @PUT("${Endpoints.MARKETPLACE}/{id}")
   Future<HttpResponse<BaseModel<MarketplaceModel>>> updateMarketplace(
-      @Path("id") String id,
-      @Body() Map<String, dynamic> body,
-      );
+    @Path("id") String id,
+    @Body() Map<String, dynamic> body,
+  );
 
   @DELETE("${Endpoints.MARKETPLACE}/{id}")
   Future<HttpResponse<BaseModel<MarketplaceModel>>> deleteMarketplace(
-      @Path("id") String id,
-      );
+    @Path("id") String id,
+  );
 
   @POST(Endpoints.MARKETPLACE_FAVORITE)
   Future<HttpResponse<BaseModel<dynamic>>> addToFavorite(
-      @Body() Map<String, dynamic> body,
-      );
+    @Body() Map<String, dynamic> body,
+  );
 
   @GET(Endpoints.MARKETPLACE_FAVORITES_LIST)
   Future<HttpResponse<BaseListModel<MarketplaceModel>>> getFavoriteMarketplaces(
-      @Queries() Map<String, dynamic> queryParams,
-      );
+    @Queries() Map<String, dynamic> queryParams,
+  );
 
   @POST(Endpoints.MARKETPLACE_VIEW_LOG)
   Future<HttpResponse<BaseModel<dynamic>>> trackMarketplaceView(
-      @Body() Map<String, dynamic> body,
-      );
+    @Body() Map<String, dynamic> body,
+  );
 
   @POST("${Endpoints.REPORT_MARKETPLACE}/report/{id}")
   Future<HttpResponse<BaseModel<dynamic>>> reportMarketPlace(
-      @Path("id") String id,
-      @Body() Map<String, dynamic> body,
-      );
+    @Path("id") String id,
+    @Body() Map<String, dynamic> body,
+  );
 
   //News
 
@@ -167,24 +187,26 @@ abstract class ApiServices{
   Future<HttpResponse<BaseListModel<NewsTagModel>>> getNewsTags();
 
   @GET(Endpoints.NEWS)
-    Future<HttpResponse<BaseListModel<NewsModel>>> getNews(@Queries() Map<String, dynamic> queryParams);
+  Future<HttpResponse<BaseListModel<NewsModel>>> getNews(
+    @Queries() Map<String, dynamic> queryParams,
+  );
 
   @POST(Endpoints.NEWS)
-  Future<HttpResponse<BaseModel<dynamic>>> createNews(@Body() Map<String, dynamic> body);
+  Future<HttpResponse<BaseModel<dynamic>>> createNews(
+    @Body() Map<String, dynamic> body,
+  );
 
   @GET("${Endpoints.NEWS}/{id}")
   Future<HttpResponse<BaseModel<NewsModel>>> getNewsById(@Path("id") String id);
 
   @PUT("${Endpoints.NEWS}/{id}")
   Future<HttpResponse<BaseModel<dynamic>>> updateNews(
-      @Path("id") String id,
-      @Body() Map<String, dynamic> body,
-      );
+    @Path("id") String id,
+    @Body() Map<String, dynamic> body,
+  );
 
   @DELETE("${Endpoints.NEWS}/{id}")
-  Future<HttpResponse<BaseModel<dynamic>>> deleteNews(
-      @Path("id") String id,
-      );
+  Future<HttpResponse<BaseModel<dynamic>>> deleteNews(@Path("id") String id);
 
   @POST("${Endpoints.NEWS}/{id}/favorite")
   Future<HttpResponse<BaseModel<dynamic>>> addToFavoriteNews(
@@ -199,13 +221,13 @@ abstract class ApiServices{
 
   @GET(Endpoints.NEWS_FAVORITES_LIST)
   Future<HttpResponse<BaseModel<FavoriteNewsListResponse>>> getFavoriteNews(
-      @Queries() Map<String, dynamic> queryParams,
-      );
+    @Queries() Map<String, dynamic> queryParams,
+  );
 
   @POST(Endpoints.NEWS_VIEW_LOG)
   Future<HttpResponse<BaseModel<dynamic>>> trackNewsView(
-      @Body() Map<String, dynamic> body,
-      );
+    @Body() Map<String, dynamic> body,
+  );
 
   @GET(Endpoints.MY_NEWS)
   Future<HttpResponse<BaseListModel<NewsModel>>> getMyNews();
@@ -215,40 +237,48 @@ abstract class ApiServices{
   @POST(Endpoints.UPLOAD_FILE)
   @MultiPart()
   Future<HttpResponse<BaseModel<UploadResponseModel>>> uploadFile(
-      @Part(name: 'myfile') MultipartFile myfile,
-      );
-
+    @Part(name: 'myfile') MultipartFile myfile,
+  );
 
   //block / unblock
 
   @GET(Endpoints.BLOCKED_LIST)
-  Future<HttpResponse<BaseListModel<UserModel>>> getBlockedList(@Queries() Map<String, dynamic> queryParams);
+  Future<HttpResponse<BaseListModel<UserModel>>> getBlockedList(
+    @Queries() Map<String, dynamic> queryParams,
+  );
 
   @POST(Endpoints.USER_BLOCK_UNBLOCK)
-  Future<HttpResponse<BaseModel<UserModel>>> requestBlockUser(@Body() Map<String, dynamic> body);
-
+  Future<HttpResponse<BaseModel<UserModel>>> requestBlockUser(
+    @Body() Map<String, dynamic> body,
+  );
 
   // Other user profile
 
   @GET("${Endpoints.OTHER_USER_PROFILE}/{id}")
-  Future<HttpResponse<BaseModel<UserModel>>> getOtherUserProfile(@Path("id") String userId);
+  Future<HttpResponse<BaseModel<UserModel>>> getOtherUserProfile(
+    @Path("id") String userId,
+  );
 
   @GET("${Endpoints.OTHER_USER_CREATED_NEWS}/{id}")
   Future<HttpResponse<BaseListModel<NewsModel>>> getOtherUserCreatedNewsList(
-      @Path("id") String userId,
-      @Queries() Map<String, dynamic> queryParams,
-      );
+    @Path("id") String userId,
+    @Queries() Map<String, dynamic> queryParams,
+  );
 
   @GET("${Endpoints.OTHER_USER_CREATED_MARKETPLACE}/{id}")
-  Future<HttpResponse<BaseListModel<MarketplaceModel>>> getOtherUserCreatedMarketplaceList(
-      @Path("id") String userId,
-      @Queries() Map<String, dynamic> queryParams,
-      );
+  Future<HttpResponse<BaseListModel<MarketplaceModel>>>
+  getOtherUserCreatedMarketplaceList(
+    @Path("id") String userId,
+    @Queries() Map<String, dynamic> queryParams,
+  );
 
   // Report List
   @GET(Endpoints.MY_MARKETPLACE_REPORT)
-  Future<HttpResponse<BaseListModel<ReportResponseModel>>> getMarketplaceReportList(@Queries() Map<String, dynamic> queryParams);
+  Future<HttpResponse<BaseListModel<ReportResponseModel>>>
+  getMarketplaceReportList(@Queries() Map<String, dynamic> queryParams);
 
   @GET(Endpoints.MY_NEWS_REPORT)
-  Future<HttpResponse<BaseListModel<ReportResponseModel>>> getNewsReportList(@Queries() Map<String, dynamic> queryParams);
+  Future<HttpResponse<BaseListModel<ReportResponseModel>>> getNewsReportList(
+    @Queries() Map<String, dynamic> queryParams,
+  );
 }

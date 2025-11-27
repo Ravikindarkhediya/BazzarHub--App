@@ -58,7 +58,6 @@ class AppPages {
         return NewsDetailView(newsId: newsId);
       },
     ),
-    GetPage(name: AppRoutes.otherUserProfile, page: () => const OtherUserProfile()),
 
     GetPage(
       name: ProductDetailPage.routeName,
@@ -108,6 +107,5 @@ class AppRoutes {
   static const addNewsView = '/addNews';
   static const newsView = '/newsView';
   static const newsDetail = '/news-detail';
-  static const otherUserProfile = '/otherUserProfile';
 
 }

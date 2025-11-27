@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:bazzar_hub_app/presentation/controller/location_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart' hide MultipartFile;
 import 'package:image_picker/image_picker.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:path_provider/path_provider.dart';
@@ -10,6 +11,7 @@ import 'package:geolocator/geolocator.dart';
 
 import '../commons/dialogs/app_toasts.dart';
 import '../modules/product/widgets/image_upload_section.dart';
+import '../routes/app_routes.dart';
 import '../services/api_service.dart';
 import '../services/models/categorie/categorie_model.dart';
 import '../services/models/Common/coordinates_model.dart';
@@ -601,6 +603,7 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
           }
           _isLoading = false;
           notifyListeners();
+
           return true;
         } else {
           throw Exception(response.data.message ?? 'Failed to update product');
@@ -616,6 +619,7 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
           clearForm();
           _isLoading = false;
           notifyListeners();
+
           return true;
         } else {
           throw Exception(response.data.message ?? 'Failed to create product');

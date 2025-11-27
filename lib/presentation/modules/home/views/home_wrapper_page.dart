@@ -22,48 +22,55 @@ class HomeWrapper extends StatefulWidget {
 }
 
 class _HomeWrapperState extends State<HomeWrapper> {
-  int _currentIndex = 0;
-  // ✅ Removed _isVisible and _scrollController - not needed anymore
+  final HomeWrapperController _controller = Get.put(
+    HomeWrapperController(),
+    permanent: true,
+  );
 
   final List<Widget> _pages = [
-    const HomeView(),
-    const NewsView(),
-    const MarketplaceView(),
-    const AccountPage(),
+    const HomeView(),        // 0 - Home
+    const NewsView(),        // 1 - News
+    const MarketplaceView(), // 2 - Marketplace
+    const AccountPage(),     // 3 - Profile
   ];
 
   @override
   void initState() {
     super.initState();
+
+    // ✅ Handle initial tab argument
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final args = Get.arguments as Map<String, dynamic>?;
+      final initialTab = args?['initialTab'];
+
+      if (initialTab != null && initialTab is int) {
+        debugPrint('📍 Setting initial tab to: $initialTab');
+        _controller.currentIndex.value = initialTab;
+
+        // ✅ Refresh News tab if opening directly
+        if (initialTab == 1 && Get.isRegistered<NewsController>()) {
+          Get.find<NewsController>().refresh();
+          debugPrint('🔄 Refreshing News tab on open');
+        }
+      }
+    });
+
     FirebaseManager().initNotification();
     LocationManager().requestLocation();
-    // ✅ Removed scroll listener
   }
 
-  @override
-  void dispose() {
-    // ✅ No scroll controller to dispose
-    super.dispose();
-  }
+  void _onItemTapped(int index) {
+    _controller.changeTab(index);
 
-  void _onItemTapped(int index) => setState(() => _currentIndex = index);
+    if (index == 1 && Get.isRegistered<NewsController>()) {
+      Get.find<NewsController>().refresh();
+      debugPrint('🔄 Refreshing News tab');
+    }
+
+  }
 
   void _onSellTap() {
     _showSellOptionsSheet(context);
-  }
-
-  void _refreshNews() {
-    try {
-      if (Get.isRegistered<NewsController>()) {
-        Get.find<NewsController>().fetchNews();
-      }
-
-      if (_currentIndex == 1) {
-        setState(() {});
-      }
-    } catch (e) {
-      debugPrint('Error refreshing news: $e');
-    }
   }
 
   void _showSellOptionsSheet(BuildContext context) {
@@ -86,12 +93,10 @@ class _HomeWrapperState extends State<HomeWrapper> {
           ),
         ),
         actions: [
-          /// ------------------- Ads Button -------------------
           CupertinoActionSheetAction(
             onPressed: () async {
               Navigator.pop(context);
-              final result = await Get.toNamed(AppRoutes.sellProductPage);
-              // Add refresh logic if needed
+              await Get.toNamed(AppRoutes.sellProductPage);
             },
             child: Text(
               "Ads",
@@ -100,16 +105,10 @@ class _HomeWrapperState extends State<HomeWrapper> {
               ),
             ),
           ),
-
-          /// ------------------- News Button -------------------
           CupertinoActionSheetAction(
             onPressed: () async {
               Navigator.pop(context);
-              final result = await Get.toNamed(AppRoutes.addNewsView);
-
-              if (result == true) {
-                _refreshNews();
-              }
+              await Get.toNamed(AppRoutes.addNewsView);
             },
             child: Text(
               "News",
@@ -119,8 +118,6 @@ class _HomeWrapperState extends State<HomeWrapper> {
             ),
           ),
         ],
-
-        /// ------------------- Cancel Button -------------------
         cancelButton: CupertinoActionSheetAction(
           isDefaultAction: true,
           onPressed: () => Navigator.pop(context),
@@ -140,16 +137,39 @@ class _HomeWrapperState extends State<HomeWrapper> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: false,
-      // ✅ Use bottomNavigationBar instead of Stack
-      body: IndexedStack(
-        index: _currentIndex,
+      body: Obx(() => IndexedStack(
+        index: _controller.currentIndex.value,
         children: _pages,
-      ),
-      bottomNavigationBar: BottomNavBarWidget(
-        currentIndex: _currentIndex,
+      )),
+      bottomNavigationBar: Obx(() => BottomNavBarWidget(
+        currentIndex: _controller.currentIndex.value,
         onTap: _onItemTapped,
         onSellTap: _onSellTap,
-      ),
+      )),
     );
+  }
+}
+
+class HomeWrapperController extends GetxController {
+  var currentIndex = 0.obs;
+
+  void changeTab(int index) {
+    currentIndex.value = index;
+  }
+
+  void goToProfile() {
+    currentIndex.value = 3;
+  }
+
+  void goToHome() {
+    currentIndex.value = 0;
+  }
+
+  void goToNews() {
+    currentIndex.value = 1;
+  }
+
+  void goToMarketplace() {
+    currentIndex.value = 2;
   }
 }
