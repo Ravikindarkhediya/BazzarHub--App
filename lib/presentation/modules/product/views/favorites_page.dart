@@ -21,7 +21,8 @@ import '../../../services/models/user/user_model.dart';
 import '../../../modules/home/widgets/product_grid_widget.dart';
 import '../../../modules/news/widgets/featured_news_card.dart';
 import '../../../modules/news/views/news_detail_view.dart';
-import '../../product/views/product_detail_page.dart';
+import 'package:bazzar_hub_app/presentation/modules/product/views/product_detail_page.dart';
+import 'package:bazzar_hub_app/presentation/modules/product/views/product_detail_page.dart' show ProductPageArguments;
 
 class FavoritesPage extends StatefulWidget {
   const FavoritesPage({super.key});
@@ -136,7 +137,9 @@ class _FavoritesPageState extends State<FavoritesPage>
               _favoriteMarketplaces.addAll(newMarketplaces);
             }
 
-            _hasMoreMarketplaces = newMarketplaces.length == _marketplaceLimit;
+            _hasMoreMarketplaces =
+                newMarketplaces.length == _marketplaceLimit;
+
             if (!isRefresh) _marketplacePage++;
           });
         }
@@ -148,18 +151,25 @@ class _FavoritesPageState extends State<FavoritesPage>
     } on DioException catch (e) {
       AppToast.showError('Network error: ${e.message}');
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoadingMarketplaces = false;
-        });
-      }
+      setState(() {
+        _isLoadingMarketplaces = false;
+      });
     }
   }
 
   void _handleProductTap(MarketplaceModel product) {
-    // Handle product tap
-    // You can navigate to product detail page here
-    Get.toNamed('/product-detail', arguments: product.id);
+    // Navigate to product detail page with the product
+    if (product.id != null) {
+      Get.toNamed(
+        ProductDetailPage.routeName,
+        arguments: ProductPageArguments(
+          productId: product.id!,
+          product: product,
+        ),
+      );
+    } else {
+      AppToast.showError('Invalid product data');
+    }
   }
 
   Future<void> _handleFavoriteToggle(MarketplaceModel product, bool isFavorite) async {
@@ -607,11 +617,14 @@ class _FavoritesPageState extends State<FavoritesPage>
       child: GridView.builder(
         controller: _scrollController,
         padding: const EdgeInsets.all(16),
+        shrinkWrap: true,
+        physics: const AlwaysScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           childAspectRatio: 0.7,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
+          mainAxisExtent: 240, // Fixed height for each item
         ),
         itemCount: _favoriteMarketplaces.length + (_hasMoreMarketplaces ? 1 : 0),
         itemBuilder: (context, index) {
@@ -626,7 +639,7 @@ class _FavoritesPageState extends State<FavoritesPage>
               ? product.images.first
               : 'https://via.placeholder.com/200';
           final price = product.price.toStringAsFixed(2) ?? '0.00';
-          
+
           return GestureDetector(
             onTap: () => _handleProductTap(product),
             child: Card(
@@ -635,9 +648,15 @@ class _FavoritesPageState extends State<FavoritesPage>
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minHeight: 0,
+                  maxHeight: double.infinity,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                   // Product Image
                   Stack(
                     children: [
@@ -685,7 +704,7 @@ class _FavoritesPageState extends State<FavoritesPage>
                       ),
                     ],
                   ),
-                  
+
                   // Product Details
                   Padding(
                     padding: const EdgeInsets.all(12),
@@ -711,8 +730,8 @@ class _FavoritesPageState extends State<FavoritesPage>
                           ),
                         ),
                         const SizedBox(height: 4),
-                        if (product.location != null && 
-                            (product.location!.village.isNotEmpty || 
+                        if (product.location != null &&
+                            (product.location!.village.isNotEmpty ||
                              product.location!.district.isNotEmpty))
                           Row(
                             children: [
@@ -738,7 +757,9 @@ class _FavoritesPageState extends State<FavoritesPage>
                       ],
                     ),
                   ),
+                  const Spacer(),
                 ],
+              ),
               ),
             ),
           );

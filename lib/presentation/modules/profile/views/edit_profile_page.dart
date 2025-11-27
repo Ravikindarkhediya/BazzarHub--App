@@ -12,6 +12,7 @@ import 'package:get/get.dart' hide MultipartFile, FormData;
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'dart:io';
+import 'dart:convert';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -36,6 +37,22 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final TextEditingController _districtController = TextEditingController();
   final TextEditingController _stateController = TextEditingController();
 
+  // Location data
+  List<Map<String, dynamic>> _locationsData = [];
+  List<String> _statesList = [];
+  List<String> _districtsList = [];
+  List<String> _talukasList = [];
+  List<String> _villagesList = [];
+
+  String? _selectedState;
+  String? _selectedDistrict;
+  String? _selectedTaluka;
+  String? _selectedVillage;
+
+  bool _isLoadingDistricts = false;
+  bool _isLoadingTalukas = false;
+  bool _isLoadingVillages = false;
+
   File? _selectedAvatarImage;
   String? _uploadedAvatarUrl;
   final ImagePicker _picker = ImagePicker();
@@ -43,21 +60,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
   String? _selectedGender;
   UserModel? _currentUser;
 
-  // Track which field is being edited
-  String? _editingField;
-
   final List<String> _genderOptions = ['Male', 'Female', 'Other'];
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _loadLocationsData();
   }
 
   Future<void> _loadUserData() async {
-    setState(() {
-      _isInitialLoading = true;
-    });
+    setState(() => _isInitialLoading = true);
 
     try {
       final user = await SessionManager().getUser();
@@ -67,12 +80,18 @@ class _EditProfilePageState extends State<EditProfilePage> {
         _emailController.text = user.email;
         _uploadedAvatarUrl = user.avatar;
         _phoneController.text = user.phone;
-        _bioController.text = user.bio;
+        _bioController.text = user.bio ?? '';
         _selectedGender = user.gender.isNotEmpty ? user.gender : null;
-        _villageController.text = user.village;
-        _talukaController.text = user.taluka;
-        _districtController.text = user.district;
-        _stateController.text = user.state;
+
+        _stateController.text = user.state ?? '';
+        _districtController.text = user.district ?? '';
+        _talukaController.text = user.taluka ?? '';
+        _villageController.text = user.village ?? '';
+
+        _selectedState = user.state;
+        _selectedDistrict = user.district;
+        _selectedTaluka = user.taluka;
+        _selectedVillage = user.village;
 
         if (user.dob != null && user.dob!.isNotEmpty) {
           try {
@@ -86,9 +105,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     } catch (e) {
       AppToast.showError('Error loading user data');
     } finally {
-      setState(() {
-        _isInitialLoading = false;
-      });
+      setState(() => _isInitialLoading = false);
     }
   }
 
@@ -100,19 +117,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
           : DateTime.now(),
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
-      builder: (BuildContext context, Widget? child) {
-        return Theme(
-          data: ThemeData.light().copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: AppColors.white,
-              surface: AppColors.white,
-              onSurface: AppColors.textPrimary,
-            ),
+      builder: (context, child) => Theme(
+        data: ThemeData.light().copyWith(
+          colorScheme: const ColorScheme.light(
+            primary: AppColors.primary,
+            onPrimary: AppColors.white,
           ),
-          child: child!,
-        );
-      },
+        ),
+        child: child!,
+      ),
     );
 
     if (picked != null) {
@@ -123,31 +136,23 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Future<void> _uploadAvatarImage(File imageFile) async {
-    setState(() {
-      _isUploadingImage = true;
-    });
+    setState(() => _isUploadingImage = true);
 
     try {
-      final apiClient = await getApiClient();
-
       String fileName = imageFile.path.split('/').last;
       FormData formData = FormData.fromMap({
-        "myfile": await MultipartFile.fromFile(
-          imageFile.path,
-          filename: fileName,
-        ),
+        "myfile": await MultipartFile.fromFile(imageFile.path, filename: fileName),
       });
 
       final dio = Dio();
-      final session = await SessionManager().getToken();
+      final token = await SessionManager().getToken();
 
       final response = await dio.post(
         'http://192.168.2.210:3000/v1/common/upload',
         data: formData,
         options: Options(
-          contentType: 'multipart/form-data',
           headers: {
-            'Authorization': 'Bearer $session',
+            'Authorization': 'Bearer $token',
             'accept': 'application/json',
           },
         ),
@@ -155,201 +160,135 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
       if (response.data['status'] == true) {
         setState(() {
-          _uploadedAvatarUrl = response.data['data']['url'] as String? ?? '';
+          _uploadedAvatarUrl = response.data['data']['url'] as String;
         });
         AppToast.showSuccess('Avatar uploaded successfully!');
       } else {
-        AppToast.showError('Failed to upload avatar');
-        setState(() {
-          _selectedAvatarImage = null;
-        });
+        throw Exception('Upload failed');
       }
     } catch (e) {
-      debugPrint('Error uploading avatar: $e');
-      AppToast.showError('Error uploading image: $e');
-      setState(() {
-        _selectedAvatarImage = null;
-      });
+      debugPrint('Upload error: $e');
+      AppToast.showError('Failed to upload image');
+      setState(() => _selectedAvatarImage = null);
     } finally {
-      setState(() {
-        _isUploadingImage = false;
-      });
+      setState(() => _isUploadingImage = false);
     }
   }
 
   Future<void> _pickAvatarFromCamera() async {
-    try {
-      HapticFeedback.mediumImpact();
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.camera,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 85,
-      );
-
-      if (image != null) {
-        final File imageFile = File(image.path);
-        setState(() {
-          _selectedAvatarImage = imageFile;
-        });
-        await _uploadAvatarImage(imageFile);
-      }
-    } catch (e) {
-      debugPrint('Error picking avatar from camera: $e');
-      AppToast.showError('Failed to capture image');
+    HapticFeedback.mediumImpact();
+    final XFile? image = await _picker.pickImage(
+      source: ImageSource.camera,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 85,
+    );
+    if (image != null) {
+      final file = File(image.path);
+      setState(() => _selectedAvatarImage = file);
+      await _uploadAvatarImage(file);
     }
   }
 
   Future<void> _pickAvatarFromGallery() async {
-    try {
-      HapticFeedback.mediumImpact();
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 85,
-      );
-
-      if (image != null) {
-        final File imageFile = File(image.path);
-        setState(() {
-          _selectedAvatarImage = imageFile;
-        });
-        await _uploadAvatarImage(imageFile);
-      }
-    } catch (e) {
-      debugPrint('Error picking avatar from gallery: $e');
-      AppToast.showError('Failed to select image');
+    HapticFeedback.mediumImpact();
+    final XFile? image = await _picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 85,
+    );
+    if (image != null) {
+      final file = File(image.path);
+      setState(() => _selectedAvatarImage = file);
+      await _uploadAvatarImage(file);
     }
   }
 
   void _showImagePickerBottomSheet() {
     showModalBottomSheet(
       context: context,
-      backgroundColor:AppColors.background,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 20),
-              const Text(
-                'Update Avatar',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
+      backgroundColor: AppColors.background,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 20),
+            const Text('Update Avatar', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickAvatarFromCamera();
+                  },
+                  child: const Column(children: [
+                    Icon(Icons.camera_alt, size: 32, color: AppColors.primary),
+                    SizedBox(height: 8),
+                    Text('Camera'),
+                  ]),
                 ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pop(context);
-                      _pickAvatarFromCamera();
-                    },
-                    child: Column(
-                      children: [
-                        const Icon(
-                          Icons.camera_alt,
-                          size: 32,
-                          color: AppColors.primary,
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Camera',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                        ),
-                      ],
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pop(context);
-                      _pickAvatarFromGallery();
-                    },
-                    child: Column(
-                      children: [
-                        const Icon(
-                          Icons.photo_library,
-                          size: 32,
-                          color: AppColors.primary,
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Gallery',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 30),
-            ],
-          ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickAvatarFromGallery();
+                  },
+                  child: const Column(children: [
+                    Icon(Icons.photo_library, size: 32, color: AppColors.primary),
+                    SizedBox(height: 8),
+                    Text('Gallery'),
+                  ]),
+                ),
+              ],
+            ),
+            const SizedBox(height: 30),
+          ],
         ),
       ),
     );
   }
 
   Future<void> _updateProfile() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
+    if (!_formKey.currentState!.validate()) return;
     if (_isUploadingImage) {
       AppToast.showError('Please wait for image upload to complete');
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
       final params = <String, dynamic>{
         'name': _nameController.text.trim(),
-        if (_uploadedAvatarUrl != null && _uploadedAvatarUrl!.isNotEmpty)
-          'avatar': _uploadedAvatarUrl!,
+        if (_uploadedAvatarUrl != null && _uploadedAvatarUrl!.isNotEmpty) 'avatar': _uploadedAvatarUrl!,
         'phone': _phoneController.text.trim(),
         if (_selectedGender != null) 'gender': _selectedGender!,
-        if (_dobController.text.isNotEmpty) 'dob': _dobController.text.trim(),
+        if (_dobController.text.isNotEmpty) 'dob': _dobController.text,
         'bio': _bioController.text.trim(),
+        if (_selectedState != null) 'state': _selectedState!,
+        if (_selectedDistrict != null) 'district': _selectedDistrict!,
+        if (_selectedTaluka != null) 'taluka': _selectedTaluka!,
+        if (_selectedVillage != null) 'village': _selectedVillage!,
       };
 
       final apiClient = await getApiClient();
       final response = await apiClient.updateUserProfile(params);
 
       if (response.data.status) {
-        if (response.data.data != null) {
-          await SessionManager().saveUserData(response.data.data!);
-          AppToast.showSuccess('Profile updated successfully');
-          Get.back(result: true);
-        } else {
-          AppToast.showError('Failed to update profile');
-        }
+        await SessionManager().saveUserData(response.data.data!);
+        AppToast.showSuccess('Profile updated successfully');
+        Get.back(result: true);
       } else {
-        AppToast.showError(
-          response.data.message ?? 'Something went wrong, Please try again.',
-        );
+        AppToast.showError(response.data.message ?? 'Update failed');
       }
     } on DioException catch (e) {
-      String errorMessage = 'Error updating profile';
-      if (e.response?.data != null) {
-        errorMessage = e.response?.data['message'] ?? errorMessage;
-      }
-      AppToast.showError(errorMessage);
-    } catch (error) {
-      AppToast.showError('Error: $error');
+      AppToast.showError(e.response?.data['message'] ?? 'Network error');
+    } catch (e) {
+      AppToast.showError('Error: $e');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
   }
 
@@ -367,29 +306,406 @@ class _EditProfilePageState extends State<EditProfilePage> {
     super.dispose();
   }
 
-  String _getFieldPlaceholder(String fieldKey) {
-    switch (fieldKey) {
-      case 'name':
-        return 'Name';
-      case 'email':
-        return 'Email';
-      case 'phone':
-        return 'Phone';
-      case 'location':
-        return 'Location';
-      case 'village':
-        return 'Village';
-      case 'taluka':
-        return 'Taluka';
-      case 'district':
-        return 'District';
-      case 'state':
-        return 'State';
-      case 'bio':
-        return 'Bio';
-      default:
-        return 'Enter details';
+  // ─────────────────────────────────────────────────────────────
+  // LOCATION DATA LOADING
+  // ─────────────────────────────────────────────────────────────
+  Future<void> _loadLocationsData() async {
+    try {
+      final String jsonString = await rootBundle.loadString('assets/data/india_locations.json');
+      _locationsData = List<Map<String, dynamic>>.from(json.decode(jsonString));
+
+      final seen = <String>{};
+      _statesList = _locationsData
+          .map((e) => e['state'] as String)
+          .where((s) => seen.add(s))
+          .toList()
+        ..sort();
+
+      setState(() {});
+
+      // Restore saved state and cascade
+      if (_selectedState != null && _statesList.contains(_selectedState)) {
+        await _loadDistricts(_selectedState!);
+      }
+    } catch (e) {
+      debugPrint('Location load error: $e');
     }
+  }
+
+  Future<void> _loadDistricts(String state) async {
+    setState(() => _isLoadingDistricts = true);
+    _districtsList.clear();
+    _talukasList.clear();
+    _villagesList.clear();
+    _selectedDistrict = null;
+    _selectedTaluka = null;
+    _selectedVillage = null;
+
+    try {
+      final stateData = _locationsData.firstWhere(
+        (e) => e['state'] == state,
+        orElse: () => <String, dynamic>{},
+      );
+
+      if (stateData.isNotEmpty) {
+        final districts = stateData['districts'] as List;
+        final seen = <String>{};
+        _districtsList = districts
+            .map<String>((d) => d['district'] as String)
+            .where((d) => seen.add(d))
+            .toList();
+        _districtsList.sort();
+
+        if (_selectedDistrict != null && _districtsList.contains(_selectedDistrict)) {
+          await _loadTalukas(state, _selectedDistrict!);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading districts: $e');
+    } finally {
+      setState(() => _isLoadingDistricts = false);
+    }
+  }
+
+  Future<void> _loadTalukas(String state, String district) async {
+    setState(() => _isLoadingTalukas = true);
+    _talukasList.clear();
+    _villagesList.clear();
+    _selectedTaluka = null;
+    _selectedVillage = null;
+
+    try {
+      final stateData = _locationsData.firstWhere((e) => e['state'] == state, orElse: () => {});
+      final districtData = (stateData['districts'] as List?)
+          ?.firstWhere((d) => d['district'] == district, orElse: () => {}) ?? {};
+
+      if (districtData.isNotEmpty) {
+        final subs = districtData['subDistricts'] as List;
+        final seen = <String>{};
+        _talukasList = subs
+            .map((s) => s['subDistrict'] as String)
+            .where((t) => seen.add(t))
+            .toList()
+          ..sort();
+
+        if (_selectedTaluka != null && _talukasList.contains(_selectedTaluka)) {
+          await _loadVillages(state, district, _selectedTaluka!);
+        }
+      }
+    } finally {
+      setState(() => _isLoadingTalukas = false);
+    }
+  }
+
+  Future<void> _loadVillages(String state, String district, String taluka) async {
+    setState(() => _isLoadingVillages = true);
+    _villagesList.clear();
+    _selectedVillage = null;
+
+    try {
+      final stateData = _locationsData.firstWhere((e) => e['state'] == state, orElse: () => {});
+      final districtData = (stateData['districts'] as List?)
+          ?.firstWhere((d) => d['district'] == district, orElse: () => {}) ?? {};
+      final subData = (districtData['subDistricts'] as List?)
+          ?.firstWhere((s) => s['subDistrict'] == taluka, orElse: () => {}) ?? {};
+
+      if (subData.isNotEmpty) {
+        final villages = subData['villages'] as List;
+        final seen = <String>{};
+        _villagesList = villages.map((v) => v.toString()).where((v) => seen.add(v)).toList()..sort();
+
+        if (_villageController.text.isNotEmpty && _villagesList.contains(_villageController.text)) {
+          _selectedVillage = _villageController.text;
+        }
+      }
+    } finally {
+      setState(() => _isLoadingVillages = false);
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // SEARCHABLE BOTTOM SHEET FOR LOCATION PICKER
+  // ─────────────────────────────────────────────────────────────
+  void _showLocationPicker({
+    required String title,
+    required List<String> items,
+    required String? current,
+    required Function(String) onSelect,
+  }) {
+    String query = '';
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => StatefulBuilder(
+        builder: (context, setStateSheet) {
+          List<String> filtered = items
+              .where((item) => item.toLowerCase().contains(query.toLowerCase()))
+              .toList();
+
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.85,
+            decoration: const BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
+                      Expanded(child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
+                      const SizedBox(width: 48),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Search $title...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: AppColors.grey100,
+                    ),
+                    onChanged: (val) => setStateSheet(() => query = val),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: filtered.isEmpty
+                      ? const Center(child: Text('No items found'))
+                      : ListView.builder(
+                    itemCount: filtered.length,
+                    itemBuilder: (_, i) {
+                      final item = filtered[i];
+                      return ListTile(
+                        title: Text(item),
+                        trailing: current == item ? const Icon(Icons.check, color: AppColors.primary) : null,
+                        onTap: () {
+                          onSelect(item);
+                          Navigator.pop(context);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // UI WIDGETS
+  // ─────────────────────────────────────────────────────────────
+  Widget _buildLocationField({
+    required String label,
+    required String? value,
+    required IconData icon,
+    required bool enabled,
+    required bool isLoading,
+    required VoidCallback onTap,
+  }) {
+    String getPlaceholder() {
+      switch (label.toLowerCase()) {
+        case 'state':
+          return 'Select State';
+        case 'district':
+          return 'Select District';
+        case 'taluka':
+          return 'Select Taluka';
+        case 'village':
+          return 'Select Village';
+        default:
+          return 'Select $label';
+      }
+    }
+
+    return InkWell(
+      onTap: enabled ? onTap : null,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        child: Row(
+          children: [
+            Icon(icon, color: enabled ? AppColors.primary : AppColors.grey400, size: 24),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                value ?? getPlaceholder(),
+                style: TextStyle(
+                  fontSize: 15,
+                  color: enabled
+                      ? (value != null ? AppColors.textPrimary : AppColors.textSecondary.withOpacity(0.7))
+                      : AppColors.textSecondary.withOpacity(0.5),
+                  fontWeight: value != null ? FontWeight.w500 : FontWeight.normal,
+                ),
+              ),
+            ),
+            if (isLoading)
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            else if (enabled)
+              Icon(
+                Icons.keyboard_arrow_down,
+                size: 16,
+                color: AppColors.textSecondary,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInlineEditField({
+    required String fieldKey,
+    required IconData icon,
+    required TextEditingController controller,
+    TextInputType keyboardType = TextInputType.text,
+    int maxLines = 1,
+    String? Function(String?)? validator,
+  }) {
+    String getHintText() {
+      switch (fieldKey) {
+        case 'name':
+          return 'Enter your full name';
+        case 'email':
+          return 'Enter your email address';
+        case 'phone':
+          return 'Enter your phone number';
+        case 'bio':
+          return 'Tell us about yourself';
+        default:
+          return 'Enter $fieldKey';
+      }
+    }
+
+    final isBio = fieldKey == 'bio';
+
+    // Set field heights - bio is 70, all others are 60
+    final fieldHeight = isBio ? 70.0 : 60.0;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      height: fieldHeight,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Icon with centered alignment
+          Container(
+            width: 24,
+            height: 24,
+            alignment: Alignment.center,
+            child: Icon(icon, color: AppColors.primary, size: 24),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: isBio
+                ? SizedBox(
+                    height: 70,  // Bio field is taller
+                    child: TextFormField(
+                      controller: controller,
+                      keyboardType: TextInputType.multiline,
+                      maxLines: null,
+                      expands: true,
+                      textAlignVertical: TextAlignVertical.top,
+                      style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
+                      decoration: InputDecoration(
+                        hintText: getHintText(),
+                        hintStyle: TextStyle(
+                          color: AppColors.textSecondary.withOpacity(0.6),
+                        ),
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      validator: validator,
+                    ),
+                  )
+                : SizedBox(
+                    height: 48, // Standard field height (60 - 12 for padding)
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextFormField(
+                        controller: controller,
+                        keyboardType: keyboardType,
+                        maxLines: 1,
+                        style: const TextStyle(fontSize: 15, color: AppColors.textPrimary, height: 1.3),
+                        decoration: InputDecoration(
+                          hintText: getHintText(),
+                          hintStyle: TextStyle(
+                            color: AppColors.textSecondary.withOpacity(0.6),
+                            height: 1.3,
+                          ),
+                          border: InputBorder.none,
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        validator: validator,
+                      ),
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFieldRow({
+    required Widget icon,
+    required Widget field,
+  }) {
+    return SizedBox(
+      height: 60,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        alignment: Alignment.center,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            icon,
+            const SizedBox(width: 12),
+            Expanded(child: field),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInlineGenderField() {
+    return _buildFieldRow(
+      icon: const Icon(Icons.wc_outlined, color: AppColors.primary, size: 24),
+      field: DropdownButtonHideUnderline(
+        child: DropdownButtonFormField<String>(
+          value: _selectedGender,
+          hint: const Text('Select Gender', style: TextStyle(color: AppColors.textSecondary)),
+          decoration: const InputDecoration(
+            border: InputBorder.none,
+            isDense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
+          items: _genderOptions.map<DropdownMenuItem<String>>((g) => DropdownMenuItem<String>(
+            value: g,
+            child: Text(g),
+          )).toList(),
+          onChanged: (String? val) {
+            if (val != null) {
+              setState(() => _selectedGender = val);
+            }
+          },
+          style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
+        ),
+      ),
+    );
   }
 
   @override
@@ -404,39 +720,25 @@ class _EditProfilePageState extends State<EditProfilePage> {
         elevation: 0,
         toolbarHeight: 80,
         leading: Container(
-          margin: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
-          decoration: BoxDecoration(
+          margin: const EdgeInsets.all(12),
+          decoration: const BoxDecoration(
             color: AppColors.primary,
             shape: BoxShape.circle,
           ),
           child: IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(
-              Icons.arrow_back,
-              color: AppColors.white,
-            ),
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+            padding: EdgeInsets.zero,           // આ ખાસ જરૂરી છે
+            constraints: const BoxConstraints(), // આ પણ જરૂરી છે
           ),
         ),
-        title: const Text(
-          'Edit Profile',
-          style: TextStyle(
-            color: AppColors.primary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        title: const Text('Edit Profile', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
         centerTitle: true,
       ),
       body: _isInitialLoading
-          ? const Center(
-        child: CircularProgressIndicator(
-          color: AppColors.primary,
-        ),
-      )
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
           : SingleChildScrollView(
-        padding: EdgeInsets.symmetric(
-          horizontal: horizontalPadding,
-          vertical: AppSpacing.md,
-        ),
+        padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: AppSpacing.md),
         child: Form(
           key: _formKey,
           child: Column(
@@ -444,7 +746,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
             children: [
               AppSpacing.verticalSpaceMD,
 
-              // Avatar Image Section
+              // Avatar
               Center(
                 child: Stack(
                   children: [
@@ -455,71 +757,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         height: 120,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppColors.primary,
-                            width: 3,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withOpacity(0.2),
-                              blurRadius: 7,
-                              spreadRadius: 1,
-                            ),
-                          ],
+                          border: Border.all(color: AppColors.primary, width: 3),
                         ),
                         child: ClipOval(
                           child: _isUploadingImage
-                              ? Container(
-                            color: AppColors.grey200,
-                            child: const Center(
-                              child: CircularProgressIndicator(
-                                color: AppColors.primary,
-                                strokeWidth: 3,
-                              ),
-                            ),
-                          )
-                              : _uploadedAvatarUrl != null &&
-                              _uploadedAvatarUrl!.isNotEmpty
-                              ? Image.network(
-                            _uploadedAvatarUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: AppColors.grey200,
-                                child: const Icon(
-                                  Icons.person,
-                                  size: 50,
-                                  color: AppColors.grey400,
-                                ),
-                              );
-                            },
-                            loadingBuilder:
-                                (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return Container(
-                                color: AppColors.grey200,
-                                child: const Center(
-                                  child: CircularProgressIndicator(
-                                    color: AppColors.primary,
-                                    strokeWidth: 2,
-                                  ),
-                                ),
-                              );
-                            },
-                          )
+                              ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                              : _uploadedAvatarUrl != null && _uploadedAvatarUrl!.isNotEmpty
+                              ? Image.network(_uploadedAvatarUrl!, fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 50))
                               : _selectedAvatarImage != null
-                              ? Image.file(
-                            _selectedAvatarImage!,
-                            fit: BoxFit.cover,
-                          )
-                              : Container(
-                            color: AppColors.grey200,
-                            child: const Icon(
-                              Icons.person,
-                              size: 50,
-                              color: AppColors.grey400,
-                            ),
-                          ),
+                              ? Image.file(_selectedAvatarImage!, fit: BoxFit.cover)
+                              : const Icon(Icons.person, size: 50, color: AppColors.grey400),
                         ),
                       ),
                     ),
@@ -527,24 +775,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       bottom: 0,
                       right: 0,
                       child: GestureDetector(
-                        onTap: _isUploadingImage
-                            ? null
-                            : _showImagePickerBottomSheet,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppColors.white,
-                              width: 2,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.camera_alt,
-                            color: AppColors.white,
-                            size: 18,
-                          ),
+                        onTap: _showImagePickerBottomSheet,
+                        child: const CircleAvatar(
+                          radius: 18,
+                          backgroundColor: AppColors.primary,
+                          child: Icon(Icons.camera_alt, color: Colors.white, size: 18),
                         ),
                       ),
                     ),
@@ -554,438 +789,189 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
               AppSpacing.verticalSpaceMD,
 
-              // Card containing all form fields with inline editing
               Card(
                 elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 color: AppColors.surface,
-                margin: EdgeInsets.zero,
-                child: Padding(
-                  padding: const EdgeInsets.all(0.0),
-                  child: Column(
-                    children: [
-                      // Name Field - Inline Editable
-                      SizedBox(height: 5,),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 5),
-                        child: _buildInlineEditField(
-                          fieldKey: 'name',
-                          icon: Icons.person_outline,
-                          controller: _nameController,
-                          keyboardType: TextInputType.name,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return "Please enter your full name";
-                            }
-                            if (value.length < 2) {
-                              return "Name must be at least 2 characters";
-                            }
-                            return null;
-                          },
+                child: Column(
+                  children: [
+                    const SizedBox(height: 8),
+
+                    // Name
+                    _buildInlineEditField(
+                      fieldKey: 'name',
+                      icon: Icons.person_outline,
+                      controller: _nameController,
+                      validator: (v) => v?.isEmpty ?? true ? 'Name is required' : null,
+                    ),
+                    const Divider(height: 1),
+
+                    // Email
+                    _buildInlineEditField(fieldKey: 'email', icon: Icons.email_outlined, controller: _emailController),
+                    const Divider(height: 1),
+
+                    // Phone
+                    _buildInlineEditField(fieldKey: 'phone', icon: Icons.phone_outlined, controller: _phoneController),
+                    const Divider(height: 1),
+
+                    // Gender
+                    _buildInlineGenderField(),
+                    const Divider(height: 1),
+
+                    // Date of Birth
+                    _buildFieldRow(
+                      icon: const Icon(Icons.cake_outlined, color: AppColors.primary, size: 24),
+                      field: InkWell(
+                        onTap: _selectDate,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                _dobController.text.isEmpty ? 'Select your date of birth' : _dobController.text,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: _dobController.text.isEmpty
+                                      ? AppColors.textSecondary.withOpacity(0.7)
+                                      : AppColors.textPrimary,
+                                ),
+                              ),
+                            ),
+                            const Icon(Icons.calendar_today, size: 20, color: AppColors.textSecondary),
+                          ],
                         ),
                       ),
+                    ),
+                    const Divider(height: 1),
 
-                      const Divider(height: 8),
+                    // Bio
+                    _buildInlineEditField(
+                      fieldKey: 'bio',
+                      icon: Icons.description_outlined,
+                      controller: _bioController,
+                    ),
+                    const Divider(height: 1),
 
-                      // Email Field - Inline Editable
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 5),
-                        child: _buildInlineEditField(
-                          fieldKey: 'email',
-                          icon: Icons.email_outlined,
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          validator: (value) {
-                            if (value != null && value.isNotEmpty) {
-                              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                                return "Enter a valid email address";
-                              }
-                            }
-                            return null;
-                          },
-                        ),
+                    // ────── LOCATION FIELDS ──────
+                    _buildLocationField(
+                      label: "State",
+                      value: _selectedState,
+                      icon: Icons.map_outlined,
+                      enabled: true,
+                      isLoading: false,
+                      onTap: () => _showLocationPicker(
+                        title: "Select State",
+                        items: _statesList,
+                        current: _selectedState,
+                        onSelect: (val) {
+                          setState(() {
+                            _selectedState = val;
+                            _stateController.text = val;
+                            _selectedDistrict = _selectedTaluka = _selectedVillage = null;
+                            _districtController.clear();
+                            _talukaController.clear();
+                            _villageController.clear();
+                          });
+                          _loadDistricts(val);
+                        },
                       ),
+                    ),
+                    const Divider(height: 1),
 
-                      const Divider(height: 8),
-
-                      // Phone Field - Inline Editable
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 5),
-                        child: _buildInlineEditField(
-                          fieldKey: 'phone',
-                          icon: Icons.phone_outlined,
-                          controller: _phoneController,
-                          keyboardType: TextInputType.phone,
-                          validator: (value) {
-                            if (value != null && value.isNotEmpty) {
-                              if (value.length < 10) {
-                                return "Enter a valid phone number";
-                              }
-                            }
-                            return null;
-                          },
-                        ),
+                    _buildLocationField(
+                      label: "District",
+                      value: _selectedDistrict,
+                      icon: Icons.location_city_outlined,
+                      enabled: _selectedState != null,
+                      isLoading: _isLoadingDistricts,
+                      onTap: () => _showLocationPicker(
+                        title: "Select District",
+                        items: _districtsList,
+                        current: _selectedDistrict,
+                        onSelect: (val) {
+                          setState(() {
+                            _selectedDistrict = val;
+                            _districtController.text = val;
+                            _selectedTaluka = _selectedVillage = null;
+                            _talukaController.clear();
+                            _villageController.clear();
+                          });
+                          _loadTalukas(_selectedState!, val);
+                        },
                       ),
+                    ),
+                    const Divider(height: 1),
 
-                      const Divider(height: 8),
-
-                      // Gender Field - Inline Selectable
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 5),
-                        child: _buildInlineGenderField(),
+                    _buildLocationField(
+                      label: "Taluka",
+                      value: _selectedTaluka,
+                      icon: Icons.place_outlined,
+                      enabled: _selectedDistrict != null,
+                      isLoading: _isLoadingTalukas,
+                      onTap: () => _showLocationPicker(
+                        title: "Select Taluka",
+                        items: _talukasList,
+                        current: _selectedTaluka,
+                        onSelect: (val) {
+                          setState(() {
+                            _selectedTaluka = val;
+                            _talukaController.text = val;
+                            _selectedVillage = null;
+                            _villageController.clear();
+                          });
+                          _loadVillages(_selectedState!, _selectedDistrict!, val);
+                        },
                       ),
+                    ),
+                    const Divider(height: 1),
 
-                      const Divider(height: 8),
-
-                      // Date of Birth Field - Inline Selectable
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 5),
-                        child: _buildProfileListTile(
-                          icon: Icons.cake_outlined,
-                          subtitle: _dobController.text.isEmpty
-                              ? "Not specified"
-                              : _dobController.text,
-                          onTap: _selectDate,
-                        ),
+                    _buildLocationField(
+                      label: "Village",
+                      value: _selectedVillage,
+                      icon: Icons.house_outlined,
+                      enabled: _selectedTaluka != null,
+                      isLoading: _isLoadingVillages,
+                      onTap: () => _showLocationPicker(
+                        title: "Select Village",
+                        items: _villagesList,
+                        current: _selectedVillage,
+                        onSelect: (val) {
+                          setState(() {
+                            _selectedVillage = val;
+                            _villageController.text = val;
+                          });
+                        },
                       ),
+                    ),
 
-                      const Divider(height: 8),
-
-                      // Bio Field - Inline Editable
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 5),
-                        child: _buildInlineEditField(
-                          fieldKey: 'bio',
-                          icon: Icons.description_outlined,
-                          controller: _bioController,
-                          keyboardType: TextInputType.multiline,
-                          maxLines: 3,
-                        ),
-                      ),
-
-                      const Divider(height: 8),
-
-                      // Village Field - Inline Editable
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 5),
-                        child: _buildInlineEditField(
-                          fieldKey: 'village',
-                          icon: Icons.location_city_outlined,
-                          controller: _villageController,
-                          keyboardType: TextInputType.text,
-                        ),
-                      ),
-
-                      const Divider(height: 8),
-
-                      // Taluka Field - Inline Editable
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 5),
-                        child: _buildInlineEditField(
-                          fieldKey: 'taluka',
-                          icon: Icons.map_outlined,
-                          controller: _talukaController,
-                          keyboardType: TextInputType.text,
-                        ),
-                      ),
-
-                      const Divider(height: 8),
-
-                      // District Field - Inline Editable
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 5),
-                        child: _buildInlineEditField(
-                          fieldKey: 'district',
-                          icon: Icons.apartment_outlined,
-                          controller: _districtController,
-                          keyboardType: TextInputType.text,
-                        ),
-                      ),
-
-                      const Divider(height: 8),
-
-                      // State Field - Inline Editable
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 5),
-                        child: _buildInlineEditField(
-                          fieldKey: 'state',
-                          icon: Icons.public_outlined,
-                          controller: _stateController,
-                          keyboardType: TextInputType.text,
-                        ),
-                      ),
-
-                      SizedBox(height: 5,)
-                    ],
-                  ),
+                    const SizedBox(height: 12),
+                  ],
                 ),
               ),
 
               AppSpacing.verticalSpaceXL,
 
-              // Update Button
               SizedBox(
                 height: 55,
                 child: ElevatedButton(
-                  onPressed:
-                  (_isLoading || _isUploadingImage) ? null : _updateProfile,
+                  onPressed: (_isLoading || _isUploadingImage) ? null : _updateProfile,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    disabledBackgroundColor: AppColors.grey400,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 12,
-                    shadowColor: AppColors.primary.withOpacity(0.7),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 10,
                   ),
                   child: _isLoading
-                      ? Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Text(
-                        'Updating...',
-                        style: TextStyle(
-                          color: AppColors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(width: 10),
-                      SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                              AppColors.white),
-                        ),
-                      ),
-                    ],
-                  )
-                      : const Text(
-                    "Update Profile",
-                    style: TextStyle(
-                      color: AppColors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                      ? const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Text('Updating...', style: TextStyle(color: Colors.white, fontSize: 16)),
+                    SizedBox(width: 12),
+                    SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
+                  ])
+                      : const Text('Update Profile', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
 
               AppSpacing.verticalSpaceMD,
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  // Build inline editable field
-      Widget _buildInlineEditField({
-    required String fieldKey,
-    required IconData icon,
-    required TextEditingController controller,
-    TextInputType keyboardType = TextInputType.text,
-    int maxLines = 1,
-    String? Function(String?)? validator,
-  }) {
-    final isEditing = _editingField == fieldKey;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      child: Row(
-        children: [
-          // Icon
-          Icon(
-            icon,
-            color: AppColors.primary,
-            size: 24,
-          ),
-          const SizedBox(width: 12),
-
-          // Content - Either text or text field
-          Expanded(
-            child: isEditing
-                ? TextFormField(
-              controller: controller,
-              keyboardType: keyboardType,
-              maxLines: maxLines,
-              autofocus: true,
-              style: const TextStyle(
-                fontSize: 15,
-                color: AppColors.textPrimary,
-              ),
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                enabledBorder: InputBorder.none,
-                focusedBorder: InputBorder.none,
-                disabledBorder: InputBorder.none,
-                errorBorder: InputBorder.none,
-                focusedErrorBorder: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
-              ),
-
-              // decoration: InputDecoration(
-              //   border: OutlineInputBorder(
-              //     borderRadius: BorderRadius.circular(8),
-              //     borderSide: const BorderSide(color: AppColors.primary),
-              //   ),
-              //   focusedBorder: OutlineInputBorder(
-              //     borderRadius: BorderRadius.circular(8),
-              //     borderSide: const BorderSide(
-              //       color: AppColors.primary,
-              //       width: 2,
-              //     ),
-              //   ),
-              //   contentPadding: const EdgeInsets.symmetric(
-              //     horizontal: 12,
-              //     vertical: 8,
-              //   ),
-              //   isDense: true,
-              // ),
-              validator: validator,
-            )
-                : GestureDetector(
-              onTap: () {
-                setState(() {
-                  _editingField = fieldKey;
-                });
-              },
-              child: Text(
-                controller.text.isEmpty
-                    ? _getFieldPlaceholder(fieldKey)
-                    : controller.text,
-                style: TextStyle(
-                  fontSize: 15,
-                  color: controller.text.isEmpty
-                      ? AppColors.textSecondary.withOpacity(0.6)
-                      : AppColors.textPrimary,
-                ),
-                maxLines: maxLines,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ),
-
-          // Action Icon
-        ],
-      ),
-    );
-  }
-
-  // Build inline gender selector
-  // Build inline gender dropdown selector
-  Widget _buildInlineGenderField() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      child: Row(
-        children: [
-          // Icon
-          const Icon(
-            Icons.wc_outlined,
-            color: AppColors.primary,
-            size: 24,
-          ),
-          const SizedBox(width: 12),
-
-          // Dropdown Content
-          Expanded(
-            child: DropdownButtonFormField<String>(
-              value: _selectedGender,
-              hint: Text(
-                "Select gender",
-                style: TextStyle(
-                  fontSize: 15,
-                  color: AppColors.textSecondary.withOpacity(0.6),
-                ),
-              ),
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
-                isDense: true,
-              ),
-              style: const TextStyle(
-                fontSize: 15,
-                color: AppColors.textPrimary,
-              ),
-              icon: const Icon(
-                Icons.arrow_drop_down,
-                color: AppColors.textSecondary,
-              ),
-              dropdownColor: AppColors.surface,
-              isExpanded: true,
-              items: _genderOptions.map((String gender) {
-                return DropdownMenuItem<String>(
-                  value: gender,
-                  child: Text(
-                    gender,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                setState(() {
-                  _selectedGender = newValue;
-                });
-              },
-              validator: (value) {
-                // Optional: Add validation if gender is required
-                // if (value == null || value.isEmpty) {
-                //   return "Please select your gender";
-                // }
-                return null;
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-
-  // Build regular list tile (for date picker) - WITHOUT title and WITHOUT trailing pencil icon
-  Widget _buildProfileListTile({
-    required IconData icon,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: AppColors.primary,
-              size: 24,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                subtitle,
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: AppColors.textPrimary,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const Icon(
-              Icons.calendar_today_outlined,
-              color: AppColors.textSecondary,
-              size: 20,
-            ),
-          ],
         ),
       ),
     );

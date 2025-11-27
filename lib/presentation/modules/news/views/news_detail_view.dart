@@ -854,17 +854,77 @@ iOS: [App Store URL]''';
     );
   }
 
-  // Build content section
-// Build content section with first-line indent
+  // Build author profile section
+  Widget _buildAuthorProfile() {
+    final controller = Get.find<NewsDetailController>(tag: widget.newsId);
+    final news = controller.newsDetail.value;
+    
+    if (news?.createdBy == null) return const SizedBox.shrink();
+    
+    final authorName = news!.createdBy!.name ?? 'Unknown Author';
+    final authorEmail = news.createdBy!.email ?? '';
+    
+    return Padding(
+      padding: const EdgeInsets.only(top: 16, bottom: 8, left: 0, right: 16),
+      child: Row(
+        children: [
+          // Author Avatar
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.grey.shade200,
+            ),
+            child: const Icon(Icons.person, size: 20, color: Colors.grey),
+          ),
+          const SizedBox(width: 12),
+          // Author Info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  authorName,
+                  style: GoogleFonts.poppins(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey.shade800,
+                  ),
+                ),
+                if (authorEmail.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    authorEmail,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Build content section with first-line indent
   Widget _buildContentSection(String? content) {
     if (content == null || content.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Text('No content available', style: TextStyle(color: Colors.grey)),
+      return Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text('No content available', style: TextStyle(color: Colors.grey)),
+          ),
+          _buildAuthorProfile(),
+        ],
       );
     }
     if (content.isEmpty) {
-      return const SizedBox.shrink();
+      return _buildAuthorProfile();
     }
 
     return Padding(
@@ -886,6 +946,8 @@ iOS: [App Store URL]''';
             ),
             textAlign: TextAlign.justify,
           ),
+          // Add author profile below content
+          _buildAuthorProfile(),
         ],
       ),
     );
