@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../../../app/core/utils/app_spacing.dart';
 import '../../../app/data/constants/app_colors.dart';
 import '../../../app/data/constants/app_text_style.dart';
 import '../../../presentation/services/api_service.dart';
 import '../../../presentation/commons/dialogs/app_toasts.dart';
+import '../../routes/app_routes.dart';
 
 class BlockUserDialog extends StatefulWidget {
   final String name;
@@ -46,9 +48,11 @@ class _BlockUserDialogState extends State<BlockUserDialog> {
         AppToast.showSuccess("User unblocked successfully!");
 
         widget.onConfirm(); // 🔥 Refresh the parent list
-        Navigator.pop(context);
-      } else {
-        final errorMessage = response.data?.message ?? "Failed to unblock user!";
+        Get.offAllNamed(
+          AppRoutes.homeWrapper,
+          arguments: {'initialTab': 2},
+        );      } else {
+        final errorMessage = response.data.message ?? "Failed to unblock user!";
         debugPrint('Unblock user error: $errorMessage');
         AppToast.showError(errorMessage);
       }
