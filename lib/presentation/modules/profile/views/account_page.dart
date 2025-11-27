@@ -1,4 +1,6 @@
+import 'package:bazzar_hub_app/presentation/modules/profile/views/block_user.dart';
 import 'package:bazzar_hub_app/presentation/modules/profile/widgets/profile_info.dart';
+import 'package:bazzar_hub_app/presentation/modules/widgets/app_update_dialoge.dart';
 import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
@@ -10,6 +12,8 @@ import '../../../../manager/session_manager.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../services/api_service.dart';
 import '../../../services/models/user/user_model.dart';
+import '../../home/widgets/similar_product_widget.dart';
+import '../../widgets/app_review_dialog.dart';
 import '../widgets/settings_section.dart';
 import '../widgets/custom_bottom_sheet.dart';
 import '../widgets/settings_tile.dart';
@@ -161,6 +165,23 @@ class _AccountPageState extends State<AccountPage>
                               }
                             },
                           ),
+                          SettingsTile(
+                            icon: Icons.block,
+                            title: 'Block User',
+                            subtitle: 'Block any user from messaging you',
+                            onTap: () async {
+                              final result = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => BlockUser(),  // Direct screen open
+                                ),
+                              );
+                              if (result == true) {
+                                setState(() {});  // Refresh parent screen
+                              }
+                            },
+                          ),
+
                         ],
                       ),
 
@@ -217,7 +238,8 @@ class _AccountPageState extends State<AccountPage>
                             icon: Icons.feedback_outlined,
                             title: 'Send Feedback',
                             subtitle: 'Help us improve the app',
-                            onTap: () => _navigateTo(context, 'Send Feedback'),
+                            onTap: () {
+                            },
                           ),
                         ],
                       ),

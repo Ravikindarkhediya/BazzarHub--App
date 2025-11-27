@@ -49,6 +49,15 @@ class EmptyStateWidget extends StatelessWidget {
     );
   }
 
+  /// Factory for blocked users empty state
+  factory EmptyStateWidget.blockedUsers() {
+    return EmptyStateWidget(
+      title: 'No Blocked Users',
+      subtitle: 'You haven\'t blocked any users yet.\nBlocked users will appear here.',
+      icon: Icons.block,
+    );
+  }
+
   /// Factory for filter empty state
   factory EmptyStateWidget.filter({
     VoidCallback? onClearFilters,
