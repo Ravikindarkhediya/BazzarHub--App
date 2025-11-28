@@ -3,6 +3,7 @@ import 'package:bazzar_hub_app/manager/session_manager.dart';
 import 'package:bazzar_hub_app/app/data/constants/app_colors.dart';
 import 'package:bazzar_hub_app/presentation/commons/dialogs/app_toasts.dart';
 import 'package:bazzar_hub_app/presentation/controller/location_controller.dart';
+import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
 import 'package:bazzar_hub_app/presentation/services/api_service.dart';
 import 'package:bazzar_hub_app/presentation/services/models/user/user_model.dart';
 import 'package:dio/dio.dart';
@@ -273,16 +274,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
         if (_dobController.text.isNotEmpty) 'dob': _dobController.text,
         'bio': _bioController.text.trim(),
 
+        // ✅ LOCATION: ONLY send if not empty
         if (locationData['state'] != null && locationData['state']!.isNotEmpty)
           'state': locationData['state']!,
-        if (locationData['district'] != null &&
-            locationData['district']!.isNotEmpty)
+        if (locationData['district'] != null && locationData['district']!.isNotEmpty)
           'district': locationData['district']!,
-        if (locationData['taluka'] != null &&
-            locationData['taluka']!.isNotEmpty)
+        if (locationData['taluka'] != null && locationData['taluka']!.isNotEmpty)
           'taluka': locationData['taluka']!,
-        if (locationData['village'] != null &&
-            locationData['village']!.isNotEmpty)
+        if (locationData['village'] != null && locationData['village']!.isNotEmpty)
           'village': locationData['village']!,
       };
 
@@ -294,16 +293,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
       if (response.data.status) {
         await SessionManager().saveUserData(response.data.data!);
 
-        if (locationData['state'] != null &&
-            locationData['state']!.isNotEmpty) {
-          await _locationController.saveUserLocation();
+        // ✅ Save location and set refresh flag
+        await _locationController.saveUserLocation();
 
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setBool('marketplace_refresh_needed', true);
-        }
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('marketplace_refresh_needed', true);
 
         AppToast.showSuccess('Profile updated successfully');
-        Get.back(result: true);
+        Get.offAllNamed(
+          AppRoutes.homeWrapper,
+          arguments: {'initialTab': 3},
+        );
       } else {
         AppToast.showError(response.data.message ?? 'Update failed');
       }
