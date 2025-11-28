@@ -1,14 +1,14 @@
+import 'package:bazzar_hub_app/presentation/controller/location_controller.dart';
 import 'package:bazzar_hub_app/presentation/controller/product_controller.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../app/core/manager/log_manager.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../commons/dialogs/app_toasts.dart';
 import '../../../commons/widgets/location_bar_widget.dart';
-import '../../../routes/app_routes.dart';
 import '../../../services/api_service.dart';
 import '../../../services/models/categorie/categorie_model.dart';
 import '../../../services/models/marketplace/marketplace_model.dart';
@@ -26,7 +26,10 @@ class MarketplaceView extends StatefulWidget {
   State<MarketplaceView> createState() => _MarketplaceViewState();
 }
 
-class _MarketplaceViewState extends State<MarketplaceView> {
+class _MarketplaceViewState extends State<MarketplaceView>
+    with WidgetsBindingObserver, RouteAware {
+  final LocationController _locationController = Get.put(LocationController());
+
   // Global Query Params
   Map<String, dynamic> queryParams = {"page": 1, "limit": 50};
 
@@ -37,78 +40,271 @@ class _MarketplaceViewState extends State<MarketplaceView> {
   List<CategoryModel> _categories = [];
   List<CategoryModel> _displayedCategories = [];
   List<MarketplaceModel> _displayedProducts = [];
+  bool _isRefreshing = false;
 
   bool _isLoading = true;
   bool _isLoadingProducts = true;
+  bool _isInitialLoad = true;
 
   @override
   void initState() {
     super.initState();
-    // _filterController = FilterController();
-    _getCategory();
-    _getMarketplace();
-    _buildLocationFromMap();
+    WidgetsBinding.instance.addObserver(this);
+
+    debugPrint('🎯 MarketplaceView initialized');
   }
 
   @override
   void dispose() {
-    // _filterController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    debugPrint('🔴 MarketplaceView disposed');
     super.dispose();
   }
 
+  // ✅ INITIALIZE MARKETPLACE
+  Future<void> _initializeMarketplace() async {
+    debugPrint('🚀 Initializing marketplace...');
+    await _loadLocationAndFetch();
+    await _getCategory();
+    if (mounted) {
+      setState(() => _isInitialLoad = false);
+    }
+  }
+
+  // ✅ CHECK WHENEVER PAGE BECOMES VISIBLE AGAIN
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (!_isInitialLoad && mounted && !_isRefreshing) {
+      debugPrint('👀 MarketplaceView became visible, checking for updates...');
+
+      // ✅ Call directly without delay
+      Future.microtask(() => _checkAndReloadData());
+    }
+  }
+
+  // ✅ APP LIFECYCLE - Background to Foreground
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    debugPrint('🔄 App lifecycle changed: $state');
+    if (state == AppLifecycleState.resumed) {
+      _checkAndReloadData();
+    }
+  }
+
+  // ✅ CHECK IF DATA NEEDS REFRESH
+  Future<void> _checkAndReloadData() async {
+    // ✅ Prevent multiple simultaneous refreshes
+    if (_isRefreshing) {
+      debugPrint('⚠️ Refresh already in progress, skipping...');
+      return;
+    }
+
+    debugPrint('🔍 Checking for marketplace refresh flag...');
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final needsRefresh = prefs.getBool('marketplace_refresh_needed') ?? false;
+
+      debugPrint('🔍 Refresh flag value: $needsRefresh');
+
+      if (needsRefresh) {
+        debugPrint('🔄 Refresh needed! Starting refresh...');
+
+        // ✅ Set refresh lock
+        _isRefreshing = true;
+
+        // Clear flag IMMEDIATELY
+        await prefs.remove('marketplace_refresh_needed');
+        debugPrint('✅ Refresh flag cleared');
+
+        // Perform full refresh
+        await _refreshMarketplace();
+
+        // ✅ Release lock
+        _isRefreshing = false;
+      } else {
+        debugPrint('ℹ️ No refresh needed');
+      }
+    } catch (e) {
+      debugPrint('❌ Error checking refresh flag: $e');
+      _isRefreshing = false;
+    }
+  }
+
+  // ✅ FULL MARKETPLACE REFRESH
+  Future<void> _refreshMarketplace() async {
+    debugPrint('🔄 Starting full marketplace refresh...');
+
+    try {
+      // 1️⃣ Reload location from controller
+      await _locationController.loadUserLocation();
+      debugPrint('✅ Location reloaded from controller');
+
+      // 2️⃣ Sync location to query params
+      _syncLocationFromController();
+
+      // 3️⃣ Build location display string
+      _buildLocationFromMap();
+
+      // 4️⃣ Reload categories
+      await _getCategory();
+      debugPrint('✅ Categories reloaded');
+
+      // 5️⃣ Fetch products with new location
+      await _getMarketplace();
+      debugPrint('✅ Products reloaded');
+
+      // 6️⃣ Force complete UI rebuild
+      if (mounted) {
+        setState(() {
+          // Force rebuild everything
+          debugPrint('🔄 Forcing UI rebuild');
+        });
+      }
+
+      // 7️⃣ Show success message
+      if (mounted) {
+        AppToast.showSuccess('✅ Marketplace updated!');
+      }
+
+      debugPrint('✅ Marketplace refresh completed successfully');
+      debugPrint('📊 Current products count: ${_displayedProducts.length}');
+      debugPrint('📍 Current location: $_currentLocation');
+    } catch (e) {
+      debugPrint('❌ Error refreshing marketplace: $e');
+      if (mounted) {
+        AppToast.showError('Failed to refresh marketplace');
+      }
+    }
+  }
+
+  // ✅ SYNC LOCATION FROM CONTROLLER TO QUERY PARAMS
+  void _syncLocationFromController() {
+    debugPrint('🔄 Syncing location from controller...');
+
+    // Clear existing location params
+    queryParams.remove("state");
+    queryParams.remove("district");
+    queryParams.remove("taluko");
+    queryParams.remove("village");
+
+    // Get location from controller
+    final locationData = _locationController.getLocationData();
+
+    // Add to query params
+    if (locationData['state'] != null && locationData['state']!.isNotEmpty) {
+      queryParams["state"] = locationData['state']!;
+    }
+    if (locationData['district'] != null &&
+        locationData['district']!.isNotEmpty) {
+      queryParams["district"] = locationData['district']!;
+    }
+    if (locationData['taluka'] != null && locationData['taluka']!.isNotEmpty) {
+      queryParams["taluko"] = locationData['taluka']!; // API uses 'taluko'
+    }
+    if (locationData['village'] != null &&
+        locationData['village']!.isNotEmpty) {
+      queryParams["village"] = locationData['village']!;
+    }
+
+    debugPrint('📍 Query params synced: $queryParams');
+  }
+
+  // ✅ LOAD LOCATION FROM CONTROLLER AND FETCH
+  Future<void> _loadLocationAndFetch() async {
+    debugPrint('📍 Loading location and fetching products...');
+
+    try {
+      // Load location via controller
+      await _locationController.loadUserLocation();
+
+      // Sync to query params
+      _syncLocationFromController();
+
+      // Build location string for display
+      _buildLocationFromMap();
+
+      // Fetch products with updated location
+      await _getMarketplace();
+
+      debugPrint('✅ Location loaded and products fetched');
+    } catch (e) {
+      debugPrint('❌ Error loading location: $e');
+    }
+  }
+
+  // ✅ GET CATEGORIES
   Future<void> _getCategory() async {
     setState(() => _isLoading = true);
+
     try {
+      debugPrint('📦 Fetching categories...');
       var services = await getApiClient();
       var response = await services.requestAllCategories();
+
       if (response.data.status) {
         _categories = response.data.data?.categories ?? [];
         _displayedCategories = List.from(_categories);
+        debugPrint('✅ Categories loaded: ${_categories.length}');
       } else {
+        debugPrint('❌ Categories fetch failed: ${response.data.message}');
         AppToast.showError(
           response.data.message ?? "Something went wrong, Please try again.",
         );
       }
     } on DioException catch (e) {
+      debugPrint('❌ Network error loading categories: ${e.message}');
       AppToast.showError('Network error: ${e.message}');
     } catch (error) {
+      debugPrint('❌ Error loading categories: $error');
       AppToast.showError('Error loading categories: $error');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
+  // ✅ GET MARKETPLACE PRODUCTS
   Future<void> _getMarketplace() async {
     setState(() => _isLoadingProducts = true);
+
     try {
+      debugPrint('🛍️ Fetching products with params: $queryParams');
       var services = await getApiClient();
       var response = await services.getMarketplace(queryParams);
+
       if (response.data.status) {
         _displayedProducts.clear();
         _displayedProducts.addAll(response.data.data ?? []);
+        debugPrint('✅ Products loaded: ${_displayedProducts.length}');
       } else {
+        debugPrint('❌ Products fetch failed: ${response.data.message}');
         AppToast.showError(
           response.data.message ?? "Something went wrong, Please try again.",
         );
       }
     } on DioException catch (e) {
+      debugPrint('❌ Network error loading products: ${e.message}');
       if (e.response?.statusCode == 404) {
         _displayedProducts.clear();
+        debugPrint('ℹ️ No products found (404)');
       } else {
         AppToast.showError('Network error: ${e.message}');
       }
     } catch (error) {
+      debugPrint('❌ Error loading products: $error');
       AppToast.showError('Error loading products: $error');
     } finally {
       if (mounted) setState(() => _isLoadingProducts = false);
     }
   }
 
+  // ✅ BUILD LOCATION STRING
   void _buildLocationFromMap() {
     const order = ["village", "taluko", "district", "state"];
     List<String> parts = [];
 
-    // Loop through map values
     for (var key in order) {
       if (queryParams.containsKey(key)) {
         final value = queryParams[key];
@@ -118,7 +314,6 @@ class _MarketplaceViewState extends State<MarketplaceView> {
       }
     }
 
-    // If map is empty → use fallback (LogManager)
     if (parts.isEmpty) {
       final fallbackState = LogManager.getField("state", "");
       final fallbackCity = LogManager.getField("city", "");
@@ -128,28 +323,28 @@ class _MarketplaceViewState extends State<MarketplaceView> {
       if (fallbackCity.isNotEmpty) fallbackParts.add(fallbackCity);
       if (fallbackState.isNotEmpty) fallbackParts.add(fallbackState);
 
-      // Return empty if nothing found
       if (fallbackParts.isEmpty) {
         _currentLocation = "";
+        debugPrint('📍 No location set');
         return;
       }
 
       _currentLocation = fallbackParts.join(", ");
+      debugPrint('📍 Location (fallback): $_currentLocation');
       return;
     }
 
     _currentLocation = parts.join(", ");
+    debugPrint('📍 Location: $_currentLocation');
   }
 
-  /// 🔍 Filter Products by Single Category (tap on category card)
+  // ✅ FILTER BY CATEGORY
   void _filterByCategory(String categoryId) {
     setState(() {
       if (_selectedCategoryIds.contains(categoryId)) {
-        // Deselect category
         _selectedCategoryIds.remove(categoryId);
         _reorderCategories();
       } else {
-        // Select single category
         _selectedCategoryIds = [categoryId];
         _reorderCategories();
       }
@@ -158,7 +353,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
     });
   }
 
-  /// 🔄 Reorder categories - move selected to front
+  // ✅ REORDER CATEGORIES
   void _reorderCategories() {
     if (_selectedCategoryIds.isEmpty) {
       _displayedCategories = List.from(_categories);
@@ -179,7 +374,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
     _displayedCategories = [...selectedCategories, ...unselectedCategories];
   }
 
-  /// 📊 Update query params and fetch products
+  // ✅ UPDATE QUERY PARAMS AND FETCH
   void _updateQueryParamsAndFetch() {
     if (_selectedCategoryIds.isNotEmpty) {
       queryParams["category"] = _selectedCategoryIds.join(',');
@@ -189,7 +384,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
     _getMarketplace();
   }
 
-  /// 🎯 Handle View All Button - Show bottom sheet
+  // ✅ VIEW ALL CATEGORIES
   void _handleViewAllCategories() {
     CategorySelectionBottomSheet.show(
       context: context,
@@ -205,11 +400,13 @@ class _MarketplaceViewState extends State<MarketplaceView> {
     );
   }
 
-  /// 🎯 Handle View All Button - Show bottom sheet
+  // ✅ FILTER LOCATION
   void _handleFilterLocation() {
     LocationSelectionBottomSheet.show(
       context: context,
-      onApply: (selectedLocations) {
+      onApply: (selectedLocations) async {
+        debugPrint('📍 Location selected: $selectedLocations');
+
         setState(() {
           queryParams.remove("state");
           queryParams.remove("district");
@@ -217,13 +414,38 @@ class _MarketplaceViewState extends State<MarketplaceView> {
           queryParams.remove("village");
           queryParams.addAll(selectedLocations);
           _buildLocationFromMap();
-          _getMarketplace();
         });
+
+        // ✅ Save via LocationController
+        try {
+          if (selectedLocations.containsKey('state')) {
+            await _locationController.selectState(selectedLocations['state']);
+          }
+          if (selectedLocations.containsKey('district')) {
+            await _locationController.selectDistrict(
+              selectedLocations['district'],
+            );
+          }
+          if (selectedLocations.containsKey('taluko')) {
+            await _locationController.selectTaluka(selectedLocations['taluko']);
+          }
+          if (selectedLocations.containsKey('village')) {
+            _locationController.selectVillage(selectedLocations['village']);
+          }
+
+          // Save to SharedPreferences
+          await _locationController.saveUserLocation();
+          debugPrint('✅ Location saved via controller');
+        } catch (e) {
+          debugPrint('❌ Error saving location: $e');
+        }
+
+        await _getMarketplace();
       },
     );
   }
 
-  /// 📱 Handle Product Tap
+  // ✅ HANDLE PRODUCT TAP
   Future<void> _handleProductTap(MarketplaceModel product) async {
     try {
       final productId = product.id;
@@ -258,6 +480,7 @@ class _MarketplaceViewState extends State<MarketplaceView> {
         }
       }
     } catch (error) {
+      debugPrint('❌ Error opening product: $error');
       AppToast.showError('Error opening product: $error');
     }
   }
@@ -272,29 +495,30 @@ class _MarketplaceViewState extends State<MarketplaceView> {
         },
         child: Column(
           children: [
-            /// 🎯 Header Section
             HeaderWidget(),
 
-            /// 🔍 Enhanced Search Bar with Filter
-            LocationBarWidget(
-              onLocationTap: _handleFilterLocation,
-              location: _currentLocation,
-            ),
+            // ✅ REACTIVE LOCATION BAR WITH OBX
+            Obx(() {
+              final controllerLocation = _locationController.getFullAddress();
+              final displayLocation = controllerLocation.isNotEmpty
+                  ? controllerLocation
+                  : _currentLocation;
 
-            /// 📊 Filter Summary (if filters applied)
-            // if (_filterController.isFilterApplied) _buildFilterSummary(),
+              return LocationBarWidget(
+                onLocationTap: _handleFilterLocation,
+                location: displayLocation,
+              );
+            }),
 
-            /// 📜 Scrollable Content
             Expanded(
               child: RefreshIndicator(
                 onRefresh: () async {
-                  await _getCategory();
-                  await _getMarketplace();
+                  debugPrint('🔄 Pull to refresh triggered');
+                  await _refreshMarketplace();
                 },
                 color: AppColors.primary,
                 child: CustomScrollView(
                   slivers: [
-                    /// Categories Section
                     SliverToBoxAdapter(
                       child: Column(
                         children: [
@@ -305,13 +529,10 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                               onCategorySelected: _filterByCategory,
                               onViewAllTap: _handleViewAllCategories,
                             ),
-
                           AppSpacing.verticalSpaceMD,
                         ],
                       ),
                     ),
-
-                    /// Products Section Header
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: AppSpacing.horizontalMD,
@@ -338,8 +559,6 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                         ),
                       ),
                     ),
-
-                    /// Products Grid
                     SliverToBoxAdapter(
                       child: ProductGridWidget(
                         products: _displayedProducts,
@@ -368,8 +587,6 @@ class _MarketplaceViewState extends State<MarketplaceView> {
                         showHeartIcon: true,
                       ),
                     ),
-
-                    /// Bottom Padding
                     const SliverToBoxAdapter(child: SizedBox(height: 100)),
                   ],
                 ),
