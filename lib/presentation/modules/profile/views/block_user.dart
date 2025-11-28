@@ -54,18 +54,23 @@ class _BlockUserState extends State<BlockUser> with TickerProviderStateMixin {
         _isError = false;
       });
 
-      final api = Get.find<ApiServices>();
+      final api = await getApiClient();
       final response = await api.getBlockedList({"page": 1, "limit": 200});
 
-      setState(() {
-        blockedUsers = response.data.data ?? [];
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          blockedUsers = response.data.data ?? [];
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _isError = true;
-      });
+      debugPrint('❌ Error fetching blocked users: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isError = true;
+        });
+      }
     }
   }
 
@@ -77,14 +82,9 @@ class _BlockUserState extends State<BlockUser> with TickerProviderStateMixin {
         name: user.name,
         username: user.email,
         userId: user.id,
-        onConfirm: () async {
-          // Remove locally for instant UI update
-          setState(() {
-            blockedUsers.removeWhere((u) => u.id == user.id);
-          });
-
-          // Fetch latest data from server
-          await _fetchBlockedUsers();
+        onConfirm: () {
+          // ✅ Refresh the blocked users list
+          _fetchBlockedUsers();
         },
       ),
     );
@@ -153,7 +153,30 @@ class _BlockUserState extends State<BlockUser> with TickerProviderStateMixin {
         // BODY
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : _isError || blockedUsers.isEmpty
+            : _isError
+            ? Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                size: 60,
+                color: Colors.red,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Failed to load blocked users',
+                style: TextStyle(fontSize: 16, color: Colors.red),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _fetchBlockedUsers,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        )
+            : blockedUsers.isEmpty
             ? Center(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -196,23 +219,26 @@ class _BlockUserState extends State<BlockUser> with TickerProviderStateMixin {
             ),
           ),
         )
-            : ListView.separated(
-          padding: EdgeInsets.zero,
-          itemCount: blockedUsers.length,
-          separatorBuilder: (context, index) => Container(
-            margin: const EdgeInsets.only(left: 80),
-            height: 1,
-            color: const Color(0xFFD1D5DB),
+            : RefreshIndicator(
+          onRefresh: _fetchBlockedUsers,
+          child: ListView.separated(
+            padding: EdgeInsets.zero,
+            itemCount: blockedUsers.length,
+            separatorBuilder: (context, index) => Container(
+              margin: const EdgeInsets.only(left: 80),
+              height: 1,
+              color: const Color(0xFFD1D5DB),
+            ),
+            itemBuilder: (context, index) {
+              final user = blockedUsers[index];
+              return _BlockedUserTile(
+                user: user,
+                isFirst: index == 0,
+                isLast: index == blockedUsers.length - 1,
+                onUnblock: () => _openUnblockDialog(user),
+              );
+            },
           ),
-          itemBuilder: (context, index) {
-            final user = blockedUsers[index];
-            return _BlockedUserTile(
-              user: user,
-              isFirst: index == 0,
-              isLast: index == blockedUsers.length - 1,
-              onUnblock: () => _openUnblockDialog(user),
-            );
-          },
         ),
       ),
     );

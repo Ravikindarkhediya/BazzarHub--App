@@ -35,7 +35,7 @@ class _BlockUserDialogState extends State<BlockUserDialog> {
       final api = await getApiClient();
 
       final body = {
-        "blockedUserId": widget.userId,  // Changed from userId to blockedUserId
+        "blockedUserId": widget.userId,
         "isBlock": false,
       };
 
@@ -47,11 +47,13 @@ class _BlockUserDialogState extends State<BlockUserDialog> {
 
         AppToast.showSuccess("User unblocked successfully!");
 
-        widget.onConfirm(); // 🔥 Refresh the parent list
-        Get.offAllNamed(
-          AppRoutes.homeWrapper,
-          arguments: {'initialTab': 2},
-        );      } else {
+        // ✅ Close dialog
+        Navigator.of(context).pop();
+
+        // ✅ Refresh parent list immediately
+        widget.onConfirm();
+
+      } else {
         final errorMessage = response.data.message ?? "Failed to unblock user!";
         debugPrint('Unblock user error: $errorMessage');
         AppToast.showError(errorMessage);
@@ -122,7 +124,6 @@ class _BlockUserDialogState extends State<BlockUserDialog> {
                       backgroundColor: AppColors.primary,
                       foregroundColor: AppColors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 13),
-
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(AppSpacing.radiusMD),
                       ),

@@ -14,6 +14,7 @@ import '../../../services/api_service.dart';
 import '../../../services/models/user/user_model.dart';
 import '../../home/widgets/similar_product_widget.dart';
 import '../../widgets/app_review_dialog.dart';
+import '../widgets/language_actionsheet.dart';
 import '../widgets/settings_section.dart';
 import '../widgets/custom_bottom_sheet.dart';
 import '../widgets/settings_tile.dart';
@@ -55,6 +56,19 @@ class _AccountPageState extends State<AccountPage>
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+
+  // Helper method to get the current language name
+  String _getCurrentLanguageName(Locale locale) {
+    switch (locale.languageCode) {
+      case 'gu':
+        return 'ગુજરાતી';
+      case 'hi':
+        return 'हिंदी';
+      case 'en':
+      default:
+        return 'English';
+    }
   }
 
   Future<void> _launchURL(String url) async {
@@ -173,11 +187,11 @@ class _AccountPageState extends State<AccountPage>
                               final result = await Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => BlockUser(),  // Direct screen open
+                                  builder: (context) => BlockUser(),
                                 ),
                               );
                               if (result == true) {
-                                setState(() {});  // Refresh parent screen
+                                setState(() {});
                               }
                             },
                           ),
@@ -208,6 +222,31 @@ class _AccountPageState extends State<AccountPage>
                               setState(() {
                                 _pushNotifications = value;
                               });
+                            },
+                          ),
+                          // 🎯 UPDATED: Language tile with trailing
+                          SettingsTile(
+                            icon: Icons.language,
+                            title: 'Language',
+                            subtitle: 'Choose your preferred language',
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  _getCurrentLanguageName(
+                                    Get.locale ?? const Locale('en', 'US'),
+                                  ),
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            onTap: () async {
+                              await LanguageActionSheet.show(context);
+                              setState(() {});
                             },
                           ),
                         ],
@@ -245,8 +284,7 @@ class _AccountPageState extends State<AccountPage>
                             icon: Icons.feedback_outlined,
                             title: 'Send Feedback',
                             subtitle: 'Help us improve the app',
-                            onTap: () {
-                            },
+                            onTap: () {},
                           ),
                         ],
                       ),
@@ -649,7 +687,6 @@ class _AccountPageState extends State<AccountPage>
       if (!mounted) return;
 
       // Check response based on your API structure
-      // Your API returns: {"status": false/true, "message": "...", "data": null}
       final responseData = response.response.data;
 
       // Check if the response status is successful
@@ -665,12 +702,10 @@ class _AccountPageState extends State<AccountPage>
           final apiStatus = responseData['status'];
           isSuccess = apiStatus == true || apiStatus == 1;
 
-          message =
-              responseData['message']?.toString() ??
+          message = responseData['message']?.toString() ??
               'Account deleted successfully';
         } else {
-          message =
-              responseData['message']?.toString() ??
+          message = responseData['message']?.toString() ??
               response.response.statusMessage ??
               'Failed to delete account';
         }
@@ -707,7 +742,7 @@ class _AccountPageState extends State<AccountPage>
         String userMessage = message;
         if (message.contains('ObjectId cannot be invoked without \'new\'')) {
           userMessage =
-              'Server error occurred. Please contact support or try again later.';
+          'Server error occurred. Please contact support or try again later.';
         }
 
         if (mounted) {
