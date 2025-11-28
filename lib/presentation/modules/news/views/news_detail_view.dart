@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:video_player/video_player.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import '../../../commons/widgets/report_bottom_sheet.dart';
 import '../../../services/models/news/news_model.dart';
 import '../widgets/compact_news_card.dart';
 import '../../../../app/data/constants/app_colors.dart';
@@ -37,7 +38,8 @@ class NewsDetailView extends StatefulWidget {
   State<NewsDetailView> createState() => _NewsDetailViewState();
 }
 
-class _NewsDetailViewState extends State<NewsDetailView> with WidgetsBindingObserver {
+class _NewsDetailViewState extends State<NewsDetailView>
+    with WidgetsBindingObserver {
   Map<String, dynamic>? _reportInfo;
 
   @override
@@ -47,7 +49,10 @@ class _NewsDetailViewState extends State<NewsDetailView> with WidgetsBindingObse
 
     // Changed: permanent: true
     Get.put(
-      NewsDetailController(newsId: widget.newsId, initialData: widget.initialData),
+      NewsDetailController(
+        newsId: widget.newsId,
+        initialData: widget.initialData,
+      ),
       tag: widget.newsId,
       permanent: true, // <-- આ બદલો!
     );
@@ -108,24 +113,20 @@ class _NewsDetailViewState extends State<NewsDetailView> with WidgetsBindingObse
     }
   }
 
-
   // Share news content
   void _shareNews() {
-    const String shareText = '''Check out this interesting news on BazzarHub App!
+    const String shareText =
+        '''Check out this interesting news on BazzarHub App!
 
 Download the app now to stay updated with the latest news and updates.
 
 Android: [Play Store URL]
 iOS: [App Store URL]''';
 
-    Share.share(
-      shareText,
-      subject: 'Check out this news on BazzarHub',
-    );
+    Share.share(shareText, subject: 'Check out this news on BazzarHub');
   }
 
-
-// Show options bottom sheet
+  // Show options bottom sheet
   void _showOptionsBottomSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -147,7 +148,6 @@ iOS: [App Store URL]''';
               ),
             ),
 
-            // Report option - ✅ Navigate to new screen
             ListTile(
               leading: const Icon(
                 Icons.report_problem_outlined,
@@ -161,10 +161,15 @@ iOS: [App Store URL]''';
                 ),
               ),
               onTap: () {
-                Navigator.pop(context); // Close bottom sheet
+                // Close first bottom sheet
+                Navigator.pop(context);
 
-                // ✅ Navigate to report reasons page
-                Get.to(() => NewsReportReasonsPage(newsId: widget.newsId));
+                // ✅ FIXED: Direct call (no Get.to)
+                ReportBottomSheet.show(
+                  context: context,
+                  type: 'news',
+                  id: widget.newsId,
+                );
               },
             ),
 
@@ -209,9 +214,7 @@ iOS: [App Store URL]''';
   Widget build(BuildContext context) {
     // Get the controller - it should be initialized in initState
     if (!Get.isRegistered<NewsDetailController>(tag: widget.newsId)) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final controller = Get.find<NewsDetailController>(tag: widget.newsId);
@@ -283,9 +286,7 @@ iOS: [App Store URL]''';
               onPressed: () => Get.back(),
             ),
           ),
-          body: const Center(
-            child: Text('No news data available'),
-          ),
+          body: const Center(child: Text('No news data available')),
         );
       }
 
@@ -320,7 +321,7 @@ iOS: [App Store URL]''';
               Obx(() {
                 final isFavorite = controller.isFavorite.value;
                 final isLoading = controller.isFavoriteLoading.value;
-                
+
                 return Container(
                   margin: const EdgeInsets.only(right: 8.0),
                   child: GestureDetector(
@@ -338,11 +339,13 @@ iOS: [App Store URL]''';
                           // Favorite icon
                           if (!isLoading)
                             Icon(
-                              isFavorite ? Icons.favorite : Icons.favorite_border,
+                              isFavorite
+                                  ? Icons.favorite
+                                  : Icons.favorite_border,
                               color: isFavorite ? Colors.red : Colors.white,
                               size: 22,
                             ),
-                          
+
                           // Loading indicator
                           if (isLoading)
                             const SizedBox(
@@ -350,7 +353,9 @@ iOS: [App Store URL]''';
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
                               ),
                             ),
                         ],
@@ -363,25 +368,31 @@ iOS: [App Store URL]''';
                 padding: const EdgeInsets.only(right: 12.0),
                 child: roundedIconButton(
                   Icons.more_vert,
-                  () => _showOptionsBottomSheet(context),
+                  () => ReportBottomSheet.show(
+                    context: context,
+                    type: 'news',
+                    id: widget.newsId,
+                  ),
                 ),
               ),
             ],
           ],
         ),
 
-
         /// ---------------------- BODY CONTENT ------------------------
         body: RefreshIndicator(
           onRefresh: () async {
-            final controller = Get.find<NewsDetailController>(tag: widget.newsId);
+            final controller = Get.find<NewsDetailController>(
+              tag: widget.newsId,
+            );
             await controller.refreshData();
           },
           color: Colors.white,
           backgroundColor: AppColors.primary,
           strokeWidth: 2.5,
           child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(), // Enable pull-to-refresh
+            physics:
+                const AlwaysScrollableScrollPhysics(), // Enable pull-to-refresh
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -403,7 +414,10 @@ iOS: [App Store URL]''';
 
                 // Title and Meta
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -427,7 +441,7 @@ iOS: [App Store URL]''';
                           fontSize: 12,
                         ),
                       ),
-                      SizedBox(height: 20,),
+                      SizedBox(height: 20),
                       _buildMediaGallery(media, controller),
                     ],
                   ),
@@ -439,8 +453,7 @@ iOS: [App Store URL]''';
                 const SizedBox(height: 16),
 
                 // Related News Section
-                if (widget.showRelatedSection &&
-                    news.relatedNews.isNotEmpty)
+                if (widget.showRelatedSection && news.relatedNews.isNotEmpty)
                   _buildRelatedNewsSection(news.relatedNews),
 
                 const SizedBox(height: 24),
@@ -520,7 +533,10 @@ iOS: [App Store URL]''';
   }
 
   // Build Media Gallery
-  Widget _buildMediaGallery(List<Map<String, dynamic>>? media, NewsDetailController controller) {
+  Widget _buildMediaGallery(
+    List<Map<String, dynamic>>? media,
+    NewsDetailController controller,
+  ) {
     if (media == null || media.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -544,7 +560,8 @@ iOS: [App Store URL]''';
                 },
                 itemBuilder: (context, index) {
                   final mediaItem = media[index];
-                  final isVideo = mediaItem['type']?.toString().toLowerCase() == 'video';
+                  final isVideo =
+                      mediaItem['type']?.toString().toLowerCase() == 'video';
                   final url = mediaItem['url']?.toString() ?? '';
 
                   return GestureDetector(
@@ -561,12 +578,17 @@ iOS: [App Store URL]''';
                               placeholder: (context, url) => const Center(
                                 child: CircularProgressIndicator(),
                               ),
-                              errorWidget: (context, url, error) => const Icon(Icons.error),
+                              errorWidget: (context, url, error) =>
+                                  const Icon(Icons.error),
                             )
                           : Container(
                               color: Colors.grey[200],
                               child: const Center(
-                                child: Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
+                                child: Icon(
+                                  Icons.image_not_supported,
+                                  size: 50,
+                                  color: Colors.grey,
+                                ),
                               ),
                             ),
                     ),
@@ -580,7 +602,10 @@ iOS: [App Store URL]''';
                   bottom: 16,
                   right: 16,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.black54,
                       borderRadius: BorderRadius.circular(20),
@@ -608,12 +633,12 @@ iOS: [App Store URL]''';
   Widget _buildAuthorProfile() {
     final controller = Get.find<NewsDetailController>(tag: widget.newsId);
     final news = controller.newsDetail.value;
-    
+
     if (news?.createdBy == null) return const SizedBox.shrink();
-    
+
     final authorName = news!.createdBy!.name ?? 'Unknown Author';
     final authorEmail = news.createdBy!.email ?? '';
-    
+
     return Padding(
       padding: const EdgeInsets.only(top: 10, bottom: 8, left: 0, right: 16),
       child: Row(
@@ -668,7 +693,10 @@ iOS: [App Store URL]''';
           _buildAuthorProfile(),
           const Padding(
             padding: EdgeInsets.all(16.0),
-            child: Text('No content available', style: TextStyle(color: Colors.grey)),
+            child: Text(
+              'No content available',
+              style: TextStyle(color: Colors.grey),
+            ),
           ),
         ],
       );
@@ -717,9 +745,13 @@ iOS: [App Store URL]''';
 
     // If still just one paragraph, treat entire content as single paragraph
     if (paragraphs.length == 1 && paragraphs[0].isNotEmpty) {
-      spans.add(const WidgetSpan(
-        child: SizedBox(width: 40), // First line indent - adjust width as needed
-      ));
+      spans.add(
+        const WidgetSpan(
+          child: SizedBox(
+            width: 40,
+          ), // First line indent - adjust width as needed
+        ),
+      );
       spans.add(TextSpan(text: paragraphs[0].trim()));
       return spans;
     }
@@ -735,9 +767,11 @@ iOS: [App Store URL]''';
         }
 
         // Add indent ONLY for first line of each paragraph
-        spans.add(const WidgetSpan(
-          child: SizedBox(width: 40), // Adjust width (32-48 typical)
-        ));
+        spans.add(
+          const WidgetSpan(
+            child: SizedBox(width: 40), // Adjust width (32-48 typical)
+          ),
+        );
 
         // Add the paragraph text
         spans.add(TextSpan(text: paragraph));
@@ -798,12 +832,16 @@ iOS: [App Store URL]''';
 
   // Format content with proper paragraphs
 
-
   // Show full screen image viewer
   void _showFullScreenImage(
-      BuildContext context, List<dynamic> media, int initialIndex) {
+    BuildContext context,
+    List<dynamic> media,
+    int initialIndex,
+  ) {
     // Filter only images for the gallery
-    final imageMedia = media.where((m) => m['type']?.toLowerCase() != 'video').toList();
+    final imageMedia = media
+        .where((m) => m['type']?.toLowerCase() != 'video')
+        .toList();
 
     // If the initial index is a video, find the nearest image index
     int adjustedIndex = initialIndex;
@@ -859,9 +897,7 @@ iOS: [App Store URL]''';
                   imageProvider: NetworkImage(imageMedia[index]['url'] ?? ''),
                   minScale: PhotoViewComputedScale.contained,
                   maxScale: PhotoViewComputedScale.covered * 2,
-                  heroAttributes: PhotoViewHeroAttributes(
-                    tag: 'image_$index',
-                  ),
+                  heroAttributes: PhotoViewHeroAttributes(tag: 'image_$index'),
                 );
               },
               loadingBuilder: (context, event) => Center(
@@ -873,7 +909,7 @@ iOS: [App Store URL]''';
                     value: event == null
                         ? 0
                         : event.cumulativeBytesLoaded /
-                            (event.expectedTotalBytes ?? 1),
+                              (event.expectedTotalBytes ?? 1),
                   ),
                 ),
               ),
@@ -961,10 +997,7 @@ Widget roundedIconButton(IconData icon, VoidCallback onTap) {
     child: Container(
       width: 30,
       height: 30,
-      decoration: BoxDecoration(
-        color: Colors.black45,
-        shape: BoxShape.circle
-      ),
+      decoration: BoxDecoration(color: Colors.black45, shape: BoxShape.circle),
       child: Icon(icon, color: Colors.white, size: 22),
     ),
   );

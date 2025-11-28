@@ -1,17 +1,39 @@
+// lib/presentation/commons/pages/common_report_reasons_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
-import '../controllers/news_detail_controller.dart';
+import '../../../commons/dialogs/app_toasts.dart';
+import '../../../services/api_service.dart';
 
-class NewsReportReasonsPage extends StatelessWidget {
-  final String newsId;
+class CommonReportReasonsPage extends StatelessWidget {
+  final String itemId;
+  final String type; // 'news' or 'marketplace'
 
-  const NewsReportReasonsPage({
+  const CommonReportReasonsPage({
     super.key,
-    required this.newsId,
+    required this.itemId,
+    required this.type,
   });
+
+  // ✅ Static method to open the page
+  static Future<void> show({
+    required BuildContext context,
+    required String itemId,
+    required String type,
+  }) {
+    return Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CommonReportReasonsPage(
+          itemId: itemId,
+          type: type,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -150,9 +172,10 @@ class NewsReportReasonsPage extends StatelessWidget {
                     onTap: () {
                       _showReportDetailsBottomSheet(
                         context,
-                        newsId,
-                        reason['id'] as String,
+                        itemId,
+                        type,
                         reason['title'] as String,
+                        reason['description'] as String,
                       );
                     },
                   ),
@@ -165,15 +188,16 @@ class NewsReportReasonsPage extends StatelessWidget {
     );
   }
 
-  // Show bottom sheet with TextField and buttons
+  // ✅ Show bottom sheet with TextField and buttons
   void _showReportDetailsBottomSheet(
       BuildContext context,
-      String newsId,
-      String reasonId,
+      String itemId,
+      String type,
       String reasonTitle,
+      String reasonDescription,
       ) {
-    final controller = Get.find<NewsDetailController>(tag: newsId);
     final TextEditingController messageController = TextEditingController();
+    bool isSubmitting = false;
 
     showModalBottomSheet(
       context: context,
@@ -187,79 +211,93 @@ class NewsReportReasonsPage extends StatelessWidget {
       builder: (context) {
         final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
-        return Padding(
-          padding: EdgeInsets.only(bottom: bottomInset),
-          child: Container(
-            padding: AppSpacing.paddingMD,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Drag handle
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: AppSpacing.md),
-                    decoration: BoxDecoration(
-                      color: AppColors.grey400,
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusXS),
-                    ),
-                  ),
-                ),
-
-
-
-                // Additional details field label
-                Text(
-                  'Additional details (optional)',
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-
-                // TextField
-                TextField(
-                  controller: messageController,
-                  maxLines: 4,
-                  autofocus: true,
-                  style: AppTextStyles.bodyMedium,
-                  decoration: InputDecoration(
-                    hintText: 'Please provide more details about your report...',
-                    hintStyle: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textHint,
-                    ),
-                    filled: true,
-                    fillColor: AppColors.grey50,
-                    border: OutlineInputBorder(
-                      borderRadius: AppSpacing.borderRadiusMD,
-                      borderSide: const BorderSide(
-                        color: AppColors.borderLight,
+        return StatefulBuilder(
+          builder: (context, setState) => Padding(
+            padding: EdgeInsets.only(bottom: bottomInset),
+            child: Container(
+              padding: AppSpacing.paddingMD,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Drag handle
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: AppColors.grey400,
+                        borderRadius: BorderRadius.circular(AppSpacing.radiusXS),
                       ),
                     ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: AppSpacing.borderRadiusMD,
-                      borderSide: const BorderSide(
-                        color: AppColors.borderLight,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: AppSpacing.borderRadiusMD,
-                      borderSide: const BorderSide(
-                        color: AppColors.error,
-                        width: 1.5,
-                      ),
-                    ),
-                    contentPadding: AppSpacing.paddingMD,
                   ),
-                ),
-                const SizedBox(height: AppSpacing.md),
 
-                // Submit button
-                Obx(() {
-                  final isSubmitting = controller.isReporting.value;
-                  return SizedBox(
+                  // Selected reason display
+                  Text(
+                    'Selected reason:',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    reasonTitle,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.error,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+
+                  // Additional details field label
+                  Text(
+                    'Additional details (optional)',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+
+                  // TextField
+                  TextField(
+                    controller: messageController,
+                    maxLines: 4,
+                    autofocus: true,
+                    style: AppTextStyles.bodyMedium,
+                    decoration: InputDecoration(
+                      hintText: 'Please provide more details about your report...',
+                      hintStyle: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textHint,
+                      ),
+                      filled: true,
+                      fillColor: AppColors.grey50,
+                      border: OutlineInputBorder(
+                        borderRadius: AppSpacing.borderRadiusMD,
+                        borderSide: const BorderSide(
+                          color: AppColors.borderLight,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: AppSpacing.borderRadiusMD,
+                        borderSide: const BorderSide(
+                          color: AppColors.borderLight,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: AppSpacing.borderRadiusMD,
+                        borderSide: const BorderSide(
+                          color: AppColors.error,
+                          width: 1.5,
+                        ),
+                      ),
+                      contentPadding: AppSpacing.paddingMD,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+
+                  // Submit button
+                  SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -278,65 +316,71 @@ class NewsReportReasonsPage extends StatelessWidget {
                       onPressed: isSubmitting
                           ? null
                           : () async {
+                        setState(() => isSubmitting = true);
+
                         try {
                           final message = messageController.text.trim();
-                          final fullReason = message.isNotEmpty
-                              ? '$reasonId: $message'
-                              : reasonId;
 
-                          await controller.reportNews(fullReason);
+                          // ✅ Call API based on type
+                          final success = await _submitReport(
+                            itemId: itemId,
+                            type: type,
+                            reason: reasonTitle,
+                            message: message,
+                          );
 
                           if (!context.mounted) return;
 
-                          // ✅ Close bottom sheet
-                          Navigator.pop(context);
+                          if (success) {
+                            // Close bottom sheet
+                            Navigator.pop(context);
 
-                          // ✅ Close report reasons page
-                          Navigator.pop(context);
+                            // Close report reasons page
+                            Navigator.pop(context);
 
-                          // ✅ Show success message on NewsDetailPage
-                          Future.delayed(const Duration(milliseconds: 300), () {
-                            Get.snackbar(
-                              'Success',
-                              'Report submitted successfully',
-                              snackPosition: SnackPosition.BOTTOM,
-                              backgroundColor: AppColors.success,
-                              colorText: AppColors.white,
-                              margin: const EdgeInsets.all(AppSpacing.md),
-                              borderRadius: AppSpacing.radiusMD,
-                              duration: const Duration(seconds: 2),
-                              icon: const Icon(
-                                Icons.check_circle,
-                                color: AppColors.white,
-                              ),
+                            // Show success message
+                            Future.delayed(
+                              const Duration(milliseconds: 300),
+                                  () {
+                                Get.snackbar(
+                                  'Success',
+                                  'Report submitted successfully',
+                                  snackPosition: SnackPosition.BOTTOM,
+                                  backgroundColor: AppColors.success,
+                                  colorText: AppColors.white,
+                                  margin: const EdgeInsets.all(AppSpacing.md),
+                                  borderRadius: AppSpacing.radiusMD,
+                                  duration: const Duration(seconds: 2),
+                                  icon: const Icon(
+                                    Icons.check_circle,
+                                    color: AppColors.white,
+                                  ),
+                                );
+                              },
                             );
-                          });
+                          } else {
+                            setState(() => isSubmitting = false);
+                          }
                         } catch (e) {
                           if (!context.mounted) return;
 
-                          // ✅ Close bottom sheet
-                          Navigator.pop(context);
+                          setState(() => isSubmitting = false);
 
-                          // ✅ Close report reasons page
-                          Navigator.pop(context);
-
-                          // ✅ Show error on NewsDetailPage
-                          Future.delayed(const Duration(milliseconds: 300), () {
-                            Get.snackbar(
-                              'Error',
-                              'Failed to submit report: ${e.toString()}',
-                              snackPosition: SnackPosition.BOTTOM,
-                              backgroundColor: AppColors.error,
-                              colorText: AppColors.white,
-                              margin: const EdgeInsets.all(AppSpacing.md),
-                              borderRadius: AppSpacing.radiusMD,
-                              duration: const Duration(seconds: 3),
-                              icon: const Icon(
-                                Icons.error,
-                                color: AppColors.white,
-                              ),
-                            );
-                          });
+                          // Show error
+                          Get.snackbar(
+                            'Error',
+                            'Failed to submit report: ${e.toString()}',
+                            snackPosition: SnackPosition.BOTTOM,
+                            backgroundColor: AppColors.error,
+                            colorText: AppColors.white,
+                            margin: const EdgeInsets.all(AppSpacing.md),
+                            borderRadius: AppSpacing.radiusMD,
+                            duration: const Duration(seconds: 3),
+                            icon: const Icon(
+                              Icons.error,
+                              color: AppColors.white,
+                            ),
+                          );
                         }
                       },
                       child: isSubmitting
@@ -358,34 +402,67 @@ class NewsReportReasonsPage extends StatelessWidget {
                         ),
                       ),
                     ),
-                  );
-                }),
+                  ),
 
-                // Cancel button
-                const SizedBox(height: AppSpacing.sm),
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: AppSpacing.md,
+                  // Cancel button
+                  const SizedBox(height: AppSpacing.sm),
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppSpacing.md,
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      'Cancel',
-                      style: AppTextStyles.button.copyWith(
-                        color: AppColors.textSecondary,
+                      child: Text(
+                        'Cancel',
+                        style: AppTextStyles.button.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-              ],
+                  const SizedBox(height: AppSpacing.sm),
+                ],
+              ),
             ),
           ),
         );
       },
     );
+  }
+
+  // ✅ Submit report API call
+  Future<bool> _submitReport({
+    required String itemId,
+    required String type,
+    required String reason,
+    required String message,
+  }) async {
+    try {
+      var services = await getApiClient();
+
+      final body = {
+        'reason': reason,
+        if (message.isNotEmpty) 'message': message,
+      };
+
+      final response = type == 'news'
+          ? await services.reportNews(itemId, body)
+          : await services.reportMarketPlace(itemId, body);
+
+      if (response.data.status) {
+        return true;
+      } else {
+        AppToast.showError(
+          response.data.message ?? 'Failed to submit report',
+        );
+        return false;
+      }
+    } catch (e) {
+      AppToast.showError('Network error: $e');
+      return false;
+    }
   }
 }

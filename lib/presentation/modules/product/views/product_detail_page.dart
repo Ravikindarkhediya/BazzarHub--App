@@ -458,10 +458,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             icon: Icons.more_vert,
             onTap: () => {
               ReportBottomSheet.show(
-                  context: context,
-                  type: "marketplace",
-                  id: widget.productId
-              )
+                context: context,
+                type: 'marketplace',
+                id: widget.productId,
+              ),
             },
             background: AppColors.primary,
             iconColor: AppColors.white,
