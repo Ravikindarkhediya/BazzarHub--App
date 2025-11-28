@@ -281,4 +281,9 @@ abstract class ApiServices {
   Future<HttpResponse<BaseListModel<ReportResponseModel>>> getNewsReportList(
       @Queries() Map<String, dynamic> queryParams,
       );
+      
+  @DELETE("${Endpoints.DELETE_NEWS_REPORT}/{id}")
+  Future<HttpResponse<BaseModel<dynamic>>> deleteNewsReport(
+    @Path("id") String reportId,
+  );
 }
