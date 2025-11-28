@@ -51,7 +51,27 @@ class _EditProfilePageState extends State<EditProfilePage> {
     super.initState();
     _loadUserData();
   }
+  String? _validateLocationFields() {
+    final locationData = _locationController.getLocationData();
 
+    if (locationData['state'] == null || locationData['state']!.isEmpty) {
+      return 'Please select a state';
+    }
+
+    if (locationData['district'] == null || locationData['district']!.isEmpty) {
+      return 'Please select a district';
+    }
+
+    if (locationData['taluka'] == null || locationData['taluka']!.isEmpty) {
+      return 'Please select a taluka';
+    }
+
+    if (locationData['village'] == null || locationData['village']!.isEmpty) {
+      return 'Please select a village';
+    }
+
+    return null;
+  }
   Future<void> _loadUserData() async {
     setState(() => _isInitialLoading = true);
 
@@ -75,15 +95,18 @@ class _EditProfilePageState extends State<EditProfilePage> {
           }
         }
 
+        // ✅ Load locations data (JSON file)
         await _locationController.loadLocationsData();
 
+        // ✅ CHANGED: ONLY load state, not full location hierarchy
         if (user.state != null && user.state!.isNotEmpty) {
-          await _locationController.initializeWithUserLocation(
-            state: user.state,
-            district: user.district,
-            taluka: user.taluka,
-            village: user.village,
-          );
+          // Just set state
+          _locationController.selectedState.value = user.state;
+
+          // Load districts for the state (but don't select any)
+          await _locationController.loadDistricts(user.state!, clearSelection: true);
+
+          debugPrint('✅ Only State loaded: ${user.state}');
         }
       }
     } catch (e) {
@@ -254,7 +277,18 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Future<void> _updateProfile() async {
-    if (!_formKey.currentState!.validate()) return;
+    // ✅ Validate form
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    // ✅ Validate location fields
+    final locationError = _validateLocationFields();
+    if (locationError != null) {
+      AppToast.showError(locationError);
+      return;
+    }
+
     if (_isUploadingImage) {
       AppToast.showError('Please wait for image upload to complete');
       return;
@@ -265,6 +299,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     try {
       final locationData = _locationController.getLocationData();
 
+      // ✅ Now all location fields are guaranteed to have values
       final params = <String, dynamic>{
         'name': _nameController.text.trim(),
         if (_uploadedAvatarUrl != null && _uploadedAvatarUrl!.isNotEmpty)
@@ -274,15 +309,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
         if (_dobController.text.isNotEmpty) 'dob': _dobController.text,
         'bio': _bioController.text.trim(),
 
-        // ✅ LOCATION: ONLY send if not empty
-        if (locationData['state'] != null && locationData['state']!.isNotEmpty)
-          'state': locationData['state']!,
-        if (locationData['district'] != null && locationData['district']!.isNotEmpty)
-          'district': locationData['district']!,
-        if (locationData['taluka'] != null && locationData['taluka']!.isNotEmpty)
-          'taluka': locationData['taluka']!,
-        if (locationData['village'] != null && locationData['village']!.isNotEmpty)
-          'village': locationData['village']!,
+        // ✅ LOCATION: All fields are required and validated
+        'state': locationData['state']!,
+        'district': locationData['district']!,
+        'taluka': locationData['taluka']!,
+        'village': locationData['village']!,
       };
 
       debugPrint('📤 Update params: $params');

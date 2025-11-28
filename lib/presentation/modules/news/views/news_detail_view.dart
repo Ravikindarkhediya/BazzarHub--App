@@ -9,8 +9,12 @@ import 'package:share_plus/share_plus.dart';
 import 'package:video_player/video_player.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import '../../../../manager/session_manager.dart';
+import '../../../commons/dialogs/app_toasts.dart';
 import '../../../commons/widgets/report_bottom_sheet.dart';
+import '../../../routes/app_routes.dart';
 import '../../../services/models/news/news_model.dart';
+import '../../otherUserProfile/views/other_user_profile.dart';
 import '../widgets/compact_news_card.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
@@ -111,90 +115,6 @@ class _NewsDetailViewState extends State<NewsDetailView>
         print("Error refreshing favorite status: $e");
       }
     }
-  }
-
-  // Share news content
-  void _shareNews() {
-    const String shareText =
-        '''Check out this interesting news on BazzarHub App!
-
-Download the app now to stay updated with the latest news and updates.
-
-Android: [Play Store URL]
-iOS: [App Store URL]''';
-
-    Share.share(shareText, subject: 'Check out this news on BazzarHub');
-  }
-
-  // Show options bottom sheet
-  void _showOptionsBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Drag handle
-            Container(
-              margin: const EdgeInsets.only(top: 8, bottom: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[400],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-
-            ListTile(
-              leading: const Icon(
-                Icons.report_problem_outlined,
-                color: Colors.red,
-              ),
-              title: const Text(
-                'Report News',
-                style: TextStyle(
-                  color: Colors.red,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              onTap: () {
-                // Close first bottom sheet
-                Navigator.pop(context);
-
-                // ✅ FIXED: Direct call (no Get.to)
-                ReportBottomSheet.show(
-                  context: context,
-                  type: 'news',
-                  id: widget.newsId,
-                );
-              },
-            ),
-
-            // Share option
-            ListTile(
-              leading: const Icon(Icons.share_outlined),
-              title: const Text('Share'),
-              onTap: () {
-                Navigator.pop(context);
-                _shareNews();
-              },
-            ),
-
-            // Cancel button
-            const Divider(height: 1),
-            ListTile(
-              leading: const Icon(Icons.close),
-              title: const Text('Cancel'),
-              onTap: () => Navigator.pop(context),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
   }
 
   /// ---------------- TIME AGO FUNCTION ----------------
@@ -711,7 +631,32 @@ iOS: [App Store URL]''';
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Author profile moved above content
-          _buildAuthorProfile(),
+          InkWell(
+              onTap: () async {
+                final controller = Get.find<NewsDetailController>(tag: widget.newsId);
+                final news = controller.newsDetail.value;
+
+                final sellerId = news?.createdBy?.id;
+
+                if (sellerId == null || sellerId.isEmpty) {
+                  AppToast.showError('Seller information not available');
+                  return;
+                }
+
+                // ✅ Get logged user ID
+                final loggedUserId =
+                    (await SessionManager().getUser())?.id ?? '';
+
+                // ✅ Check if seller is logged user
+                if (sellerId == loggedUserId) {
+                  // Navigate to own profile
+                  Get.toNamed(AppRoutes.profilePage);
+                } else {
+                  // Navigate to other user's profile
+                  Get.to(() => OtherUserProfile(userId: sellerId));
+                }
+              },
+              child: _buildAuthorProfile()),
           const SizedBox(height: 13), // Reduced from 16 to 13 (20% smaller)
           SelectableText.rich(
             TextSpan(
