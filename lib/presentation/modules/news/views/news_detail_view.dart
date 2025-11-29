@@ -385,26 +385,8 @@ class _NewsDetailViewState extends State<NewsDetailView>
     });
   }
 
-  // Convert RelatedNewsModel to NewsModel
-  NewsModel _convertToNewsModel(RelatedNewsModel relatedNews) {
-    return NewsModel(
-      id: relatedNews.id,
-      title: relatedNews.title,
-      content: relatedNews.content,
-      media: relatedNews.media,
-      category: relatedNews.category,
-      tags: relatedNews.tags,
-      location: relatedNews.location,
-      createdBy: relatedNews.createdBy,
-      views: relatedNews.views,
-      isActive: relatedNews.isActive,
-      createdAt: relatedNews.createdAt,
-      updatedAt: relatedNews.updatedAt,
-    );
-  }
-
   // Build Related News Section
-  Widget _buildRelatedNewsSection(List<dynamic>? relatedNews) {
+  Widget _buildRelatedNewsSection(List<NewsModel>? relatedNews) {
     if (relatedNews == null || relatedNews.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -429,11 +411,7 @@ class _NewsDetailViewState extends State<NewsDetailView>
           itemCount: relatedNews.length,
           separatorBuilder: (context, index) => const Divider(height: 24),
           itemBuilder: (context, index) {
-            final relatedNewsItem = relatedNews[index];
-            final newsModel = relatedNewsItem is RelatedNewsModel
-                ? _convertToNewsModel(relatedNewsItem)
-                : relatedNewsItem; // If it's already a NewsModel
-
+            final newsModel = relatedNews[index];
             return CompactNewsCard(
               key: ValueKey(newsModel.id),
               newsData: newsModel,

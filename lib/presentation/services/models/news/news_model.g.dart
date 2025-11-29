@@ -36,7 +36,7 @@ NewsModel _$NewsModelFromJson(Map<String, dynamic> json) => NewsModel(
   updatedAt: json['updatedAt'] as String? ?? '',
   relatedNews:
       (json['relatedNews'] as List<dynamic>?)
-          ?.map((e) => RelatedNewsModel.fromJson(e as Map<String, dynamic>))
+          ?.map((e) => NewsModel.fromJson(e as Map<String, dynamic>))
           .toList() ??
       [],
   isFavorite: json['isFavorite'] as bool? ?? false,
@@ -58,51 +58,3 @@ Map<String, dynamic> _$NewsModelToJson(NewsModel instance) => <String, dynamic>{
   'relatedNews': instance.relatedNews,
   'isFavorite': instance.isFavorite,
 };
-
-RelatedNewsModel _$RelatedNewsModelFromJson(
-  Map<String, dynamic> json,
-) => RelatedNewsModel(
-  id: json['_id'] as String,
-  title: json['title'] == null
-      ? null
-      : MultiLangTextModel.fromJson(json['title'] as Map<String, dynamic>),
-  content: json['content'] == null
-      ? null
-      : MultiLangTextModel.fromJson(json['content'] as Map<String, dynamic>),
-  media:
-      (json['media'] as List<dynamic>?)
-          ?.map((e) => NewsMediaModel.fromJson(e as Map<String, dynamic>))
-          .toList() ??
-      [],
-  category: json['category'] == null
-      ? null
-      : CategoryModel.fromJson(json['category'] as Map<String, dynamic>),
-  tags:
-      (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
-  location: json['location'] == null
-      ? null
-      : LocationModel.fromJson(json['location'] as Map<String, dynamic>),
-  createdBy: json['createdBy'] == null
-      ? null
-      : UserModel.fromJson(json['createdBy'] as Map<String, dynamic>),
-  views: (json['views'] as num?)?.toInt() ?? 0,
-  isActive: json['isActive'] as bool? ?? false,
-  createdAt: json['createdAt'] as String? ?? '',
-  updatedAt: json['updatedAt'] as String? ?? '',
-);
-
-Map<String, dynamic> _$RelatedNewsModelToJson(RelatedNewsModel instance) =>
-    <String, dynamic>{
-      '_id': instance.id,
-      'title': instance.title,
-      'content': instance.content,
-      'media': instance.media,
-      'category': instance.category,
-      'tags': instance.tags,
-      'location': instance.location,
-      'createdBy': instance.createdBy,
-      'views': instance.views,
-      'isActive': instance.isActive,
-      'createdAt': instance.createdAt,
-      'updatedAt': instance.updatedAt,
-    };
