@@ -294,14 +294,17 @@ class ProductDetailsWidget extends StatelessWidget {
                         return;
                       }
 
-                      // ✅ Get logged user ID
+                      //  Get logged user ID
                       final loggedUserId =
                           (await SessionManager().getUser())?.id ?? '';
 
-                      // ✅ Check if seller is logged user
+                      // Check if seller is logged user
                       if (sellerId == loggedUserId) {
                         // Navigate to own profile
-                        Get.toNamed(AppRoutes.profilePage);
+                        Get.offAllNamed(
+                          AppRoutes.homeWrapper,
+                          arguments: {'initialTab': 3},
+                        );
                       } else {
                         // Navigate to other user's profile
                         Get.to(() => OtherUserProfile(userId: sellerId));

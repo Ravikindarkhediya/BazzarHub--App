@@ -387,7 +387,7 @@ class _FavoritesPageState extends State<FavoritesPage>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      news.title?.english ?? 'No Title',
+                      news.title ?? 'No Title',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -396,9 +396,9 @@ class _FavoritesPageState extends State<FavoritesPage>
                       maxLines: 2,
                     ),
                     const SizedBox(height: 8),
-                    if (news.content?.english?.isNotEmpty == true)
+                    if (news.content?.isNotEmpty == true)
                       Text(
-                        news.content!.english!,
+                        news.content!,
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey[600],

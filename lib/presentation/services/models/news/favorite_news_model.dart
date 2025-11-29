@@ -1,5 +1,4 @@
 import 'package:json_annotation/json_annotation.dart';
-import 'package:bazzar_hub_app/presentation/services/models/Common/multi_lang_text_model.dart';
 import 'package:bazzar_hub_app/presentation/services/models/Common/location_model.dart';
 import 'package:bazzar_hub_app/presentation/services/models/news/news_media_model.dart';
 
@@ -11,10 +10,10 @@ class FavoriteNewsModel {
   final String id;
 
   @JsonKey(name: 'title')
-  final MultiLangTextModel? title;
+  final String? title;
 
   @JsonKey(name: 'content')
-  final MultiLangTextModel? content;
+  final String? content;
 
   @JsonKey(name: 'category')
   final String category;

@@ -4,7 +4,6 @@ import 'package:bazzar_hub_app/presentation/modules/news/views/news_view.dart';
 // import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:bazzar_hub_app/presentation/services/api_service.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_quill/flutter_quill.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,6 +19,7 @@ import '../../home/widgets/auto_fit_image_widget.dart';
 import '../../product/widgets/image_upload_section.dart';
 import '../../product/widgets/searchable_dropdown.dart';
 import '../controllers/add_news_controller.dart';
+import 'package:flutter_quill/flutter_quill.dart' as quill;
 
 class AddNewsView extends StatefulWidget {
   final NewsModel? news;
@@ -819,6 +819,7 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
             // Content Section
             RichTextFieldWidget(
               controller: controller.contentEnglishController,
+              quillController: controller.contentEnglishQuillController,
               label: 'Content',
               hint: "Enter your content",
               icon: Icons.description,
@@ -992,8 +993,10 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
   }
 }
 
+
 class RichTextFieldWidget extends StatefulWidget {
   final TextEditingController controller;
+  final quill.QuillController? quillController; // ✅ Add this
   final String label;
   final String hint;
   final IconData icon;
@@ -1003,6 +1006,7 @@ class RichTextFieldWidget extends StatefulWidget {
   const RichTextFieldWidget({
     Key? key,
     required this.controller,
+    this.quillController, // ✅ Add this
     required this.label,
     required this.hint,
     required this.icon,
@@ -1015,7 +1019,7 @@ class RichTextFieldWidget extends StatefulWidget {
 }
 
 class _RichTextFieldWidgetState extends State<RichTextFieldWidget> {
-  late QuillController _quillController;
+  late quill.QuillController _quillController;
   final FocusNode _focusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
 
@@ -1026,20 +1030,26 @@ class _RichTextFieldWidgetState extends State<RichTextFieldWidget> {
   }
 
   void _initializeEditor() {
-    final doc = Document();
-    if (widget.controller.text.isNotEmpty) {
-      doc.insert(0, widget.controller.text);
-    }
+    // ✅ Use passed QuillController or create new one
+    if (widget.quillController != null) {
+      _quillController = widget.quillController!;
+    } else {
+      final doc = quill.Document();
+      if (widget.controller.text.isNotEmpty) {
+        doc.insert(0, widget.controller.text);
+      }
 
-    _quillController = QuillController(
-      document: doc,
-      selection: const TextSelection.collapsed(offset: 0),
-    );
+      _quillController = quill.QuillController(
+        document: doc,
+        selection: const TextSelection.collapsed(offset: 0),
+      );
+    }
 
     _quillController.addListener(_syncToController);
   }
 
   void _syncToController() {
+    // ✅ Sync plain text to TextEditingController (for validation)
     final plainText = _quillController.document.toPlainText();
     if (widget.controller.text != plainText) {
       widget.controller.text = plainText;
@@ -1049,7 +1059,10 @@ class _RichTextFieldWidgetState extends State<RichTextFieldWidget> {
   @override
   void dispose() {
     _quillController.removeListener(_syncToController);
-    _quillController.dispose();
+    // ✅ Only dispose if we created it
+    if (widget.quillController == null) {
+      _quillController.dispose();
+    }
     _focusNode.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -1070,11 +1083,11 @@ class _RichTextFieldWidgetState extends State<RichTextFieldWidget> {
             ),
             children: widget.required
                 ? [
-                    const TextSpan(
-                      text: ' *',
-                      style: TextStyle(color: Colors.red),
-                    ),
-                  ]
+              const TextSpan(
+                text: ' *',
+                style: TextStyle(color: Colors.red),
+              ),
+            ]
                 : [],
           ),
         ),
@@ -1095,17 +1108,15 @@ class _RichTextFieldWidgetState extends State<RichTextFieldWidget> {
             children: [
               // Toolbar
               Container(
-
-                decoration: BoxDecoration(
-                  color:AppColors.white,
-                  borderRadius: const BorderRadius.vertical(
+                decoration: const BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.vertical(
                     top: Radius.circular(12),
                   ),
                 ),
-                child: QuillSimpleToolbar(
+                child: quill.QuillSimpleToolbar(
                   controller: _quillController,
-                  config: const QuillSimpleToolbarConfig(
-
+                  config: const quill.QuillSimpleToolbarConfig(
                     showAlignmentButtons: true,
                     showBackgroundColorButton: true,
                     showBoldButton: true,
@@ -1149,29 +1160,29 @@ class _RichTextFieldWidgetState extends State<RichTextFieldWidget> {
                   maxHeight: widget.maxLines * 40.0,
                 ),
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: AppColors.white,
-                  borderRadius: const BorderRadius.vertical(
+                  borderRadius: BorderRadius.vertical(
                     bottom: Radius.circular(12),
                   ),
                 ),
-                child: QuillEditor.basic(
+                child: quill.QuillEditor.basic(
                   controller: _quillController,
                   focusNode: _focusNode,
-                  config: QuillEditorConfig(
+                  config: quill.QuillEditorConfig(
                     placeholder: widget.hint,
                     padding: EdgeInsets.zero,
                     scrollable: true,
                     autoFocus: false,
                     expands: false,
-                    customStyles: DefaultStyles(
-                      placeHolder: DefaultTextBlockStyle(
+                    customStyles: quill.DefaultStyles(
+                      placeHolder: quill.DefaultTextBlockStyle(
                         AppTextStyles.bodyMedium.copyWith(
                           color: AppColors.textHint,
                         ),
-                        const HorizontalSpacing(0, 0),
-                        const VerticalSpacing(0, 0),
-                        const VerticalSpacing(0, 0),
+                        const quill.HorizontalSpacing(0, 0),
+                        const quill.VerticalSpacing(0, 0),
+                        const quill.VerticalSpacing(0, 0),
                         null,
                       ),
                     ),

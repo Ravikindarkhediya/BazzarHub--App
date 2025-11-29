@@ -106,7 +106,7 @@ class _NewsViewState extends State<NewsView>
                       debugPrint('🔄 GetBuilder rebuilding. Count: ${controller.newsList.length}');
 
                       if (controller.newsList.isNotEmpty) {
-                        debugPrint('📰 First news: ${controller.newsList.first.title?.english}');
+                        debugPrint('📰 First news: ${controller.newsList.first.title}');
                       }
 
                       // 1) LOADING
@@ -152,6 +152,8 @@ class _NewsViewState extends State<NewsView>
                             vertical: 8,
                           ),
                           itemCount: controller.newsList.length + controller.newsList.length - 1, // items + separators
+                          // Replace lines 143-151 and 152-160
+
                           itemBuilder: (context, index) {
                             // Handle separators
                             if (index.isOdd) {
@@ -167,26 +169,79 @@ class _NewsViewState extends State<NewsView>
                             final newsIndex = index ~/ 2;
                             final news = controller.newsList[newsIndex];
 
+                            // ✅ Debug: Check news data
+                            debugPrint('═══════════════════════════════════');
+                            debugPrint('📰 News Index: $newsIndex');
+                            debugPrint('📰 News ID: ${news.id}');
+                            debugPrint('📰 News Title: ${news.title}');
+                            debugPrint('📰 News ID is null? ${news.id == null}');
+                            debugPrint('📰 News ID is empty? ${news.id?.isEmpty}');
+                            debugPrint('═══════════════════════════════════');
+
+                            // ✅ FIXED: Safe navigation with null check
+                            void handleNewsTap() {
+                              debugPrint('🔵 handleNewsTap() called for news: ${news.id}');
+
+                              if (news.id == null || news.id!.isEmpty) {
+                                debugPrint('❌ Invalid news ID detected!');
+                                Get.snackbar(
+                                  'Error',
+                                  'Invalid news ID',
+                                  snackPosition: SnackPosition.BOTTOM,
+                                  backgroundColor: Colors.red,
+                                  colorText: Colors.white,
+                                );
+                                return;
+                              }
+
+                              debugPrint('✅ News ID is valid, navigating to detail...');
+
+                              try {
+                                debugPrint('🚀 Calling Get.to() with newsId: ${news.id}');
+
+                                Get.to(
+                                      () => NewsDetailView(
+                                    newsId: news.id!,
+                                    initialData: news.toJson(),
+                                  ),
+                                  transition: Transition.cupertino,
+                                  duration: const Duration(milliseconds: 300),
+                                );
+
+                                debugPrint('✅ Navigation call completed successfully');
+
+                              } catch (e, stackTrace) {
+                                debugPrint('❌ Navigation error: $e');
+                                debugPrint('❌ Stack trace: $stackTrace');
+
+                                Get.snackbar(
+                                  'Error',
+                                  'Failed to open news detail: $e',
+                                  snackPosition: SnackPosition.BOTTOM,
+                                  backgroundColor: Colors.red,
+                                  colorText: Colors.white,
+                                );
+                              }
+                            }
+
                             // First item - Featured
                             if (newsIndex == 0) {
+                              debugPrint('🎯 Rendering FeaturedNewsCard for index: $newsIndex');
                               return FeaturedNewsCard(
                                 newsData: news,
-                                onTap: () => Get.to(
-                                      () => NewsDetailView(
-                                    newsId: news.id!,
-                                    initialData: news.toJson(),
-                                  ),
-                                ),
+                                onTap: () {
+                                  debugPrint('👆 FeaturedNewsCard tapped!');
+                                  handleNewsTap();
+                                },
                               );
                             } else {
+                              debugPrint('📄 Rendering CompactNewsCard for index: $newsIndex');
                               return CompactNewsCard(
                                 newsData: news,
-                                onTap: () => Get.to(
-                                      () => NewsDetailView(
-                                    newsId: news.id!,
-                                    initialData: news.toJson(),
-                                  ),
-                                ),
+                                onTap: () {
+                                  debugPrint('👆 CompactNewsCard tapped!');
+                                  handleNewsTap();
+                                },
                               );
                             }
                           },

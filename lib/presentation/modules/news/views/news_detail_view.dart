@@ -21,6 +21,7 @@ import '../../../../app/data/constants/app_text_style.dart';
 import '../../profile/widgets/report_info_banner.dart';
 import '../controllers/news_detail_controller.dart';
 import '../widgets/news_report_reason_page.dart';
+import 'package:flutter_html/flutter_html.dart';
 
 class NewsDetailView extends StatefulWidget {
   final String newsId;
@@ -212,8 +213,8 @@ class _NewsDetailViewState extends State<NewsDetailView>
 
       // We have data, proceed to show news
       final media = news.media.map((m) => m.toJson()).toList() ?? [];
-      final title = news.title?.english ?? 'No title';
-      final content = news.content?.english ?? 'No content available';
+      final title = news.title ?? 'No title';
+      final content = news.content ?? 'No content available';
       final createdAt = timeAgo(DateTime.parse(news.createdAt));
       final createdBy = news.createdBy?.name ?? "Unknown";
       final village = news.location?.village ?? "";
@@ -230,7 +231,7 @@ class _NewsDetailViewState extends State<NewsDetailView>
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
-          leadingWidth: 40, // important: prevents auto padding
+          leadingWidth: 40,
           leading: Padding(
             padding: const EdgeInsets.only(left: 12),
             child: roundedIconButton(Icons.arrow_back, () => Get.back()),
@@ -583,7 +584,6 @@ class _NewsDetailViewState extends State<NewsDetailView>
     );
   }
 
-  // Build content section with first-line indent
   Widget _buildContentSection(String? content) {
     if (content == null || content.isEmpty) {
       return Column(
@@ -599,109 +599,215 @@ class _NewsDetailViewState extends State<NewsDetailView>
         ],
       );
     }
-    if (content.isEmpty) {
-      return _buildAuthorProfile();
-    }
+
+    // Clean HTML content
+    String cleanedContent = _cleanHtmlContent(content);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Author profile moved above content
+          // Author profile
           InkWell(
-              onTap: () async {
-                final controller = Get.find<NewsDetailController>(tag: widget.newsId);
-                final news = controller.newsDetail.value;
+            onTap: () async {
+              final controller = Get.find<NewsDetailController>(
+                tag: widget.newsId,
+              );
+              final news = controller.newsDetail.value;
+              final sellerId = news?.createdBy?.id;
 
-                final sellerId = news?.createdBy?.id;
+              if (sellerId == null || sellerId.isEmpty) {
+                AppToast.showError('Seller information not available');
+                return;
+              }
 
-                if (sellerId == null || sellerId.isEmpty) {
-                  AppToast.showError('Seller information not available');
-                  return;
-                }
+              final loggedUserId = (await SessionManager().getUser())?.id ?? '';
 
-                // ✅ Get logged user ID
-                final loggedUserId =
-                    (await SessionManager().getUser())?.id ?? '';
+              if (sellerId == loggedUserId) {
+                Get.offAllNamed(
+                  AppRoutes.homeWrapper,
+                  arguments: {'initialTab': 3},
+                );
+              } else {
+                Get.to(() => OtherUserProfile(userId: sellerId));
+              }
+            },
+            child: _buildAuthorProfile(),
+          ),
+          const SizedBox(height: 16),
 
-                // ✅ Check if seller is logged user
-                if (sellerId == loggedUserId) {
-                  // Navigate to own profile
-                  Get.toNamed(AppRoutes.profilePage);
-                } else {
-                  // Navigate to other user's profile
-                  Get.to(() => OtherUserProfile(userId: sellerId));
-                }
-              },
-              child: _buildAuthorProfile()),
-          const SizedBox(height: 13), // Reduced from 16 to 13 (20% smaller)
-          SelectableText.rich(
-            TextSpan(
-              children: _formatContent(content),
-              style: GoogleFonts.poppins(
-                fontSize: 16,
+          // ✅ HTML Content with ALL formatting support
+          Html(
+            data: cleanedContent,
+            style: {
+              // Body
+              "body": Style(
+                margin: Margins.zero,
+                padding: HtmlPaddings.zero,
+                fontSize: FontSize(16),
+                lineHeight: const LineHeight(1.8),
+                fontFamily: GoogleFonts.poppins().fontFamily,
                 color: Colors.grey.shade800,
-                height: 1.8,
-                letterSpacing: 0.2,
-                wordSpacing: 1.0,
               ),
-            ),
-            textAlign: TextAlign.justify,
+
+              // Paragraphs
+              "p": Style(
+                margin: Margins.only(bottom: 12, left: 0),
+                padding: HtmlPaddings.only(left: 0),
+              ),
+
+              // Headings
+              "h1": Style(
+                fontSize: FontSize(28),
+                fontWeight: FontWeight.bold,
+                margin: Margins.only(top: 16, bottom: 12),
+              ),
+              "h2": Style(
+                fontSize: FontSize(24),
+                fontWeight: FontWeight.bold,
+                margin: Margins.only(top: 14, bottom: 10),
+              ),
+              "h3": Style(
+                fontSize: FontSize(20),
+                fontWeight: FontWeight.bold,
+                margin: Margins.only(top: 12, bottom: 8),
+              ),
+
+              // Text formatting
+              "strong": Style(fontWeight: FontWeight.bold),
+              "b": Style(fontWeight: FontWeight.bold),
+              "em": Style(fontStyle: FontStyle.italic),
+              "i": Style(fontStyle: FontStyle.italic),
+              "u": Style(textDecoration: TextDecoration.underline),
+              "s": Style(textDecoration: TextDecoration.lineThrough),
+              "strike": Style(textDecoration: TextDecoration.lineThrough),
+
+              // Links
+              "a": Style(
+                color: AppColors.primary,
+                textDecoration: TextDecoration.underline,
+              ),
+
+              // Lists - Bullets
+              "ul": Style(
+                margin: Margins.only(left: 20, bottom: 12, top: 8),
+                padding: HtmlPaddings.only(left: 0),
+                listStyleType: ListStyleType.disc,
+              ),
+
+              // Lists - Numbers
+              "ol": Style(
+                margin: Margins.only(left: 20, bottom: 12, top: 8),
+                padding: HtmlPaddings.only(left: 0),
+                listStyleType: ListStyleType.decimal,
+              ),
+
+              "li": Style(
+                margin: Margins.only(bottom: 6),
+                padding: HtmlPaddings.only(left: 8),
+              ),
+
+              // Blockquotes
+              "blockquote": Style(
+                border: const Border(
+                  left: BorderSide(color: AppColors.primary, width: 4),
+                ),
+                margin: Margins.only(left: 0, top: 12, bottom: 12),
+                padding: HtmlPaddings.only(left: 16, top: 8, bottom: 8),
+                backgroundColor: Colors.grey.shade100,
+                fontStyle: FontStyle.italic,
+              ),
+
+              // Code blocks
+              "code": Style(
+                backgroundColor: Colors.grey.shade200,
+                padding: HtmlPaddings.symmetric(horizontal: 6, vertical: 2),
+                fontFamily: 'monospace',
+                fontSize: FontSize(14),
+              ),
+
+              "pre": Style(
+                backgroundColor: Colors.grey.shade200,
+                padding: HtmlPaddings.all(12),
+                margin: Margins.only(top: 8, bottom: 8),
+                fontFamily: 'monospace',
+                fontSize: FontSize(14),
+              ),
+
+              // Line breaks
+              "br": Style(margin: Margins.zero),
+
+              // Dividers
+              "hr": Style(
+                margin: Margins.symmetric(vertical: 16),
+                border: const Border(
+                  bottom: BorderSide(color: Colors.grey, width: 1),
+                ),
+              ),
+
+              // Span (for inline colors and backgrounds)
+              "span": Style(
+                // Inline styles will be applied from HTML
+              ),
+
+              // Alignment classes (if you add them in HTML)
+              ".text-left": Style(textAlign: TextAlign.left),
+              ".text-center": Style(textAlign: TextAlign.center),
+              ".text-right": Style(textAlign: TextAlign.right),
+              ".text-justify": Style(textAlign: TextAlign.justify),
+            },
+            onLinkTap: (url, attributes, element) {
+              if (url != null) {
+                _launchUrl(url);
+              }
+            },
           ),
         ],
       ),
     );
   }
 
-  // Method to format content with first-line indent
-  List<InlineSpan> _formatContent(String content) {
-    List<InlineSpan> spans = [];
+  // ✅ Enhanced HTML cleaning with alignment support
+  String _cleanHtmlContent(String html) {
+    // Remove leading/trailing whitespace
+    html = html.trim();
 
-    // Split content by paragraphs (double newlines or single newlines)
-    List<String> paragraphs = content.split('\n\n');
+    // Replace \n with <br> tags
+    html = html.replaceAll('\n', '<br>');
 
-    // If no double newlines found, try single newlines
-    if (paragraphs.length == 1) {
-      paragraphs = content.split('\n');
+    // Handle alignment attributes (Quill adds data-align)
+    // Example: <p data-align="center">Text</p>
+    html = html.replaceAllMapped(
+      RegExp(r'<([^>]+)\s+data-align="([^"]+)"([^>]*)>'),
+      (match) {
+        final tag = match.group(1);
+        final align = match.group(2);
+        final rest = match.group(3);
+        return '<$tag class="text-$align"$rest>';
+      },
+    );
+
+    // If content doesn't start with HTML tag, wrap it
+    if (!html.startsWith('<')) {
+      html = '<p>$html</p>';
     }
 
-    // If still just one paragraph, treat entire content as single paragraph
-    if (paragraphs.length == 1 && paragraphs[0].isNotEmpty) {
-      spans.add(
-        const WidgetSpan(
-          child: SizedBox(
-            width: 40,
-          ), // First line indent - adjust width as needed
-        ),
-      );
-      spans.add(TextSpan(text: paragraphs[0].trim()));
-      return spans;
-    }
+    return html;
+  }
 
-    // Multiple paragraphs
-    for (int i = 0; i < paragraphs.length; i++) {
-      String paragraph = paragraphs[i].trim();
-
-      if (paragraph.isNotEmpty) {
-        // Add spacing between paragraphs (except first)
-        if (i > 0) {
-          spans.add(const TextSpan(text: '\n\n'));
-        }
-
-        // Add indent ONLY for first line of each paragraph
-        spans.add(
-          const WidgetSpan(
-            child: SizedBox(width: 40), // Adjust width (32-48 typical)
-          ),
-        );
-
-        // Add the paragraph text
-        spans.add(TextSpan(text: paragraph));
+  // URL launcher method
+  Future<void> _launchUrl(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        AppToast.showError('Could not open link');
       }
+    } catch (e) {
+      AppToast.showError('Invalid URL');
     }
-
-    return spans;
   }
 
   // Launch video URL in external player
@@ -721,8 +827,6 @@ class _NewsDetailViewState extends State<NewsDetailView>
       );
     }
   }
-
-  // Build video thumbnail widget
 
   // Build image thumbnail widget
   Widget _buildImageThumbnail(String url) {

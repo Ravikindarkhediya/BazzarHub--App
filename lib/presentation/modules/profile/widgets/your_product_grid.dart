@@ -42,29 +42,15 @@ class _YourProductGridState extends State<YourProductGrid> {
     try {
       final response = await services.deleteMarketplace(productId);
       if (response.data.status) {
-        Get.snackbar(
-          'Success',
-          'Product deleted successfully',
-          backgroundColor: AppColors.success.withOpacity(0.1),
-          colorText: AppColors.success,
-        );
+        Get.offNamed(AppRoutes.yourPost);
+        AppToast.showSuccess('Product deleted successfully');
         return true;
       } else {
-        Get.snackbar(
-          'Error',
-          response.data.message ?? 'Failed to delete product',
-          backgroundColor: AppColors.error.withOpacity(0.1),
-          colorText: AppColors.error,
-        );
+        AppToast.showError(response.data.message ?? 'Failed to delete product');
         return false;
       }
     } on DioException catch (e) {
-      Get.snackbar(
-        'Error',
-        'Network error: ${e.message}',
-        backgroundColor: AppColors.error.withOpacity(0.1),
-        colorText: AppColors.error,
-      );
+      AppToast.showError('Network error: ${e.message}');
       return false;
     }
   }

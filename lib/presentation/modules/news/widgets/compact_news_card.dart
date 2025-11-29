@@ -22,7 +22,7 @@ class CompactNewsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = AppLanguage.getText(newsData.title);
+    final title = newsData.title ?? 'No Title';
 
     final List<NewsMediaModel> mediaList = newsData.media;
     final imageUrl = mediaList.isNotEmpty ? mediaList.first.url : '';

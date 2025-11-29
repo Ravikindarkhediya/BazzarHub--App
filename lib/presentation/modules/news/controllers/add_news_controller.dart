@@ -1,7 +1,10 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:flutter_quill/flutter_quill.dart' as quill;
+import 'package:flutter_quill/quill_delta.dart';
 import 'package:get/get.dart' hide MultipartFile;
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -28,14 +31,16 @@ class AddNewsController extends ChangeNotifier
   List<CategoryModel> categories = [];
   String? selectedCategoryId;
 
-  // Text Controllers
+  //  Text Controllers (Plain text for validation)
   final TextEditingController titleEnglishController = TextEditingController();
   final TextEditingController titleGujaratiController = TextEditingController();
-  final TextEditingController contentEnglishController =
-      TextEditingController();
-  final TextEditingController contentGujaratiController =
-      TextEditingController();
+  final TextEditingController contentEnglishController = TextEditingController();
+  final TextEditingController contentGujaratiController = TextEditingController();
   final TextEditingController tagsController = TextEditingController();
+
+  //  Quill Controllers (Rich text format)
+  late quill.QuillController contentEnglishQuillController;
+  late quill.QuillController contentGujaratiQuillController;
 
   // Location
   Map<String, dynamic>? locationData;
@@ -58,7 +63,7 @@ class AddNewsController extends ChangeNotifier
       selectedDistrict != null && subDistrictsList.isNotEmpty;
   bool get canSelectVillage =>
       (selectedSubDistrict != null || selectedDistrict != null) &&
-      villagesList.isNotEmpty;
+          villagesList.isNotEmpty;
   bool get hasSubDistrict =>
       selectedDistrict != null && subDistrictsList.isNotEmpty;
   bool get allowManualVillageEntry =>
@@ -77,6 +82,82 @@ class AddNewsController extends ChangeNotifier
   // Edit mode
   NewsModel? editingNews;
   bool get isEditMode => editingNews != null;
+
+  //  Constructor - Initialize Quill Controllers
+  AddNewsController() {
+    _initializeQuillControllers();
+  }
+
+  void _initializeQuillControllers() {
+    contentEnglishQuillController = quill.QuillController.basic();
+    contentGujaratiQuillController = quill.QuillController.basic();
+  }
+
+  //  Get rich text content as HTML
+  String _getHtmlContent(quill.QuillController controller) {
+    try {
+      // Convert Delta to HTML
+      final delta = controller.document.toDelta();
+      final html = _deltaToHtml(delta);
+      return html;
+    } catch (e) {
+      debugPrint('❌ Error converting to HTML: $e');
+      return controller.document.toPlainText();
+    }
+  }
+
+  // Convert Delta to HTML (simplified version)
+  String _deltaToHtml(Delta delta) {
+    final buffer = StringBuffer();
+
+    for (var op in delta.toList()) {
+      if (op.data is String) {
+        String text = op.data as String;
+
+        // Apply formatting
+        if (op.attributes != null) {
+          final attrs = op.attributes!;
+
+          if (attrs.containsKey('bold')) {
+            text = '<strong>$text</strong>';
+          }
+          if (attrs.containsKey('italic')) {
+            text = '<em>$text</em>';
+          }
+          if (attrs.containsKey('underline')) {
+            text = '<u>$text</u>';
+          }
+          if (attrs.containsKey('strike')) {
+            text = '<s>$text</s>';
+          }
+          if (attrs.containsKey('link')) {
+            text = '<a href="${attrs['link']}">$text</a>';
+          }
+          if (attrs.containsKey('color')) {
+            text = '<span style="color:${attrs['color']}">$text</span>';
+          }
+          if (attrs.containsKey('background')) {
+            text = '<span style="background-color:${attrs['background']}">$text</span>';
+          }
+        }
+
+        buffer.write(text);
+      }
+    }
+
+    return buffer.toString();
+  }
+
+  // Set rich text content from HTML (for edit mode)
+  void _setHtmlContent(quill.QuillController controller, String html) {
+    try {
+      // For now, just set as plain text
+      // You can use html_to_delta package for proper HTML parsing
+      controller.document = quill.Document()..insert(0, html);
+    } catch (e) {
+      debugPrint(' Error setting HTML content: $e');
+    }
+  }
 
   // Load categories
   Future<void> loadCategories() async {
@@ -100,7 +181,7 @@ class AddNewsController extends ChangeNotifier
       _statesList = _locationRepo.getStates();
       statesList = List.from(_statesList);
       debugPrint('Loaded ${statesList.length} states');
-      isLocationDataReady = true; // Add this line
+      isLocationDataReady = true;
       notifyListeners();
     } catch (e) {
       debugPrint('Error loading location data: $e');
@@ -112,15 +193,20 @@ class AddNewsController extends ChangeNotifier
   Future<void> initializeForEdit(NewsModel news) async {
     editingNews = news;
 
-    // Load existing data
-    if (news.title != null) {
-      titleEnglishController.text = news.title!.english ?? '';
-      titleGujaratiController.text = news.title!.gujarati ?? '';
+    // Load existing data - title is String now
+    if (news.title != null && news.title!.isNotEmpty) {
+      titleEnglishController.text = news.title!;  // ✅ Direct String
+      // Remove gujarati field since backend doesn't support it
     }
 
-    if (news.content != null) {
-      contentEnglishController.text = news.content!.english ?? '';
-      contentGujaratiController.text = news.content!.gujarati ?? '';
+    // Load rich text content - content is String (HTML) now
+    if (news.content != null && news.content!.isNotEmpty) {
+      contentEnglishController.text = news.content!;  // ✅ Direct String
+
+      // Set HTML content to Quill controller for editing
+      _setHtmlContent(contentEnglishQuillController, news.content!);
+
+      // Remove gujarati field since backend doesn't support it
     }
 
     if (news.tags.isNotEmpty) {
@@ -184,7 +270,6 @@ class AddNewsController extends ChangeNotifier
   }
 
   // Location selection methods
-
   void selectState(String state) {
     selectedState = state;
     selectedDistrict = null;
@@ -211,7 +296,6 @@ class AddNewsController extends ChangeNotifier
           district,
         );
 
-        // Add the selected district itself to sub-districts list if not present
         if (!subDistrictsList.contains(district)) {
           subDistrictsList = [district, ...subDistrictsList];
         }
@@ -221,7 +305,6 @@ class AddNewsController extends ChangeNotifier
         subDistrictsList = [];
         villagesList = _locationRepo.getVillages(selectedState!, district);
 
-        // Add the selected district itself to villages list if not present
         if (!villagesList.contains(district)) {
           villagesList = [district, ...villagesList];
         }
@@ -241,7 +324,6 @@ class AddNewsController extends ChangeNotifier
         subDistrict,
       );
 
-      // Add the selected sub-district itself to villages list if not present
       if (!villages.contains(subDistrict)) {
         villages = [subDistrict, ...villages];
       }
@@ -259,9 +341,9 @@ class AddNewsController extends ChangeNotifier
   // Image picking methods
   @override
   Future<void> pickFromCamera(
-    BuildContext context, {
-    required String mediaType,
-  }) async {
+      BuildContext context, {
+        required String mediaType,
+      }) async {
     try {
       final picker = ImagePicker();
       XFile? pickedFile;
@@ -282,9 +364,9 @@ class AddNewsController extends ChangeNotifier
 
   @override
   Future<void> pickFromGallery(
-    BuildContext context, {
-    required String mediaType,
-  }) async {
+      BuildContext context, {
+        required String mediaType,
+      }) async {
     try {
       final picker = ImagePicker();
       if (mediaType == 'all') {
@@ -294,7 +376,7 @@ class AddNewsController extends ChangeNotifier
             if (images.length >= maxImages) break;
             final isVideo =
                 file.path.toLowerCase().endsWith('.mp4') ||
-                file.path.toLowerCase().endsWith('.mov');
+                    file.path.toLowerCase().endsWith('.mov');
             await _processPickedFile(file, isVideo: isVideo);
           }
         }
@@ -305,9 +387,9 @@ class AddNewsController extends ChangeNotifier
   }
 
   Future<void> _processPickedFile(
-    XFile pickedFile, {
-    required bool isVideo,
-  }) async {
+      XFile pickedFile, {
+        required bool isVideo,
+      }) async {
     if (images.length >= maxImages) {
       AppToast.showError('Maximum $maxImages images allowed');
       return;
@@ -316,7 +398,6 @@ class AddNewsController extends ChangeNotifier
     final imageId = DateTime.now().millisecondsSinceEpoch.toString();
 
     if (isVideo) {
-      // Add video with compressing state
       images.add(
         ProductImage(
           id: imageId,
@@ -327,10 +408,8 @@ class AddNewsController extends ChangeNotifier
       );
       notifyListeners();
 
-      // Generate thumbnail
       final thumbnail = await _generateVideoThumbnail(pickedFile.path);
 
-      // Update with thumbnail
       final index = images.indexWhere((img) => img.id == imageId);
       if (index != -1) {
         images[index] = images[index].copyWith(
@@ -340,7 +419,6 @@ class AddNewsController extends ChangeNotifier
         notifyListeners();
       }
     } else {
-      // Add image with compressing state
       images.add(
         ProductImage(
           id: imageId,
@@ -351,10 +429,8 @@ class AddNewsController extends ChangeNotifier
       );
       notifyListeners();
 
-      // Compress image
       final compressedFile = await _compressImage(File(pickedFile.path));
 
-      // Update with compressed image
       final index = images.indexWhere((img) => img.id == imageId);
       if (index != -1) {
         images[index] = images[index].copyWith(
@@ -414,7 +490,7 @@ class AddNewsController extends ChangeNotifier
     notifyListeners();
   }
 
-  // Submit news
+  // Submit news with rich text
   Future<bool> submitNews(BuildContext context) async {
     try {
       isLoading = true;
@@ -430,16 +506,14 @@ class AddNewsController extends ChangeNotifier
         return false;
       }
 
+      // Get rich text content as HTML
+      final contentEnglishHtml = _getHtmlContent(contentEnglishQuillController);
+      final contentGujaratiHtml = _getHtmlContent(contentGujaratiQuillController);
+
       // Prepare news data
       final newsData = {
-        'title': {
-          'english': titleEnglishController.text.trim(),
-          'gujarati': titleGujaratiController.text.trim(),
-        },
-        'content': {
-          'english': contentEnglishController.text.trim(),
-          'gujarati': contentGujaratiController.text.trim(),
-        },
+        'title': titleEnglishController.text.trim(),
+        'content': contentEnglishHtml,
         'category': selectedCategoryId,
         'media': uploadedUrls
             .map(
@@ -466,18 +540,18 @@ class AddNewsController extends ChangeNotifier
         },
       };
 
+      debugPrint('📤 Submitting news data: $newsData');
+
       final apiService = await getApiClient();
 
       if (isEditMode) {
         debugPrint('🔧 Updating news with ID: ${editingNews!.id}');
 
-        // Update existing news
         final response = await apiService.updateNews(editingNews!.id, newsData);
 
         if (response.data.status) {
           isLoading = false;
           notifyListeners();
-
 
           AppToast.showSuccess('News updated successfully');
 
@@ -491,24 +565,20 @@ class AddNewsController extends ChangeNotifier
           );
           return true;
         } else {
-          debugPrint('❌ Update failed: ${response.data.message}');
+          debugPrint('Update failed: ${response.data.message}');
         }
       } else {
-        debugPrint('📝 Creating new news...');
 
-        // Create new news
         final response = await apiService.createNews(newsData);
 
         if (response.data.status) {
           isLoading = false;
           notifyListeners();
 
-
           AppToast.showSuccess('News added successfully');
 
           if (Get.isRegistered<NewsController>()) {
             await Get.find<NewsController>().refresh();
-            debugPrint('News list refreshed after create');
           }
 
           Get.offAllNamed(
@@ -518,7 +588,7 @@ class AddNewsController extends ChangeNotifier
 
           return true;
         } else {
-          debugPrint(' Creation failed: ${response.data.message}');
+          debugPrint('Creation failed: ${response.data.message}');
         }
       }
 
@@ -531,7 +601,7 @@ class AddNewsController extends ChangeNotifier
       isLoading = false;
       notifyListeners();
       AppToast.showError('Failed to submit news: ${e.toString()}');
-      debugPrint('❌ Submit Exception: $e');
+      debugPrint('Submit Exception: $e');
       debugPrint('Stack: $s');
       return false;
     }
@@ -545,14 +615,12 @@ class AddNewsController extends ChangeNotifier
       final uploadedUrls = <String>[];
       final apiService = await getApiClient();
 
-      // Collect network URLs first
       for (var img in images) {
         if (img.isNetworkImage) {
           uploadedUrls.add(img.networkUrl!);
         }
       }
 
-      // Upload new local files
       for (var i = 0; i < images.length; i++) {
         final img = images[i];
 
@@ -568,7 +636,6 @@ class AddNewsController extends ChangeNotifier
             if (response.data.status && response.data.data != null) {
               uploadedUrls.add(response.data.data!.url);
 
-              // Update progress
               images[i] = images[i].copyWith(
                 uploadProgress: 1.0,
                 isUploaded: true,
@@ -576,7 +643,6 @@ class AddNewsController extends ChangeNotifier
               notifyListeners();
             }
           } catch (e) {
-            // Skip failed uploads
             continue;
           }
         }
@@ -600,6 +666,8 @@ class AddNewsController extends ChangeNotifier
     contentEnglishController.dispose();
     contentGujaratiController.dispose();
     tagsController.dispose();
+    contentEnglishQuillController.dispose();
+    contentGujaratiQuillController.dispose();
     super.dispose();
   }
 }

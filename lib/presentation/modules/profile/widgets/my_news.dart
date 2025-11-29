@@ -36,7 +36,7 @@ class MyNews extends StatelessWidget {
           (news) => news.id == newsData.id,
     ) ?? newsData;
 
-    final title = AppLanguage.getText(currentNews.title);
+    final title = currentNews.title ?? 'No Title';
     final List<NewsMediaModel> mediaList = currentNews.media;
     final imageUrl = mediaList.isNotEmpty ? mediaList.first.thumbnail : '';
     final bool isVideo = mediaList.isNotEmpty ? mediaList.first.type == "video" : false;

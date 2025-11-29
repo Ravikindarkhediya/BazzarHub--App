@@ -9,14 +9,8 @@ part of 'favorite_news_model.dart';
 FavoriteNewsModel _$FavoriteNewsModelFromJson(Map<String, dynamic> json) =>
     FavoriteNewsModel(
       id: json['_id'] as String,
-      title: json['title'] == null
-          ? null
-          : MultiLangTextModel.fromJson(json['title'] as Map<String, dynamic>),
-      content: json['content'] == null
-          ? null
-          : MultiLangTextModel.fromJson(
-              json['content'] as Map<String, dynamic>,
-            ),
+      title: json['title'] as String?,
+      content: json['content'] as String?,
       category: json['category'] as String,
       tags:
           (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ??
@@ -38,8 +32,8 @@ FavoriteNewsModel _$FavoriteNewsModelFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$FavoriteNewsModelToJson(FavoriteNewsModel instance) =>
     <String, dynamic>{
       '_id': instance.id,
-      'title': instance.title?.toJson(),
-      'content': instance.content?.toJson(),
+      'title': instance.title,
+      'content': instance.content,
       'category': instance.category,
       'tags': instance.tags,
       'media': instance.media.map((e) => e.toJson()).toList(),

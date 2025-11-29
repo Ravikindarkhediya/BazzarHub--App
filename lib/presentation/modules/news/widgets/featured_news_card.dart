@@ -111,7 +111,7 @@ class _FeaturedNewsCardState extends State<FeaturedNewsCard> {
 
   @override
   Widget build(BuildContext context) {
-    final title = AppLanguage.getText(widget.newsData.title);
+    final title = widget.newsData.title ?? 'No Title';
 
     final List<NewsMediaModel> mediaList = widget.newsData.media;
     final imageUrl = mediaList.isNotEmpty ? mediaList.first.thumbnail : '';

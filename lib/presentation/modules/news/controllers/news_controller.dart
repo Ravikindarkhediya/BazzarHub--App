@@ -73,7 +73,7 @@ class NewsController extends GetxController {
         update(['news_list']);
 
         if (newsList.isNotEmpty) {
-          debugPrint('First news title: ${newsList.first.title?.english}');
+          debugPrint('First news title: ${newsList.first.title}');
         }
       }
 

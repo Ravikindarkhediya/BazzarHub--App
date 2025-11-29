@@ -141,9 +141,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     try {
       final response = await services.deleteMarketplace(productId);
       if (response.data.status) {
-        if (!mounted) return;
-        await Future.delayed(Duration(milliseconds: 200));
-        Get.offNamed(AppRoutes.marketPlace);
+        Get.offAllNamed(AppRoutes.homeWrapper, arguments: {'initialTab': 3});
         AppToast.showSuccess('Product deleted successfully');
       } else {
         AppToast.showError(response.data.message ?? 'Failed to delete product');
@@ -179,9 +177,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         final updated = response.data.data as MarketplaceModel;
         _controller!.updateProduct(updated);
         setState(() {});
-        AppToast.showSuccess(
-          shouldActivate ? 'Listing live' : 'Listing pause',
-        );
+        AppToast.showSuccess(shouldActivate ? 'Listing live' : 'Listing pause');
         if (mounted) Get.offNamed(AppRoutes.marketPlace);
       } else {
         AppToast.showError(
@@ -435,7 +431,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           ),
         ),
         const Spacer(),
-        if (!widget.hideAppBarActions) ...[          
+        if (!widget.hideAppBarActions) ...[
           _buildAppbarIcon(
             icon: controller.isFavorite
                 ? Icons.favorite_rounded
@@ -451,7 +447,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     }
                   },
             background: AppColors.primary,
-            iconColor: controller.isFavorite ? AppColors.error : AppColors.white,
+            iconColor: controller.isFavorite
+                ? AppColors.error
+                : AppColors.white,
           ),
           const SizedBox(width: AppSpacing.md),
           _buildAppbarIcon(
@@ -567,7 +565,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             info: info,
             title: 'Reported Listing',
             onDelete: () {
-              // When delete is confirmed, pop back to previous screen
               Navigator.of(context).pop();
             },
           ),
