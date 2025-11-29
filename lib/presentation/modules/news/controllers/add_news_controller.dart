@@ -107,45 +107,198 @@ class AddNewsController extends ChangeNotifier
   }
 
   // Convert Delta to HTML (simplified version)
+// ✅ Complete Delta to HTML converter
   String _deltaToHtml(Delta delta) {
     final buffer = StringBuffer();
+    String? currentListType; // Track current list type (ul/ol/cl)
+    bool inList = false;
 
-    for (var op in delta.toList()) {
+    for (var i = 0; i < delta.toList().length; i++) {
+      final op = delta.toList()[i];
+
       if (op.data is String) {
         String text = op.data as String;
+        final attrs = op.attributes;
 
-        // Apply formatting
-        if (op.attributes != null) {
-          final attrs = op.attributes!;
+        // Handle newlines and block elements
+        if (text == '\n' && attrs != null) {
+          // Close any open lists
+          if (inList) {
+            buffer.write('</$currentListType>');
+            inList = false;
+            currentListType = null;
+          }
 
-          if (attrs.containsKey('bold')) {
-            text = '<strong>$text</strong>';
+          // Handle block-level attributes
+          String blockContent = '';
+
+          // Get text before newline (from previous op if exists)
+          if (i > 0) {
+            final prevOp = delta.toList()[i - 1];
+            if (prevOp.data is String) {
+              blockContent = prevOp.data as String;
+
+              // Remove the previously added text from buffer
+              final bufferStr = buffer.toString();
+              final lastIndex = bufferStr.lastIndexOf(blockContent);
+              if (lastIndex != -1) {
+                buffer.clear();
+                buffer.write(bufferStr.substring(0, lastIndex));
+              }
+            }
           }
-          if (attrs.containsKey('italic')) {
-            text = '<em>$text</em>';
+
+          // Apply inline formatting to block content
+          String formattedContent = _applyInlineFormatting(blockContent, attrs);
+
+          // Handle lists
+          if (attrs.containsKey('list')) {
+            final listType = attrs['list'];
+
+            if (listType == 'bullet') {
+              if (currentListType != 'ul') {
+                if (inList) buffer.write('</$currentListType>');
+                buffer.write('<ul>');
+                currentListType = 'ul';
+                inList = true;
+              }
+              buffer.write('<li>$formattedContent</li>');
+            } else if (listType == 'ordered') {
+              if (currentListType != 'ol') {
+                if (inList) buffer.write('</$currentListType>');
+                buffer.write('<ol>');
+                currentListType = 'ol';
+                inList = true;
+              }
+              buffer.write('<li>$formattedContent</li>');
+            } else if (listType == 'checked' || listType == 'unchecked') {
+              if (currentListType != 'ul') {
+                if (inList) buffer.write('</$currentListType>');
+                buffer.write('<ul style="list-style: none; padding-left: 0;">');
+                currentListType = 'ul';
+                inList = true;
+              }
+              final checked = listType == 'checked' ? 'checked' : '';
+              buffer.write('<li><input type="checkbox" $checked disabled> $formattedContent</li>');
+            }
+            continue;
           }
-          if (attrs.containsKey('underline')) {
-            text = '<u>$text</u>';
+
+          // Handle headings
+          if (attrs.containsKey('header')) {
+            final level = attrs['header'];
+            buffer.write('<h$level>$formattedContent</h$level>');
+            continue;
           }
-          if (attrs.containsKey('strike')) {
-            text = '<s>$text</s>';
+
+          // Handle blockquotes
+          if (attrs.containsKey('blockquote')) {
+            buffer.write('<blockquote>$formattedContent</blockquote>');
+            continue;
           }
-          if (attrs.containsKey('link')) {
-            text = '<a href="${attrs['link']}">$text</a>';
+
+          // Handle code blocks
+          if (attrs.containsKey('code-block')) {
+            buffer.write('<pre>de>$formattedContent</code></pre>');
+            continue;
           }
-          if (attrs.containsKey('color')) {
-            text = '<span style="color:${attrs['color']}">$text</span>';
+
+          // Handle alignment
+          String alignment = '';
+          if (attrs.containsKey('align')) {
+            final align = attrs['align'];
+            alignment = ' style="text-align: $align"';
           }
-          if (attrs.containsKey('background')) {
-            text = '<span style="background-color:${attrs['background']}">$text</span>';
+
+          // Regular paragraph
+          if (formattedContent.isNotEmpty) {
+            buffer.write('<p$alignment>$formattedContent</p>');
+          } else {
+            buffer.write('<br>');
           }
+        } else if (text != '\n') {
+          // Regular text with inline formatting
+          String formattedText = _applyInlineFormatting(text, attrs);
+          buffer.write(formattedText);
         }
-
-        buffer.write(text);
       }
     }
 
+    // Close any remaining open lists
+    if (inList) {
+      buffer.write('</$currentListType>');
+    }
+
     return buffer.toString();
+  }
+
+  String _applyInlineFormatting(String text, Map<String, dynamic>? attrs) {
+    if (attrs == null || attrs.isEmpty) return text;
+
+    String formatted = text;
+    List<String> openTags = [];
+    List<String> closeTags = [];
+
+    // Handle color and background first (as span)
+    bool needsSpan = false;
+    String spanStyle = '';
+
+    if (attrs.containsKey('color')) {
+      spanStyle += 'color:${attrs['color']};';
+      needsSpan = true;
+    }
+
+    if (attrs.containsKey('background')) {
+      spanStyle += 'background-color:${attrs['background']};';
+      needsSpan = true;
+    }
+
+    if (needsSpan) {
+      openTags.add('<span style="$spanStyle">');
+      closeTags.insert(0, '</span>');
+    }
+
+    // Handle text formatting
+    if (attrs.containsKey('bold')) {
+      openTags.add('<strong>');
+      closeTags.insert(0, '</strong>');
+    }
+
+    if (attrs.containsKey('italic')) {
+      openTags.add('<em>');
+      closeTags.insert(0, '</em>');
+    }
+
+    if (attrs.containsKey('underline')) {
+      openTags.add('<u>');
+      closeTags.insert(0, '</u>');
+    }
+
+    if (attrs.containsKey('strike')) {
+      openTags.add('<s>');
+      closeTags.insert(0, '</s>');
+    }
+
+    if (attrs.containsKey('code')) {
+      openTags.add('de>');
+      closeTags.insert(0, '</code>');
+    }
+
+    // Handle links
+    if (attrs.containsKey('link')) {
+      openTags.add('<a href="${attrs['link']}">');
+      closeTags.insert(0, '</a>');
+    }
+
+    // Combine all tags
+    for (var tag in openTags) {
+      formatted = tag + formatted;
+    }
+    for (var tag in closeTags) {
+      formatted = formatted + tag;
+    }
+
+    return formatted;
   }
 
   // Set rich text content from HTML (for edit mode)

@@ -996,7 +996,7 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
 
 class RichTextFieldWidget extends StatefulWidget {
   final TextEditingController controller;
-  final quill.QuillController? quillController; // ✅ Add this
+  final quill.QuillController? quillController;
   final String label;
   final String hint;
   final IconData icon;
@@ -1006,7 +1006,7 @@ class RichTextFieldWidget extends StatefulWidget {
   const RichTextFieldWidget({
     Key? key,
     required this.controller,
-    this.quillController, // ✅ Add this
+    this.quillController,
     required this.label,
     required this.hint,
     required this.icon,
