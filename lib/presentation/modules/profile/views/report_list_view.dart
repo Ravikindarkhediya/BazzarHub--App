@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import 'package:bazzar_hub_app/app/core/utils/app_spacing.dart';
 import 'package:bazzar_hub_app/app/core/utils/utils.dart';
@@ -16,11 +17,15 @@ import 'report_news_detail_view.dart';
 class ReportItemCard extends StatelessWidget {
   final ReportResponseModel report;
   final bool isNewsReport;
+  final VoidCallback? onRefreshNews;
+  final VoidCallback? onRefreshMarketplace;
 
   const ReportItemCard({
     super.key,
     required this.report,
     required this.isNewsReport,
+    this.onRefreshNews,
+    this.onRefreshMarketplace,
   });
 
   @override
@@ -131,18 +136,26 @@ class ReportItemCard extends StatelessWidget {
           'reason': report.reason,
           'status': report.status,
           'message': report.message,
+          'reportId': report.id,
         };
 
         if (isNewsReport) {
           Get.to(() => ReportNewsDetailView(
                 newsId: item.id,
                 reportInfo: reportPayload,
-              ));
+                reportResponseModel: report,
+              ))?.then((_) {
+            // Refresh news reports when coming back from detail view
+            onRefreshNews?.call();
+          });
         } else {
           Get.to(() => ReportMarketplaceView(
                 listingId: item.id,
                 reportInfo: reportPayload,
-              ));
+              ))?.then((_) {
+            // Refresh marketplace reports when coming back from detail view
+            onRefreshMarketplace?.call();
+          });
         }
       },
       child: card,
@@ -375,11 +388,12 @@ class _ReportListViewState extends State<ReportListView>
                 ),
                 child: Row(
                   children: [
-                    IconButton(
-                      onPressed: () => Get.back(),
-                      icon: const Icon(Icons.arrow_back),
-                      color: AppColors.primary,
-                    ),
+                    if (Navigator.canPop(context))
+                      IconButton(
+                        onPressed: () => Navigator.of(context).maybePop(),
+                        icon: const Icon(Icons.arrow_back),
+                        color: AppColors.primary,
+                      ),
                     Expanded(
                       child: Center(
                         child: Text(
@@ -388,8 +402,12 @@ class _ReportListViewState extends State<ReportListView>
                             color: AppColors.primary,
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
                           ),
-                        ),
+                        )
+                            .animate()
+                            .fadeIn(duration: 600.ms)
+                            .slideY(begin: -0.3, end: 0),
                       ),
                     ),
                     const SizedBox(width: 48),
@@ -443,6 +461,7 @@ class _ReportListViewState extends State<ReportListView>
                         return ReportItemCard(
                           report: _marketplaceReports[index],
                           isNewsReport: false,
+                          onRefreshMarketplace: () => _loadMarketplaceReports(isRefresh: true),
                         );
                       },
                     ),
@@ -472,6 +491,7 @@ class _ReportListViewState extends State<ReportListView>
                         return ReportItemCard(
                           report: _newsReports[index],
                           isNewsReport: true,
+                          onRefreshNews: () => _loadNewsReports(isRefresh: true),
                         );
                       },
                     ),
