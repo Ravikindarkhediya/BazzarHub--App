@@ -13,7 +13,7 @@ import '../../../../manager/session_manager.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../services/api_service.dart';
 import '../../../services/models/user/user_model.dart';
-import '../../home/widgets/similar_product_widget.dart';
+import '../../product/widgets/similar_product_widget.dart';
 import '../../widgets/app_review_dialog.dart';
 import '../widgets/language_actionsheet.dart';
 import '../widgets/settings_section.dart';

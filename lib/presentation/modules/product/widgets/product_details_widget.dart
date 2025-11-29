@@ -1,5 +1,5 @@
-import 'package:bazzar_hub_app/presentation/modules/home/widgets/product_grid_widget.dart';
-import 'package:bazzar_hub_app/presentation/modules/home/widgets/similar_product_widget.dart';
+import 'package:bazzar_hub_app/presentation/modules/product/widgets/product_grid_widget.dart';
+import 'package:bazzar_hub_app/presentation/modules/product/widgets/similar_product_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';

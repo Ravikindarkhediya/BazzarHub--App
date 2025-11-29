@@ -169,21 +169,9 @@ class _NewsViewState extends State<NewsView>
                             final newsIndex = index ~/ 2;
                             final news = controller.newsList[newsIndex];
 
-                            // ✅ Debug: Check news data
-                            debugPrint('═══════════════════════════════════');
-                            debugPrint('📰 News Index: $newsIndex');
-                            debugPrint('📰 News ID: ${news.id}');
-                            debugPrint('📰 News Title: ${news.title}');
-                            debugPrint('📰 News ID is null? ${news.id == null}');
-                            debugPrint('📰 News ID is empty? ${news.id?.isEmpty}');
-                            debugPrint('═══════════════════════════════════');
-
-                            // ✅ FIXED: Safe navigation with null check
                             void handleNewsTap() {
-                              debugPrint('🔵 handleNewsTap() called for news: ${news.id}');
 
                               if (news.id == null || news.id!.isEmpty) {
-                                debugPrint('❌ Invalid news ID detected!');
                                 Get.snackbar(
                                   'Error',
                                   'Invalid news ID',
@@ -194,10 +182,8 @@ class _NewsViewState extends State<NewsView>
                                 return;
                               }
 
-                              debugPrint('✅ News ID is valid, navigating to detail...');
 
                               try {
-                                debugPrint('🚀 Calling Get.to() with newsId: ${news.id}');
 
                                 Get.to(
                                       () => NewsDetailView(
@@ -208,7 +194,6 @@ class _NewsViewState extends State<NewsView>
                                   duration: const Duration(milliseconds: 300),
                                 );
 
-                                debugPrint('✅ Navigation call completed successfully');
 
                               } catch (e, stackTrace) {
                                 debugPrint('❌ Navigation error: $e');
@@ -226,20 +211,16 @@ class _NewsViewState extends State<NewsView>
 
                             // First item - Featured
                             if (newsIndex == 0) {
-                              debugPrint('🎯 Rendering FeaturedNewsCard for index: $newsIndex');
                               return FeaturedNewsCard(
                                 newsData: news,
                                 onTap: () {
-                                  debugPrint('👆 FeaturedNewsCard tapped!');
                                   handleNewsTap();
                                 },
                               );
                             } else {
-                              debugPrint('📄 Rendering CompactNewsCard for index: $newsIndex');
                               return CompactNewsCard(
                                 newsData: news,
                                 onTap: () {
-                                  debugPrint('👆 CompactNewsCard tapped!');
                                   handleNewsTap();
                                 },
                               );

@@ -16,7 +16,7 @@ import '../../product/views/product_detail_page.dart';
 import '../widgets/header_widget.dart';
 import '../widgets/category_list_widget.dart';
 import '../widgets/location_selection_bottom_sheet.dart';
-import '../widgets/product_grid_widget.dart';
+import '../../product/widgets/product_grid_widget.dart';
 import '../widgets/category_selection_bottom_sheet.dart';
 
 class HomeView extends StatefulWidget {

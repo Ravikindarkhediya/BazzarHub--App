@@ -16,7 +16,7 @@ import '../../home/widgets/category_list_widget.dart';
 import '../../home/widgets/category_selection_bottom_sheet.dart';
 import '../../home/widgets/header_widget.dart';
 import '../../home/widgets/location_selection_bottom_sheet.dart';
-import '../../home/widgets/product_grid_widget.dart';
+import '../../product/widgets/product_grid_widget.dart';
 import '../../product/views/product_detail_page.dart';
 
 class MarketplaceView extends StatefulWidget {

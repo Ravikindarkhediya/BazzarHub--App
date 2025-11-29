@@ -7,7 +7,7 @@ import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
 import '../../../commons/dialogs/appDialog.dart';
-import '../../home/widgets/product_grid_widget.dart';
+import '../../product/widgets/product_grid_widget.dart';
 import '../../product/views/product_detail_page.dart';
 import '../../profile/widgets/my_news.dart';
 

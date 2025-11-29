@@ -18,7 +18,7 @@ import '../../../services/models/categorie/categorie_model.dart';
 import '../../../services/models/Common/multi_lang_text_model.dart';
 import '../../../services/models/news/news_model.dart';
 import '../../../services/models/user/user_model.dart';
-import '../../../modules/home/widgets/product_grid_widget.dart';
+import '../widgets/product_grid_widget.dart';
 import '../../../modules/news/widgets/featured_news_card.dart';
 import '../../../modules/news/views/news_detail_view.dart';
 import 'package:bazzar_hub_app/presentation/modules/product/views/product_detail_page.dart';
