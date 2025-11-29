@@ -10,9 +10,9 @@ import 'custom_image_widget.dart';
 import 'fullscreen_image_viewer.dart';
 
 class MediaCarousel extends StatefulWidget {
-  final List<String> mediaUrls; // ✅ Generic media URLs
+  final List<String> mediaUrls;
   final double height;
-  final ValueChanged<int>? onPageChanged; // ✅ Optional callback
+  final ValueChanged<int>? onPageChanged;
 
   const MediaCarousel({
     super.key,
@@ -98,7 +98,6 @@ class _MediaCarouselState extends State<MediaCarousel> {
             _currentIndex = index;
             _handleVideoTransition(previousIndex, index);
           });
-          // ✅ Notify parent of page change
           widget.onPageChanged?.call(index);
         },
         viewportFraction: 1.0,
@@ -247,37 +246,37 @@ class _MediaCarouselState extends State<MediaCarousel> {
 
   Widget _buildFullscreenHint() {
     return Positioned(
-      bottom: AppSpacing.md,
-      left: AppSpacing.md,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
-          vertical: AppSpacing.xs,
-        ),
-        decoration: BoxDecoration(
-          color: AppColors.black.withOpacity(0.5),
-          borderRadius: AppSpacing.borderRadiusSM,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.zoom_out_map_rounded,
-              size: 14,
-              color: AppColors.white,
+          bottom: AppSpacing.md,
+          left: AppSpacing.md,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.xs,
             ),
-            const SizedBox(width: 4),
-            Text(
-              'Tap to view',
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.white,
-                fontSize: 11,
-              ),
+            decoration: BoxDecoration(
+              color: AppColors.black.withOpacity(0.5),
+              borderRadius: AppSpacing.borderRadiusSM,
             ),
-          ],
-        ),
-      ),
-    )
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.zoom_out_map_rounded,
+                  size: 14,
+                  color: AppColors.white,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Tap to view',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.white,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        )
         .animate()
         .fadeIn(duration: 400.ms, delay: 700.ms)
         .then()
@@ -362,20 +361,23 @@ class _MediaCarouselState extends State<MediaCarousel> {
       ..setLooping(true)
       ..setVolume(0);
 
-    final future = controller.initialize().then((_) {
-      if (!mounted) return;
-      _videoControllers[index] = controller;
-      _initializingVideos.remove(index);
-      if (_currentIndex == index) {
-        controller.play();
-      }
-      setState(() {});
-    }).catchError((error) {
-      controller.dispose();
-      _videoErrors[index] = 'Video unavailable';
-      _initializingVideos.remove(index);
-      if (mounted) setState(() {});
-    });
+    final future = controller
+        .initialize()
+        .then((_) {
+          if (!mounted) return;
+          _videoControllers[index] = controller;
+          _initializingVideos.remove(index);
+          if (_currentIndex == index) {
+            controller.play();
+          }
+          setState(() {});
+        })
+        .catchError((error) {
+          controller.dispose();
+          _videoErrors[index] = 'Video unavailable';
+          _initializingVideos.remove(index);
+          if (mounted) setState(() {});
+        });
 
     _initializingVideos[index] = future;
   }

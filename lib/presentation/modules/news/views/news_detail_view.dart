@@ -15,7 +15,7 @@ import '../../../commons/widgets/report_bottom_sheet.dart';
 import '../../../routes/app_routes.dart';
 import '../../../services/models/news/news_model.dart';
 import '../../otherUserProfile/views/other_user_profile.dart';
-import '../../product/widgets/product_image_carousel.dart';
+import '../../product/widgets/media_carousel.dart';
 import '../widgets/compact_news_card.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';

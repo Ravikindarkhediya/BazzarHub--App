@@ -19,7 +19,7 @@ import '../../../controller/product_controller.dart';
 import '../../../services/api_service.dart';
 import '../../../services/models/marketplace/marketplace_model.dart';
 import '../../profile/widgets/report_info_banner.dart';
-import '../widgets/product_image_carousel.dart';
+import '../widgets/media_carousel.dart';
 import '../widgets/product_details_widget.dart';
 
 class ProductDetailPage extends StatefulWidget {
