@@ -1,4 +1,5 @@
 import 'package:bazzar_hub_app/app/core/manager/location_manager.dart';
+import 'package:bazzar_hub_app/manager/wallet_manager.dart';
 import 'package:bazzar_hub_app/presentation/modules/marketplace/view/marketplace_view.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -57,6 +58,10 @@ class _HomeWrapperState extends State<HomeWrapper> {
 
     FirebaseManager().initNotification();
     LocationManager().requestLocation();
+
+    WalletManager().requestWalletCoinBalance();
+    WalletManager().requestWalletPenBalance();
+
   }
 
   void _onItemTapped(int index) {

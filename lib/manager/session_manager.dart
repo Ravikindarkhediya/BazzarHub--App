@@ -20,6 +20,8 @@ class SessionManager {
   static const String _keyUserId = 'user_id';
   static const String _keyUserEmail = 'user_email';
   static const String _keyUserSelectedLang = 'user_selected_lang';
+  static const String _keyUserPenBalance = 'user_pen_balance';
+  static const String _keyUserCoinBalance = 'user_coin_balance';
 
   /// Get the authentication token
   Future<String?> getToken() async {
@@ -119,4 +121,27 @@ class SessionManager {
         notEmpty(model?.village);
   }
 
+  /// Get user pen balance
+  Future<int?> getUserPenBalance() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_keyUserPenBalance);
+  }
+
+  /// Save the user pen balance
+  Future<void> setUserPenBalance(int penBalance) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_keyUserPenBalance, penBalance);
+  }
+
+  /// Get user coin balance
+  Future<int?> getUserCoinBalance() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_keyUserCoinBalance);
+  }
+
+  /// Save the user coin balance
+  Future<void> setUserCoinBalance(int coinBalance) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_keyUserCoinBalance, coinBalance);
+  }
 }

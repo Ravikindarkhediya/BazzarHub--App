@@ -55,4 +55,8 @@ class Endpoints {
   // Common/Upload
   static const String UPLOAD_FILE = "/common/upload";
 
+  // Wallet
+  static const String WALLET_PEN_BALANCE = "api/wallet/pen/balance";
+  static const String WALLET_COIN_BALANCE = "api/wallet/coin/balance";
+
 }

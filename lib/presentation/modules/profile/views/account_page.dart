@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../app/core/utils/app_spacing.dart';
+import '../../../../app/data/constants/app_text_style.dart';
 import '../../../../manager/session_manager.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../services/api_service.dart';
@@ -37,10 +38,15 @@ class _AccountPageState extends State<AccountPage>
   // Replace these URLs with your actual Terms & Privacy Policy URLs
   final String termsUrl = 'https://yourwebsite.com/terms-and-conditions';
   final String privacyUrl = 'https://yourwebsite.com/privacy-policy';
+  String coinBalance = "";
+  String penBalance = "";
 
   @override
   void initState() {
     super.initState();
+
+    fectchBalance();
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
@@ -84,6 +90,16 @@ class _AccountPageState extends State<AccountPage>
         );
       }
     }
+  }
+
+  Future<void> fectchBalance() async {
+    final int coinBal = await SessionManager().getUserCoinBalance() ?? 0;
+    final int penBal = await SessionManager().getUserPenBalance() ?? 0;
+    setState(() {
+      coinBalance = coinBal.toString();
+      penBalance = penBal.toString();
+    });
+
   }
 
   @override
@@ -137,6 +153,95 @@ class _AccountPageState extends State<AccountPage>
                             );
                           }
                         },
+                      ),
+
+                      AppSpacing.verticalSpaceLG,
+
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Padding(
+                          padding: AppSpacing.horizontalMD,
+                          child: Text(
+                            "Wallet",
+                            style: Theme
+                                .of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      AppSpacing.verticalSpaceSM,
+
+                      // Wallet
+                      Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: AppSpacing.borderRadiusLG,
+                          boxShadow: AppColors.cardShadow,
+                        ),
+                        child: Padding(
+                            padding: const EdgeInsets.all(20.0),
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildWalletInfo(
+                                          "Pen Balance", penBalance,"assets/icons/icon_pen_balance.png"),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: _buildWalletInfo(
+                                          "Coin Balance", coinBalance,"assets/icons/icon_coin_balance.png"),
+                                    ),
+                                  ],
+                                ),
+                                AppSpacing.verticalSpaceMD,
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      SizedBox(width: 10),
+                                      TextButton(
+                                        onPressed: () {
+                                          _launchURL(privacyUrl);
+                                        },
+                                        style: TextButton.styleFrom(
+                                          padding: EdgeInsets.zero,
+                                          minimumSize: const Size(0, 0),
+                                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        ),
+                                        child: Text(
+                                          "More",
+                                          style: AppTextStyles.label.copyWith(
+                                            color: AppColors.primary,
+                                            decoration: TextDecoration.underline,
+                                            fontSize: 14
+                                          ),
+                                        ),
+                                      ),
+
+                                      AppSpacing.horizontalSpaceXS,
+
+                                      const Icon(
+                                        Icons.arrow_forward,
+                                        size: 16,
+                                        color: AppColors.primary,
+                                      ),
+                                    ],
+                                  )
+                                ),
+                              ],
+                            )
+                        ),
+
                       ),
 
                       AppSpacing.verticalSpaceLG,
@@ -379,9 +484,9 @@ class _AccountPageState extends State<AccountPage>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: AppColors.grey900.withOpacity(0.05),
+            offset: const Offset(0, 2),
+            blurRadius: 8,
           ),
         ],
       ),
@@ -438,6 +543,41 @@ class _AccountPageState extends State<AccountPage>
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildWalletInfo(String title,String value,String iconPath) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Image.asset(
+              iconPath,
+              width: 22,
+              height: 22,
+              color: AppColors.primary,
+            ),
+
+            const SizedBox(width: 6),
+
+            Text(
+              value,
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
