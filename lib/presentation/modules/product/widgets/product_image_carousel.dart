@@ -6,25 +6,26 @@ import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/core/utils/utils.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
-import '../../../controller/product_controller.dart';
 import 'custom_image_widget.dart';
 import 'fullscreen_image_viewer.dart';
 
-class ProductImageCarousel extends StatefulWidget {
-  final ProductController controller;
+class MediaCarousel extends StatefulWidget {
+  final List<String> mediaUrls; // ✅ Generic media URLs
   final double height;
+  final ValueChanged<int>? onPageChanged; // ✅ Optional callback
 
-  const ProductImageCarousel({
+  const MediaCarousel({
     super.key,
-    required this.controller,
+    required this.mediaUrls,
     this.height = 400,
+    this.onPageChanged,
   });
 
   @override
-  State<ProductImageCarousel> createState() => _ProductImageCarouselState();
+  State<MediaCarousel> createState() => _MediaCarouselState();
 }
 
-class _ProductImageCarouselState extends State<ProductImageCarousel> {
+class _MediaCarouselState extends State<MediaCarousel> {
   int _currentIndex = 0;
   late CarouselSliderController _carouselController;
   bool _isInitialized = false;
@@ -51,40 +52,34 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
     for (final controller in _videoControllers.values) {
       controller.dispose();
     }
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: widget.controller,
-      builder: (context, _) {
-        final images = widget.controller.images;
+    final images = widget.mediaUrls;
 
-        if (images.isEmpty) {
-          return _buildEmptyState();
-        }
+    if (images.isEmpty) {
+      return _buildEmptyState();
+    }
 
-        _prepareVideo(_currentIndex);
-        _prepareVideo(_currentIndex + 1);
+    _prepareVideo(_currentIndex);
+    _prepareVideo(_currentIndex + 1);
 
-        return SizedBox(
-          height: widget.height,
-          child: Stack(
-            children: [
-              /// Carousel Slider
-              _isInitialized ? _buildCarousel(images) : const SizedBox.shrink(),
+    return SizedBox(
+      height: widget.height,
+      child: Stack(
+        children: [
+          /// Carousel Slider
+          _isInitialized ? _buildCarousel(images) : const SizedBox.shrink(),
 
-              /// Image Counter Badge (Bottom Right)
-              _buildImageCounter(images.length),
+          /// Image Counter Badge (Bottom Right)
+          _buildImageCounter(images.length),
 
-              /// Tap to View Fullscreen Hint (Bottom Left)
-              _buildFullscreenHint(),
-            ],
-          ),
-        ).animate().fadeIn(duration: 600.ms);
-      },
-    );
+          /// Tap to View Fullscreen Hint (Bottom Left)
+          _buildFullscreenHint(),
+        ],
+      ),
+    ).animate().fadeIn(duration: 600.ms);
   }
 
   Widget _buildCarousel(List<String> images) {
@@ -101,9 +96,10 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
           setState(() {
             final previousIndex = _currentIndex;
             _currentIndex = index;
-            widget.controller.updateImageIndex(index);
             _handleVideoTransition(previousIndex, index);
           });
+          // ✅ Notify parent of page change
+          widget.onPageChanged?.call(index);
         },
         viewportFraction: 1.0,
         enlargeCenterPage: false,
@@ -116,9 +112,9 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
   }
 
   Widget _buildImageItem(String imageUrl, int index) {
-    // Get screen width for responsive image sizing
     final screenWidth = MediaQuery.of(context).size.width;
     final isVideo = Utils.isVideo(imageUrl);
+
     if (isVideo) {
       return _buildVideoItem(imageUrl, index, screenWidth);
     }
@@ -126,7 +122,7 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
     return GestureDetector(
       onTap: () => _openFullscreenViewer(index),
       child: Hero(
-        tag: 'product_image_$index',
+        tag: 'media_image_$index',
         child: Container(
           color: AppColors.white,
           width: double.infinity,
@@ -136,7 +132,7 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
             height: widget.height,
             width: screenWidth,
             fit: BoxFit.cover,
-            cornerRadius: 0, // No corner radius for carousel
+            cornerRadius: 0,
           ),
         ),
       ),
@@ -147,7 +143,6 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
     _prepareVideo(index);
     final controller = _videoControllers[index];
     final error = _videoErrors[index];
-    final isActive = _currentIndex == index;
 
     Widget child;
     if (error != null) {
@@ -174,7 +169,7 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
     return GestureDetector(
       onTap: () => _openFullscreenViewer(index),
       child: Hero(
-        tag: 'product_image_$index',
+        tag: 'media_image_$index',
         child: Container(
           color: AppColors.black,
           width: width,
@@ -219,7 +214,6 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
     );
   }
 
-
   Widget _buildImageCounter(int totalImages) {
     return Positioned(
       bottom: AppSpacing.md,
@@ -253,37 +247,37 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
 
   Widget _buildFullscreenHint() {
     return Positioned(
-          bottom: AppSpacing.md,
-          left: AppSpacing.md,
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm,
-              vertical: AppSpacing.xs,
+      bottom: AppSpacing.md,
+      left: AppSpacing.md,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.black.withOpacity(0.5),
+          borderRadius: AppSpacing.borderRadiusSM,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.zoom_out_map_rounded,
+              size: 14,
+              color: AppColors.white,
             ),
-            decoration: BoxDecoration(
-              color: AppColors.black.withOpacity(0.5),
-              borderRadius: AppSpacing.borderRadiusSM,
+            const SizedBox(width: 4),
+            Text(
+              'Tap to view',
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.white,
+                fontSize: 11,
+              ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.zoom_out_map_rounded,
-                  size: 14,
-                  color: AppColors.white,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'Tap to view',
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.white,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        )
+          ],
+        ),
+      ),
+    )
         .animate()
         .fadeIn(duration: 400.ms, delay: 700.ms)
         .then()
@@ -317,7 +311,7 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
   }
 
   Future<void> _openFullscreenViewer(int initialIndex) async {
-    final isVideo = Utils.isVideo(widget.controller.images[initialIndex]);
+    final isVideo = Utils.isVideo(widget.mediaUrls[initialIndex]);
     final controller = isVideo ? _videoControllers[initialIndex] : null;
     final wasPlaying = controller?.value.isPlaying ?? false;
 
@@ -330,7 +324,7 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
         opaque: false,
         pageBuilder: (context, animation, secondaryAnimation) {
           return FullscreenImageViewer(
-            images: widget.controller.images,
+            images: widget.mediaUrls,
             initialIndex: initialIndex,
             inlineVideoController: controller,
             inlineVideoIndex: isVideo ? initialIndex : null,
@@ -352,7 +346,7 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
 
   bool _isVideo(int index) {
     if (!_isValidIndex(index)) return false;
-    return Utils.isVideo(widget.controller.images[index]);
+    return Utils.isVideo(widget.mediaUrls[index]);
   }
 
   void _prepareVideo(int index) {
@@ -362,29 +356,26 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
       return;
     }
 
-    final url = widget.controller.images[index];
+    final url = widget.mediaUrls[index];
     final controller = VideoPlayerController.networkUrl(Uri.parse(url));
     controller
       ..setLooping(true)
       ..setVolume(0);
 
-    final future = controller
-        .initialize()
-        .then((_) {
-          if (!mounted) return;
-          _videoControllers[index] = controller;
-          _initializingVideos.remove(index);
-          if (_currentIndex == index) {
-            controller.play();
-          }
-          setState(() {});
-        })
-        .catchError((error) {
-          controller.dispose();
-          _videoErrors[index] = 'Video unavailable';
-          _initializingVideos.remove(index);
-          if (mounted) setState(() {});
-        });
+    final future = controller.initialize().then((_) {
+      if (!mounted) return;
+      _videoControllers[index] = controller;
+      _initializingVideos.remove(index);
+      if (_currentIndex == index) {
+        controller.play();
+      }
+      setState(() {});
+    }).catchError((error) {
+      controller.dispose();
+      _videoErrors[index] = 'Video unavailable';
+      _initializingVideos.remove(index);
+      if (mounted) setState(() {});
+    });
 
     _initializingVideos[index] = future;
   }
@@ -408,5 +399,5 @@ class _ProductImageCarouselState extends State<ProductImageCarousel> {
   }
 
   bool _isValidIndex(int index) =>
-      index >= 0 && index < widget.controller.images.length;
+      index >= 0 && index < widget.mediaUrls.length;
 }

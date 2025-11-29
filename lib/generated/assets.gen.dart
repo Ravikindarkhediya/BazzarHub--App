@@ -77,8 +77,14 @@ class $AssetsIconsGen {
   /// File path: assets/icons/google.png
   AssetGenImage get google => const AssetGenImage('assets/icons/google.png');
 
+  /// File path: assets/icons/icon_coin_balance.png
+  AssetGenImage get iconCoinBalance => const AssetGenImage('assets/icons/icon_coin_balance.png');
+
+  /// File path: assets/icons/icon_pen_balance.png
+  AssetGenImage get iconPenBalance => const AssetGenImage('assets/icons/icon_pen_balance.png');
+
   /// List of all assets
-  List<AssetGenImage> get values => [apple, google];
+  List<AssetGenImage> get values => [apple, google, iconCoinBalance, iconPenBalance];
 }
 
 class $AssetsImagesGen {

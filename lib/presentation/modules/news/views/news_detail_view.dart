@@ -15,6 +15,7 @@ import '../../../commons/widgets/report_bottom_sheet.dart';
 import '../../../routes/app_routes.dart';
 import '../../../services/models/news/news_model.dart';
 import '../../otherUserProfile/views/other_user_profile.dart';
+import '../../product/widgets/product_image_carousel.dart';
 import '../widgets/compact_news_card.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
@@ -161,9 +162,11 @@ class _NewsDetailViewState extends State<NewsDetailView>
       if (hasError && news == null) {
         return Scaffold(
           appBar: AppBar(
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () => Get.back(),
+            leading: _buildAppbarIcon(
+              icon: Icons.arrow_back_rounded,
+              background: AppColors.primary,
+              iconColor: AppColors.white,
+              onTap: () => Get.back(),
             ),
           ),
           body: Center(
@@ -202,9 +205,11 @@ class _NewsDetailViewState extends State<NewsDetailView>
       if (news == null) {
         return Scaffold(
           appBar: AppBar(
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () => Get.back(),
+            leading: _buildAppbarIcon(
+              icon: Icons.arrow_back_rounded,
+              background: AppColors.primary,
+              iconColor: AppColors.white,
+              onTap: () => Get.back(),
             ),
           ),
           body: const Center(child: Text('No news data available')),
@@ -228,77 +233,75 @@ class _NewsDetailViewState extends State<NewsDetailView>
         backgroundColor: Colors.white,
 
         /// ---------------------- TOP APP BAR ------------------------
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          leadingWidth: 40,
-          leading: Padding(
-            padding: const EdgeInsets.only(left: 12),
-            child: roundedIconButton(Icons.arrow_back, () => Get.back()),
-          ),
-          actions: [
-            if (!widget.hideAppBarActions) ...[
-              // Favorite button with loading state
-              Obx(() {
-                final isFavorite = controller.isFavorite.value;
-                final isLoading = controller.isFavoriteLoading.value;
-
-                return Container(
-                  margin: const EdgeInsets.only(right: 8.0),
-                  child: GestureDetector(
-                    onTap: isLoading ? null : () => controller.toggleFavorite(),
-                    child: Container(
-                      width: 30,
-                      height: 30,
-                      decoration: const BoxDecoration(
-                        color: Colors.black45,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // Favorite icon
-                          if (!isLoading)
-                            Icon(
-                              isFavorite
-                                  ? Icons.favorite
-                                  : Icons.favorite_border,
-                              color: isFavorite ? Colors.red : Colors.white,
-                              size: 22,
-                            ),
-
-                          // Loading indicator
-                          if (isLoading)
-                            const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }),
-              Padding(
-                padding: const EdgeInsets.only(right: 12.0),
-                child: roundedIconButton(
-                  Icons.more_vert,
-                  () => ReportBottomSheet.show(
-                    context: context,
-                    type: 'news',
-                    id: widget.newsId,
-                  ),
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            elevation: 0,
+            leadingWidth: 56, // ✅ Width for button + margin
+            leading: Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                margin: const EdgeInsets.only(left: 12), // ✅ Left margin
+                child: _buildAppbarIcon(
+                  icon: Icons.arrow_back_rounded,
+                  background: AppColors.black.withOpacity(0.5),
+                  iconColor: AppColors.white,
+                  onTap: () => Get.back(),
                 ),
               ),
+            ),
+            actions: [
+              if (!widget.hideAppBarActions) ...[
+                // ✅ 1. Favorite button with loading state
+                Obx(() {
+                  final isFavorite = controller.isFavorite.value;
+                  final isLoading = controller.isFavoriteLoading.value;
+
+                  return Container(
+                    margin: const EdgeInsets.only(right: 8.0),
+                    child: isLoading
+                        ? SizedBox(
+                      width: 36,
+                      height: 36,
+                      child: Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppColors.primary,
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                        : _buildAppbarIcon(
+                      icon: isFavorite ? Icons.favorite : Icons.favorite_border,
+                      background: Colors.black45,
+                      iconColor: isFavorite ? Colors.red : Colors.white,
+                      onTap: () => controller.toggleFavorite(),
+                    ),
+                  );
+                }),
+
+                // ✅ 2. More options button
+                Padding(
+                  padding: const EdgeInsets.only(right: 12.0),
+                  child: _buildAppbarIcon(
+                    icon: Icons.more_vert,
+                    background: Colors.black45,
+                    iconColor: Colors.white,
+                    onTap: () => ReportBottomSheet.show(
+                      context: context,
+                      type: 'news',
+                      id: widget.newsId,
+                    ),
+                  ),
+                ),
+              ],
             ],
-          ],
-        ),
+          ),
+
 
         /// ---------------------- BODY CONTENT ------------------------
         body: RefreshIndicator(
@@ -391,6 +394,7 @@ class _NewsDetailViewState extends State<NewsDetailView>
     if (relatedNews == null || relatedNews.isEmpty) {
       return const SizedBox.shrink();
     }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -413,16 +417,29 @@ class _NewsDetailViewState extends State<NewsDetailView>
           separatorBuilder: (context, index) => const Divider(height: 24),
           itemBuilder: (context, index) {
             final newsModel = relatedNews[index];
+
             return CompactNewsCard(
-              key: ValueKey(newsModel.id),
+              key: ValueKey(newsModel.id ?? 'news_$index'),
               newsData: newsModel,
               onTap: () {
-                Get.to(
-                  () => NewsDetailView(
-                    newsId: newsModel.id,
-                    initialData: newsModel.toJson(),
-                  ),
-                );
+                if (newsModel.id == null || newsModel.id!.isEmpty) {
+                  AppToast.showError('Invalid news data');
+                  return;
+                }
+
+                try {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => NewsDetailView(
+                        newsId: newsModel.id!,
+                        initialData: newsModel.toJson(),
+                      ),
+                    ),
+                  );
+                } catch (e, stackTrace) {
+                  AppToast.showError('Failed to open news');
+                }
               },
             );
           },
@@ -431,102 +448,76 @@ class _NewsDetailViewState extends State<NewsDetailView>
     );
   }
 
+
+  Widget _buildAppbarIcon({
+    required IconData icon,
+    VoidCallback? onTap,
+    Color? background,
+    Color iconColor = Colors.white,
+  }) {
+    final bg = background ?? AppColors.primary;
+
+    return SizedBox(
+      width: 36,
+      height: 36,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(50),
+          onTap: onTap,
+          child: Container(
+            decoration: BoxDecoration(
+              color: bg,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Icon(icon, size: 18, color: iconColor),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   // Build Media Gallery
   Widget _buildMediaGallery(
-    List<Map<String, dynamic>>? media,
-    NewsDetailController controller,
-  ) {
+      List<Map<String, dynamic>>? media,
+      NewsDetailController controller,
+      ) {
     if (media == null || media.isEmpty) {
       return const SizedBox.shrink();
     }
-    if (media.isEmpty) {
+
+    //  Extract URLs from media list
+    final mediaUrls = media
+        .map((m) => m['url']?.toString() ?? '')
+        .where((url) => url.isNotEmpty)
+        .toList();
+
+    if (mediaUrls.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Media Slider
-        SizedBox(
-          height: 260,
-          child: Stack(
-            children: [
-              PageView.builder(
-                controller: controller.pageController,
-                itemCount: media.length,
-                onPageChanged: (index) {
-                  controller.currentImageIndex.value = index;
-                },
-                itemBuilder: (context, index) {
-                  final mediaItem = media[index];
-                  final isVideo =
-                      mediaItem['type']?.toString().toLowerCase() == 'video';
-                  final url = mediaItem['url']?.toString() ?? '';
-
-                  return GestureDetector(
-                    onTap: isVideo
-                        ? () => _launchVideoUrl(url)
-                        : () => _showFullScreenImage(context, media, index),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: url.isNotEmpty
-                          ? CachedNetworkImage(
-                              imageUrl: url,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              placeholder: (context, url) => const Center(
-                                child: CircularProgressIndicator(),
-                              ),
-                              errorWidget: (context, url, error) =>
-                                  const Icon(Icons.error),
-                            )
-                          : Container(
-                              color: Colors.grey[200],
-                              child: const Center(
-                                child: Icon(
-                                  Icons.image_not_supported,
-                                  size: 50,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ),
-                    ),
-                  );
-                },
-              ),
-
-              // Image counter indicator
-              if (media.length > 1)
-                Positioned(
-                  bottom: 16,
-                  right: 16,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Obx(
-                      () => Text(
-                        '${controller.currentImageIndex.value + 1}/${media.length}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ],
+    //  Use MediaCarousel widget
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: MediaCarousel(
+        mediaUrls: mediaUrls,
+        height: 260,
+        onPageChanged: (index) {
+          controller.currentImageIndex.value = index;
+        },
+      ),
     );
   }
+
 
   // Build author profile section
   Widget _buildAuthorProfile() {

@@ -20,12 +20,21 @@ import 'models/user/user_token_model.dart';
 
 part 'api_service.g.dart';
 
-// Development URL
-const baseUrl = 'http://192.168.2.210:3000';
+class AppConfig {
+  static String getBaseUrl() {
+    return const String.fromEnvironment(
+      'BASE_URL',
+      defaultValue: 'http://192.168.2.210:3000',
+    );
+  }
+
+  static String get baseUrl => getBaseUrl();
+
+}
 
 Future<ApiServices> getApiClient() async {
   var options = BaseOptions(
-    baseUrl: baseUrl,
+    baseUrl: AppConfig.baseUrl,
     connectTimeout: const Duration(seconds: 15),
     receiveTimeout: const Duration(seconds: 15),
   );

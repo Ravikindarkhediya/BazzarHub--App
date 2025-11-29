@@ -468,7 +468,13 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         const SizedBox(width: AppSpacing.md),
       ],
       flexibleSpace: FlexibleSpaceBar(
-        background: ProductImageCarousel(controller: controller, height: 370),
+        background: MediaCarousel(
+          mediaUrls: controller.images,
+          height: 370,
+          onPageChanged: (index) {
+            controller.updateImageIndex(index);
+          },
+        ),
       ),
     );
   }
