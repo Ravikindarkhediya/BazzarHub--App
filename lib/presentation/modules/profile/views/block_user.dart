@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:get/get.dart';
-
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
-
 import '../../../commons/widgets/empty_state_widget.dart';
 import '../../widgets/block_user_dialog.dart';
 import '../../../services/api_service.dart';
@@ -21,7 +18,6 @@ class BlockUser extends StatefulWidget {
 
 class _BlockUserState extends State<BlockUser> with TickerProviderStateMixin {
   late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
 
   List<UserModel> blockedUsers = [];
   bool _isLoading = true;
@@ -34,19 +30,11 @@ class _BlockUserState extends State<BlockUser> with TickerProviderStateMixin {
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
-    );
-
-    _fadeAnimation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    );
-
-    _animationController.forward();
+    )..forward();
 
     _fetchBlockedUsers();
   }
 
-  // 🔥 Fetch API Blocked List
   Future<void> _fetchBlockedUsers() async {
     try {
       setState(() {
@@ -57,24 +45,20 @@ class _BlockUserState extends State<BlockUser> with TickerProviderStateMixin {
       final api = await getApiClient();
       final response = await api.getBlockedList({"page": 1, "limit": 200});
 
-      if (mounted) {
-        setState(() {
-          blockedUsers = response.data.data ?? [];
-          _isLoading = false;
-        });
-      }
+      setState(() {
+        blockedUsers = response.data.data ?? [];
+        _isLoading = false;
+      });
     } catch (e) {
-      debugPrint('❌ Error fetching blocked users: $e');
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _isError = true;
-        });
-      }
+      debugPrint("❌ Error fetching blocked users: $e");
+
+      setState(() {
+        _isError = true;
+        _isLoading = false;
+      });
     }
   }
 
-  // 🔥 Open dialog for unblock
   void _openUnblockDialog(UserModel user) {
     showDialog(
       context: context,
@@ -82,10 +66,7 @@ class _BlockUserState extends State<BlockUser> with TickerProviderStateMixin {
         name: user.name,
         username: user.email,
         userId: user.id,
-        onConfirm: () {
-          // ✅ Refresh the blocked users list
-          _fetchBlockedUsers();
-        },
+        onConfirm: _fetchBlockedUsers,
       ),
     );
   }
@@ -106,7 +87,6 @@ class _BlockUserState extends State<BlockUser> with TickerProviderStateMixin {
       child: Scaffold(
         backgroundColor: AppColors.background,
 
-        // APP BAR
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Container(
@@ -150,79 +130,19 @@ class _BlockUserState extends State<BlockUser> with TickerProviderStateMixin {
           ),
         ),
 
-        // BODY
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
-            : _isError
-            ? Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.error_outline,
-                size: 60,
-                color: Colors.red,
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Failed to load blocked users',
-                style: TextStyle(fontSize: 16, color: Colors.red),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _fetchBlockedUsers,
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        )
             : blockedUsers.isEmpty
-            ? Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.block,
-                    size: 50,
-                    color: Colors.grey,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'No Blocked Users',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'You haven\'t blocked any users yet.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
+            ? SizedBox.expand(
+          child: Center(
+            child: EmptyStateWidget.blockedUsers(),
           ),
         )
+
             : RefreshIndicator(
           onRefresh: _fetchBlockedUsers,
           child: ListView.separated(
-            padding: EdgeInsets.zero,
+            padding: const EdgeInsets.only(bottom: 40),
             itemCount: blockedUsers.length,
             separatorBuilder: (context, index) => Container(
               margin: const EdgeInsets.only(left: 80),
@@ -270,7 +190,6 @@ class _BlockedUserTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Avatar
           CircleAvatar(
             radius: 28,
             backgroundImage:
@@ -282,7 +201,6 @@ class _BlockedUserTile extends StatelessWidget {
           ),
           const SizedBox(width: 16),
 
-          // User info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -307,7 +225,6 @@ class _BlockedUserTile extends StatelessWidget {
             ),
           ),
 
-          // UNBLOCK BUTTON
           Container(
             height: 36,
             padding: const EdgeInsets.symmetric(horizontal: 13),

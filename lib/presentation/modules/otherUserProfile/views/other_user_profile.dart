@@ -1,4 +1,5 @@
 import 'package:bazzar_hub_app/presentation/modules/otherUserProfile/controllers/other_user_profile_controller.dart';
+import 'package:bazzar_hub_app/presentation/modules/news/widgets/news_report_reason_page.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -12,7 +13,7 @@ import '../../product/views/product_detail_page.dart';
 import '../../profile/widgets/my_news.dart';
 
 class OtherUserProfile extends StatefulWidget {
-  final String userId; // ✅ Dynamic user ID
+  final String userId;
 
   const OtherUserProfile({
     Key? key,
@@ -33,17 +34,18 @@ class _OtherUserProfileState extends State<OtherUserProfile>
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
 
-    // ✅ Initialize controller with dynamic userId
     _profileController = Get.put(
       OtherUserProfileController(userId: widget.userId),
-      tag: widget.userId, // Unique tag for multiple instances
+      tag: widget.userId,
     );
   }
 
   @override
   void dispose() {
     _tabController.dispose();
-    // ✅ Clean up controller
+
+
+
     Get.delete<OtherUserProfileController>(tag: widget.userId);
     super.dispose();
   }
@@ -150,7 +152,6 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                         ),
                         const SizedBox(height: 12),
 
-                        // Name
                         Text(
                           user.name ?? 'Unknown User',
                           style: AppTextStyles.h4.copyWith(
@@ -161,7 +162,6 @@ class _OtherUserProfileState extends State<OtherUserProfile>
 
                         const SizedBox(height: 4),
 
-                        // Email
                         if (user.email != null && user.email!.isNotEmpty)
                           Text(
                             user.email!,
@@ -173,7 +173,6 @@ class _OtherUserProfileState extends State<OtherUserProfile>
 
                         const SizedBox(height: 12),
 
-                        // Bio
                         if (user.bio != null && user.bio!.isNotEmpty)
                           Text(
                             user.bio!,
@@ -192,7 +191,6 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                 ),
               ),
 
-              // Pinned Tab Bar
               SliverPersistentHeader(
                 pinned: true,
                 delegate: _SliverTabBarDelegate(
@@ -216,7 +214,6 @@ class _OtherUserProfileState extends State<OtherUserProfile>
           body: TabBarView(
             controller: _tabController,
             children: [
-              // Products Tab
               Obx(() {
                 if (_profileController.isMarketPlaceLoading.value) {
                   return const Center(child: CircularProgressIndicator());
@@ -244,8 +241,13 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                   );
                 }
 
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.only(
+                    left: 0,
+                    right: 0,
+                    top: 16.0,
+                    bottom: 35.0,
+                  ),
                   child: ProductGridWidget(
                     products: _profileController.productList.value,
                     isLoading: false,
@@ -258,7 +260,6 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                 );
               }),
 
-              // News Tab
               Obx(() {
                 if (_profileController.isNewsListLoading.value) {
                   return const Center(child: CircularProgressIndicator());
@@ -287,8 +288,11 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                 }
 
                 return ListView.separated(
-                  padding: AppSpacing.horizontalMD.add(
-                    const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.only(
+                    left: 16.0,
+                    right: 16.0,
+                    top: 16.0,
+                    bottom: 50.0,
                   ),
                   itemCount: _profileController.newsList.length,
                   separatorBuilder: (_, __) => const Divider(
@@ -311,7 +315,6 @@ class _OtherUserProfileState extends State<OtherUserProfile>
     );
   }
 
-  // ✅ Show Cupertino Options Bottom Sheet
   void _showOptionsBottomSheet(BuildContext context) {
     final user = _profileController.userModel.value;
     if (user == null) return;
@@ -355,10 +358,8 @@ class _OtherUserProfileState extends State<OtherUserProfile>
 
                     if (confirm) {
                       _profileController.toggleBlockUser();
-
                     }
                   },
-
                   isDestructiveAction: !isBlocked,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -372,7 +373,8 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                       Text(
                         isBlocked ? 'Unblock User' : 'Block User',
                         style: AppTextStyles.bodyLarge.copyWith(
-                          color: isBlocked ? AppColors.success : AppColors.error,
+                          color:
+                          isBlocked ? AppColors.success : AppColors.error,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -383,7 +385,12 @@ class _OtherUserProfileState extends State<OtherUserProfile>
               CupertinoActionSheetAction(
                 onPressed: () {
                   Navigator.pop(ctx);
-                  // _showReportUserDialog(context);
+                  CommonReportReasonsPage.show(
+                    context: context,
+                    itemId: widget.userId,
+                    type:
+                    'marketplace',
+                  );
                 },
                 isDestructiveAction: true,
                 child: Row(
@@ -423,7 +430,6 @@ class _OtherUserProfileState extends State<OtherUserProfile>
     );
   }
 
-  // Rounded Icon Button
   Widget _roundedIconButton(IconData icon, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
@@ -440,7 +446,6 @@ class _OtherUserProfileState extends State<OtherUserProfile>
     );
   }
 
-  // Placeholder Avatar
   Widget _buildPlaceholder(String? name) {
     String firstLetter = 'U';
     if (name != null && name.isNotEmpty) {
@@ -467,7 +472,6 @@ class _OtherUserProfileState extends State<OtherUserProfile>
   }
 }
 
-// Tab Bar Delegate
 class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
   final TabBar tabBar;
 

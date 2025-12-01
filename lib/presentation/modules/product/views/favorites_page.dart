@@ -624,7 +624,7 @@ class _FavoritesPageState extends State<FavoritesPage>
           childAspectRatio: 0.7,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
-          mainAxisExtent: 240, // Fixed height for each item
+          mainAxisExtent: 250, // Fixed height for each item
         ),
         itemCount: _favoriteMarketplaces.length + (_hasMoreMarketplaces ? 1 : 0),
         itemBuilder: (context, index) {
@@ -780,7 +780,7 @@ class _FavoritesPageState extends State<FavoritesPage>
     }
     return '';
   }
-  
+
   Future<void> _handleNewsFavoriteToggle(FavoriteNewsModel news) async {
     try {
       final services = await getApiClient();
@@ -811,14 +811,14 @@ class _FavoritesPageState extends State<FavoritesPage>
       AppToast.showError('Failed to update favorite status');
     }
   }
-  
+
   String _formatDate(String dateString) {
     if (dateString.isEmpty) return '';
     try {
       final dateTime = DateTime.parse(dateString);
       final now = DateTime.now();
       final difference = now.difference(dateTime);
-      
+
       if (difference.inDays > 0) {
         return '${difference.inDays} ${difference.inDays == 1 ? 'day' : 'days'} ago';
       } else if (difference.inHours > 0) {
