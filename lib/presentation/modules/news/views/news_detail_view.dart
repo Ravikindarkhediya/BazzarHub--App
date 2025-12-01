@@ -589,8 +589,7 @@ class _NewsDetailViewState extends State<NewsDetailView>
       );
     }
 
-    // Clean HTML content
-    String cleanedContent = _cleanHtmlContent(content);
+    String processedContent = _preprocessCheckboxes(content);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -626,9 +625,8 @@ class _NewsDetailViewState extends State<NewsDetailView>
           ),
           const SizedBox(height: 16),
 
-          //  HTML Content with ALL formatting support
           Html(
-            data: cleanedContent,
+            data: processedContent,
             style: {
               // Body
               "body": Style(
@@ -646,21 +644,35 @@ class _NewsDetailViewState extends State<NewsDetailView>
                 padding: HtmlPaddings.only(left: 0),
               ),
 
-              // Headings
               "h1": Style(
+                fontSize: FontSize(32),
+                fontWeight: FontWeight.bold,
+                margin: Margins.only(top: 20, bottom: 16),
+              ),
+              "h2": Style(
                 fontSize: FontSize(28),
+                fontWeight: FontWeight.bold,
+                margin: Margins.only(top: 18, bottom: 14),
+              ),
+              "h3": Style(
+                fontSize: FontSize(24),
                 fontWeight: FontWeight.bold,
                 margin: Margins.only(top: 16, bottom: 12),
               ),
-              "h2": Style(
-                fontSize: FontSize(24),
+              "h4": Style(
+                fontSize: FontSize(20),
                 fontWeight: FontWeight.bold,
                 margin: Margins.only(top: 14, bottom: 10),
               ),
-              "h3": Style(
-                fontSize: FontSize(20),
+              "h5": Style(
+                fontSize: FontSize(18),
                 fontWeight: FontWeight.bold,
                 margin: Margins.only(top: 12, bottom: 8),
+              ),
+              "h6": Style(
+                fontSize: FontSize(16),
+                fontWeight: FontWeight.bold,
+                margin: Margins.only(top: 10, bottom: 6),
               ),
 
               // Text formatting
@@ -695,6 +707,11 @@ class _NewsDetailViewState extends State<NewsDetailView>
               "li": Style(
                 margin: Margins.only(bottom: 6),
                 padding: HtmlPaddings.only(left: 8),
+              ),
+
+              "div": Style(
+                margin: Margins.zero,
+                padding: HtmlPaddings.zero,
               ),
 
               // Blockquotes
@@ -735,17 +752,17 @@ class _NewsDetailViewState extends State<NewsDetailView>
                 ),
               ),
 
-              // Span (for inline colors and backgrounds)
               "span": Style(
-                // Inline styles will be applied from HTML
+                // This will inherit color, background-color from inline styles
               ),
 
-              // Alignment classes (if you add them in HTML)
+              // Alignment classes
               ".text-left": Style(textAlign: TextAlign.left),
               ".text-center": Style(textAlign: TextAlign.center),
               ".text-right": Style(textAlign: TextAlign.right),
               ".text-justify": Style(textAlign: TextAlign.justify),
             },
+
             onLinkTap: (url, attributes, element) {
               if (url != null) {
                 _launchUrl(url);
@@ -757,30 +774,72 @@ class _NewsDetailViewState extends State<NewsDetailView>
     );
   }
 
-  // ✅ Enhanced HTML cleaning with alignment support
-  String _cleanHtmlContent(String html) {
-    // Remove leading/trailing whitespace
-    html = html.trim();
-
-    // Replace \n with <br> tags
-    html = html.replaceAll('\n', '<br>');
-
-    // Handle alignment attributes (Quill adds data-align)
-    // Example: <p data-align="center">Text</p>
+  String _preprocessCheckboxes(String html) {
+    // Replace entire checkbox UL blocks
     html = html.replaceAllMapped(
-      RegExp(r'<([^>]+)\s+data-align="([^"]+)"([^>]*)>'),
-      (match) {
-        final tag = match.group(1);
-        final align = match.group(2);
-        final rest = match.group(3);
-        return '<$tag class="text-$align"$rest>';
+      RegExp(
+        r'<ul[^>]*list-style:none[^>]*>(.*?)</ul>',
+        dotAll: true,
+      ),
+          (match) {
+        var listContent = match.group(1) ?? '';
+
+        // Process each checkbox li item
+        listContent = listContent.replaceAllMapped(
+          RegExp(
+            r'<li[^>]*data-checked="(checked|unchecked)"[^>]*>(.*?)</li>',
+            dotAll: true,
+          ),
+              (liMatch) {
+            final isChecked = liMatch.group(1) == 'checked';
+            var content = liMatch.group(2) ?? '';
+
+            // Remove input tags but KEEP span tags with styles
+            content = content.replaceAll(RegExp(r'<input[^>]*>'), '');
+
+            // ✅ Trim but preserve inner HTML tags
+            content = content.trim();
+
+            // Return as div with checkbox symbol
+            final symbol = isChecked ? '☑' : '☐';
+            return '<div style="margin-bottom:6px;padding-left:0;">$symbol $content</div>';
+          },
+        );
+
+        // Wrap in div instead of ul
+        return '<div style="margin:8px 0;">$listContent</div>';
       },
     );
 
-    // If content doesn't start with HTML tag, wrap it
-    if (!html.startsWith('<')) {
-      html = '<p>$html</p>';
-    }
+    // Also handle standalone checkbox li items (fallback)
+    html = html.replaceAllMapped(
+      RegExp(
+        r'<li[^>]*data-checked="checked"[^>]*>(.*?)</li>',
+        dotAll: true,
+      ),
+          (match) {
+        var content = match.group(1) ?? '';
+        content = content.replaceAll(RegExp(r'<input[^>]*>'), '');
+        content = content.trim();
+        return '<div style="margin-bottom:6px;padding-left:0;">☑ $content</div>';
+      },
+    );
+
+    html = html.replaceAllMapped(
+      RegExp(
+        r'<li[^>]*data-checked="unchecked"[^>]*>(.*?)</li>',
+        dotAll: true,
+      ),
+          (match) {
+        var content = match.group(1) ?? '';
+        content = content.replaceAll(RegExp(r'<input[^>]*>'), '');
+        content = content.trim();
+        return '<div style="margin-bottom:6px;padding-left:0;">☐ $content</div>';
+      },
+    );
+
+    // Clean up any remaining input tags
+    html = html.replaceAll(RegExp(r'<input[^>]*>'), '');
 
     return html;
   }
@@ -799,222 +858,4 @@ class _NewsDetailViewState extends State<NewsDetailView>
     }
   }
 
-  // Launch video URL in external player
-  Future<void> _launchVideoUrl(String url) async {
-    if (url.isEmpty) return;
-
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      Get.snackbar(
-        'Error',
-        'Could not launch video player',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
-    }
-  }
-
-  // Build image thumbnail widget
-  Widget _buildImageThumbnail(String url) {
-    return CachedNetworkImage(
-      imageUrl: url,
-      fit: BoxFit.cover,
-      width: double.infinity,
-      placeholder: (_, __) => _buildPlaceholder(),
-      errorWidget: (_, __, ___) => _buildErrorWidget(),
-    );
-  }
-
-  // Build placeholder widget
-  Widget _buildPlaceholder() {
-    return Container(
-      height: 260,
-      color: Colors.grey.shade300,
-      child: const Center(child: CircularProgressIndicator()),
-    );
-  }
-
-  // Build error widget
-  Widget _buildErrorWidget() {
-    return Container(
-      height: 260,
-      color: Colors.grey.shade300,
-      child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
-    );
-  }
-
-  // Format content with proper paragraphs
-
-  // Show full screen image viewer
-  void _showFullScreenImage(
-    BuildContext context,
-    List<dynamic> media,
-    int initialIndex,
-  ) {
-    // Filter only images for the gallery
-    final imageMedia = media
-        .where((m) => m['type']?.toLowerCase() != 'video')
-        .toList();
-
-    // If the initial index is a video, find the nearest image index
-    int adjustedIndex = initialIndex;
-    if (media[initialIndex]['type']?.toLowerCase() == 'video') {
-      // Find the nearest image index
-      for (int i = 0; i < media.length; i++) {
-        if (media[i]['type']?.toLowerCase() != 'video') {
-          adjustedIndex = i;
-          break;
-        }
-      }
-      // If no images found, show a message and return
-      if (adjustedIndex == initialIndex) {
-        Get.snackbar(
-          'No Images Available',
-          'This gallery contains only videos',
-          snackPosition: SnackPosition.BOTTOM,
-        );
-        return;
-      }
-    } else {
-      // Adjust index for image-only gallery
-      int imageCount = 0;
-      for (int i = 0; i <= initialIndex; i++) {
-        if (media[i]['type']?.toLowerCase() != 'video') {
-          imageCount++;
-        }
-      }
-      adjustedIndex = imageCount - 1;
-    }
-
-    final controller = PageController(initialPage: adjustedIndex);
-    showDialog(
-      context: context,
-      builder: (context) => Scaffold(
-        backgroundColor: Colors.black,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.close, color: Colors.white),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-        ),
-        body: Stack(
-          children: [
-            PhotoViewGallery.builder(
-              pageController: controller,
-              scrollPhysics: const BouncingScrollPhysics(),
-              itemCount: imageMedia.length,
-              builder: (context, index) {
-                return PhotoViewGalleryPageOptions(
-                  imageProvider: NetworkImage(imageMedia[index]['url'] ?? ''),
-                  minScale: PhotoViewComputedScale.contained,
-                  maxScale: PhotoViewComputedScale.covered * 2,
-                  heroAttributes: PhotoViewHeroAttributes(tag: 'image_$index'),
-                );
-              },
-              loadingBuilder: (context, event) => Center(
-                child: Container(
-                  width: 20,
-                  height: 20,
-                  margin: const EdgeInsets.all(20),
-                  child: CircularProgressIndicator(
-                    value: event == null
-                        ? 0
-                        : event.cumulativeBytesLoaded /
-                              (event.expectedTotalBytes ?? 1),
-                  ),
-                ),
-              ),
-            ),
-            if (imageMedia.length > 1)
-              Positioned(
-                bottom: 20,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: PageViewIndicator(
-                      controller: controller,
-                      itemCount: imageMedia.length,
-                      color: Colors.white54,
-                      selectedColor: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class PageViewIndicator extends StatelessWidget {
-  final PageController controller;
-  final int itemCount;
-  final Color color;
-  final Color selectedColor;
-
-  const PageViewIndicator({
-    Key? key,
-    required this.controller,
-    required this.itemCount,
-    this.color = Colors.grey,
-    this.selectedColor = Colors.white,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(itemCount, (index) {
-        return AnimatedBuilder(
-          animation: controller,
-          builder: (context, _) {
-            double page = 0;
-            if (controller.hasClients && controller.page != null) {
-              page = controller.page!;
-            }
-            double selectedness = Curves.easeOut.transform(
-              1.0 - (page - index).abs().clamp(0.0, 1.0),
-            );
-            double size = 8.0 + (6.0 * selectedness);
-            return Container(
-              width: size,
-              height: size,
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color.lerp(color, selectedColor, selectedness),
-              ),
-            );
-          },
-        );
-      }),
-    );
-  }
-}
-
-Widget roundedIconButton(IconData icon, VoidCallback onTap) {
-  return GestureDetector(
-    onTap: onTap,
-    child: Container(
-      width: 30,
-      height: 30,
-      decoration: BoxDecoration(color: Colors.black45, shape: BoxShape.circle),
-      child: Icon(icon, color: Colors.white, size: 22),
-    ),
-  );
 }

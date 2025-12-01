@@ -89,13 +89,9 @@ class _MarketplaceViewState extends State<MarketplaceView>
       return;
     }
 
-    debugPrint('🔍 Checking for marketplace refresh flag...');
-
     try {
       final prefs = await SharedPreferences.getInstance();
       final needsRefresh = prefs.getBool('marketplace_refresh_needed') ?? false;
-
-      debugPrint('🔍 Refresh flag value: $needsRefresh');
 
       if (needsRefresh) {
         _isRefreshing = true;
@@ -482,8 +478,10 @@ class _MarketplaceViewState extends State<MarketplaceView>
 
               return LocationBarWidget(
                 onLocationTap: _handleFilterLocation,
-                onClearLocation: (displayLocation!.isNotEmpty) ? _handleClearLocation : null,
-                location: displayLocation,
+                onClearLocation: (displayLocation != null && displayLocation.isNotEmpty)
+                    ? _handleClearLocation
+                    : null,
+                location: displayLocation ?? '',
               );
             }),
 

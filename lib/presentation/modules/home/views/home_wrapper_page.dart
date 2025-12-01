@@ -27,6 +27,7 @@ class _HomeWrapperState extends State<HomeWrapper> {
     HomeWrapperController(),
     permanent: true,
   );
+  late final NewsController _newsController;
 
   final List<Widget> _pages = [
     const HomeView(),        // 0 - Home
@@ -39,6 +40,10 @@ class _HomeWrapperState extends State<HomeWrapper> {
   void initState() {
     super.initState();
 
+    _newsController = Get.isRegistered<NewsController>()
+        ? Get.find<NewsController>()
+        : Get.put(NewsController(), permanent: true);
+
     // ✅ Handle initial tab argument
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final args = Get.arguments as Map<String, dynamic>?;
@@ -49,8 +54,8 @@ class _HomeWrapperState extends State<HomeWrapper> {
         _controller.currentIndex.value = initialTab;
 
         // ✅ Refresh News tab if opening directly
-        if (initialTab == 1 && Get.isRegistered<NewsController>()) {
-          Get.find<NewsController>().refresh();
+        if (initialTab == 1) {
+          _newsController.refresh();
           debugPrint('🔄 Refreshing News tab on open');
         }
       }
@@ -67,8 +72,8 @@ class _HomeWrapperState extends State<HomeWrapper> {
   void _onItemTapped(int index) {
     _controller.changeTab(index);
 
-    if (index == 1 && Get.isRegistered<NewsController>()) {
-      Get.find<NewsController>().refresh();
+    if (index == 1) {
+      _newsController.refresh();
       debugPrint('🔄 Refreshing News tab');
     }
 

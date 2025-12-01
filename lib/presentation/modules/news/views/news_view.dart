@@ -31,7 +31,9 @@ class _NewsViewState extends State<NewsView>
   @override
   void initState() {
     super.initState();
-    _newsController = Get.put(NewsController(), permanent: true);
+    _newsController = Get.isRegistered<NewsController>()
+        ? Get.find<NewsController>()
+        : Get.put(NewsController(), permanent: true);
     _tabController = TabController(
       length: Utils.newsLocationCategories.length,
       vsync: this,

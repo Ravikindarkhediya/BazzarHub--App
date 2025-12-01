@@ -14,6 +14,7 @@ class NewsController extends GetxController {
   var newsList = <NewsModel>[].obs;
   var newsCategories = <CategoryModel>[].obs;
   var errorMessage = ''.obs;
+  bool _isRefreshing = false;
 
   String? categoryID = "";
   UserModel? userModel;
@@ -35,6 +36,11 @@ class NewsController extends GetxController {
 
   // ✅ MAIN FIX: Simple refresh method (called after edit)
   Future<void> refresh() async {
+    if (_isRefreshing) {
+      debugPrint('⚠️ Refresh already in progress, skipping duplicate call.');
+      return;
+    }
+    _isRefreshing = true;
     debugPrint('🔄 Refreshing news list...');
 
     // Add timestamp to force fresh data
@@ -67,6 +73,7 @@ class NewsController extends GetxController {
       errorMessage('Failed to refresh news');
     } finally {
       isLoading(false);
+      _isRefreshing = false;
     }
   }
 

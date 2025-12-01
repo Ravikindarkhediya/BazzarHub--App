@@ -34,7 +34,9 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView> {
   // Initialize the NewsController
-  final NewsController newsController = Get.put(NewsController());
+  final NewsController newsController = Get.isRegistered<NewsController>()
+      ? Get.find<NewsController>()
+      : Get.put(NewsController(), permanent: true);
   
   // Marketplace data
   List<MarketplaceModel> _marketplaceProducts = [];

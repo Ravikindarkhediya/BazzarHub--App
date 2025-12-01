@@ -474,6 +474,8 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
         case 'span':
           _parseSpanStyle(node, newAttrs);
           break;
+
+      // ✅ FIXED: Handle headings properly
         case 'h1':
         case 'h2':
         case 'h3':
@@ -482,53 +484,127 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
         case 'h6':
           isBlockElement = true;
           final level = int.parse(tagName.substring(1));
-          newAttrs.clear();
-          newAttrs['header'] = level;
-          _parseParagraphStyle(node, newAttrs);
-          break;
+
+          // ✅ Create block attributes for heading
+          final headingBlockAttrs = <String, dynamic>{'header': level};
+          _parseParagraphStyle(node, headingBlockAttrs);
+
+          // ✅ Process children with inline formatting only
+          for (var child in node.nodes) {
+            _processHtmlNode(child, delta, newAttrs);
+          }
+
+          // ✅ Add newline with heading attributes
+          delta.insert('\n', headingBlockAttrs);
+          return; // Exit early to avoid double processing
+
         case 'blockquote':
           isBlockElement = true;
-          newAttrs.clear();
-          newAttrs['blockquote'] = true;
-          break;
+
+          // Process children first
+          for (var child in node.nodes) {
+            _processHtmlNode(child, delta, newAttrs);
+          }
+
+          // Add newline with blockquote attribute
+          delta.insert('\n', {'blockquote': true});
+          return;
+
         case 'pre':
           isBlockElement = true;
-          newAttrs.clear();
-          newAttrs['code-block'] = true;
-          break;
+
+          // Find code tag inside pre
+          final codeNode = node.querySelector('code');
+          if (codeNode != null) {
+            final codeText = codeNode.text;
+            delta.insert(codeText);
+          } else {
+            for (var child in node.nodes) {
+              _processHtmlNode(child, delta, newAttrs);
+            }
+          }
+
+          delta.insert('\n', {'code-block': true});
+          return;
+
         case 'ul':
           _processList(node, delta, 'bullet');
           return;
+
         case 'ol':
           _processList(node, delta, 'ordered');
           return;
+
         case 'p':
           isBlockElement = true;
-          _parseParagraphStyle(node, newAttrs);
-          break;
+
+          // Parse paragraph alignment
+          final paragraphAttrs = <String, dynamic>{};
+          _parseParagraphStyle(node, paragraphAttrs);
+
+          // Process children with inline formatting
+          for (var child in node.nodes) {
+            _processHtmlNode(child, delta, newAttrs);
+          }
+
+          // Add newline with paragraph attributes (if any)
+          delta.insert('\n', paragraphAttrs.isNotEmpty ? paragraphAttrs : null);
+          return;
+
         case 'br':
           delta.insert('\n');
           return;
+
+        case 'div':
+        // ✅ Handle div elements (from checkbox preprocessing)
+          for (var child in node.nodes) {
+            _processHtmlNode(child, delta, newAttrs);
+          }
+          return;
       }
 
-      // Process children
-      for (var child in node.nodes) {
-        _processHtmlNode(child, delta, newAttrs);
-      }
-
-      // Add newline for block elements
-      if (isBlockElement) {
-        final blockAttrs = <String, dynamic>{};
-        if (newAttrs.containsKey('header')) blockAttrs['header'] = newAttrs['header'];
-        if (newAttrs.containsKey('blockquote')) blockAttrs['blockquote'] = true;
-        if (newAttrs.containsKey('code-block')) blockAttrs['code-block'] = true;
-        if (newAttrs.containsKey('align')) blockAttrs['align'] = newAttrs['align'];
-
-        delta.insert('\n', blockAttrs.isNotEmpty ? blockAttrs : null);
+      // ✅ For non-block elements, process children normally
+      if (!isBlockElement) {
+        for (var child in node.nodes) {
+          _processHtmlNode(child, delta, newAttrs);
+        }
       }
     }
   }
 
+// ✅ IMPROVED: Parse span styles (handle color formats)
+  void _parseSpanStyle(dom.Element element, Map<String, dynamic> attrs) {
+    final style = element.attributes['style'];
+    if (style != null) {
+      // Parse color
+      final colorMatch = RegExp(r'color:\s*([^;]+)').firstMatch(style);
+      if (colorMatch != null) {
+        var color = colorMatch.group(1)!.trim();
+        // Keep the color format as-is (hex or rgb)
+        attrs['color'] = color;
+      }
+
+      // Parse background-color
+      final bgMatch = RegExp(r'background-color:\s*([^;]+)').firstMatch(style);
+      if (bgMatch != null) {
+        var bgColor = bgMatch.group(1)!.trim();
+        attrs['background'] = bgColor;
+      }
+    }
+  }
+
+// ✅ Parse paragraph/heading alignment
+  void _parseParagraphStyle(dom.Element element, Map<String, dynamic> attrs) {
+    final style = element.attributes['style'];
+    if (style != null) {
+      final alignMatch = RegExp(r'text-align:\s*([^;]+)').firstMatch(style);
+      if (alignMatch != null) {
+        attrs['align'] = alignMatch.group(1)!.trim();
+      }
+    }
+  }
+
+// ✅ IMPROVED: Process lists with proper formatting
   void _processList(dom.Element listElement, Delta delta, String listType) {
     final isCheckList = listElement.attributes['style']?.contains('list-style:none') ?? false;
 
@@ -544,9 +620,12 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
           actualListType = isChecked ? 'checked' : 'unchecked';
         }
 
-        // Process list item content (skip checkbox element)
+        // ✅ Process list item content with inline formatting
         for (var node in child.nodes) {
+          // Skip input checkbox elements
           if (node is dom.Element && node.localName == 'input') continue;
+
+          // Process other nodes (text, span, etc.)
           _processHtmlNode(node, delta, {});
         }
 
@@ -556,37 +635,13 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
     }
   }
 
-  void _parseSpanStyle(dom.Element element, Map<String, dynamic> attrs) {
-    final style = element.attributes['style'];
-    if (style != null) {
-      final colorMatch = RegExp(r'color:\s*([^;]+)').firstMatch(style);
-      if (colorMatch != null) {
-        attrs['color'] = colorMatch.group(1)!.trim();
-      }
-
-      final bgMatch = RegExp(r'background-color:\s*([^;]+)').firstMatch(style);
-      if (bgMatch != null) {
-        attrs['background'] = bgMatch.group(1)!.trim();
-      }
-    }
-  }
-
-  void _parseParagraphStyle(dom.Element element, Map<String, dynamic> attrs) {
-    final style = element.attributes['style'];
-    if (style != null) {
-      final alignMatch = RegExp(r'text-align:\s*([^;]+)').firstMatch(style);
-      if (alignMatch != null) {
-        attrs['align'] = alignMatch.group(1)!.trim();
-      }
-    }
-  }
-
   String _htmlToPlainText(String html) {
     final document = html_parser.parse(html);
     return document.body?.text ?? html;
   }
 
-  // ... (keep all other existing methods unchanged - loadCategories, loadLocationData, etc.)
+
+
 
   // Load categories
   Future<void> loadCategories() async {
@@ -984,7 +1039,7 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
   Future<List<String>> _uploadImages() async {
     try {
       isUploading = true;
-      if (hasListeners) notifyListeners(); // ✅ Check before notify
+      if (hasListeners) notifyListeners();
 
       final uploadedUrls = <String>[];
       final apiService = await getApiClient();
