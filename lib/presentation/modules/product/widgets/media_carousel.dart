@@ -65,21 +65,53 @@ class _MediaCarouselState extends State<MediaCarousel> {
     _prepareVideo(_currentIndex);
     _prepareVideo(_currentIndex + 1);
 
+    final isSingleItem = images.length == 1;
+
     return SizedBox(
       height: widget.height,
       child: Stack(
         children: [
-          /// Carousel Slider
-          _isInitialized ? _buildCarousel(images) : const SizedBox.shrink(),
+          /// Carousel Slider or Single Image
+          _isInitialized 
+              ? (isSingleItem ? _buildSingleImage(images.first) : _buildCarousel(images))
+              : const SizedBox.shrink(),
 
-          /// Image Counter Badge (Bottom Right)
-          _buildImageCounter(images.length),
+          /// Image Counter Badge (Bottom Right) - Only show if multiple items
+          if (!isSingleItem) _buildImageCounter(images.length),
 
-          /// Tap to View Fullscreen Hint (Bottom Left)
-          _buildFullscreenHint(),
+          /// Tap to View Fullscreen Hint (Bottom Left) - Only show if multiple items
+          if (!isSingleItem) _buildFullscreenHint(),
         ],
       ),
     ).animate().fadeIn(duration: 600.ms);
+  }
+
+  Widget _buildSingleImage(String imageUrl) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isVideo = Utils.isVideo(imageUrl);
+
+    if (isVideo) {
+      return _buildVideoItem(imageUrl, 0, screenWidth);
+    }
+
+    return GestureDetector(
+      onTap: () => _openFullscreenViewer(0),
+      child: Hero(
+        tag: 'media_image_0',
+        child: Container(
+          color: AppColors.white,
+          width: double.infinity,
+          height: double.infinity,
+          child: CustomImageWidget(
+            imageUrl: imageUrl,
+            height: widget.height,
+            width: screenWidth,
+            fit: BoxFit.cover,
+            cornerRadius: 0,
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildCarousel(List<String> images) {
