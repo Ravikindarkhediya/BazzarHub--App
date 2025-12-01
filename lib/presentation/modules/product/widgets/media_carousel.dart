@@ -52,6 +52,7 @@ class _MediaCarouselState extends State<MediaCarousel> {
     for (final controller in _videoControllers.values) {
       controller.dispose();
     }
+    super.dispose();
   }
 
   @override
