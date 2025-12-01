@@ -19,6 +19,9 @@ import '../../home/widgets/location_selection_bottom_sheet.dart';
 import '../../product/widgets/product_grid_widget.dart';
 import '../../product/views/product_detail_page.dart';
 
+// Global RouteObserver for marketplace
+final RouteObserver<PageRoute> marketplaceRouteObserver = RouteObserver<PageRoute>();
+
 class MarketplaceView extends StatefulWidget {
   const MarketplaceView({super.key});
 
@@ -52,10 +55,15 @@ class _MarketplaceViewState extends State<MarketplaceView>
     WidgetsBinding.instance.addObserver(this);
     _initializeMarketplace();
   }
+  
+  bool _routeObserverSubscribed = false;
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    if (_routeObserverSubscribed) {
+      marketplaceRouteObserver.unsubscribe(this);
+    }
     super.dispose();
   }
 
@@ -71,6 +79,15 @@ class _MarketplaceViewState extends State<MarketplaceView>
   void didChangeDependencies() {
     super.didChangeDependencies();
 
+    // Subscribe to route observer only once after dependencies are available
+    if (!_routeObserverSubscribed) {
+      final route = ModalRoute.of(context);
+      if (route is PageRoute) {
+        marketplaceRouteObserver.subscribe(this, route);
+        _routeObserverSubscribed = true;
+      }
+    }
+
     if (!_isInitialLoad && mounted && !_isRefreshing) {
       Future.microtask(() => _checkAndReloadData());
     }
@@ -83,17 +100,43 @@ class _MarketplaceViewState extends State<MarketplaceView>
     }
   }
 
+  // RouteAware methods
+  @override
+  void didPop() {
+    debugPrint('🔄 MarketplaceView didPop - checking for refresh');
+    _checkAndReloadData();
+  }
+
+  @override
+  void didPush() {
+    debugPrint('🔄 MarketplaceView didPush');
+  }
+
+  @override
+  void didPushNext() {
+    debugPrint('🔄 MarketplaceView didPushNext');
+  }
+
+  @override
+  void didPopNext() {
+    debugPrint('🔄 MarketplaceView didPopNext - checking for refresh');
+    _checkAndReloadData();
+  }
+
   Future<void> _checkAndReloadData() async {
     if (_isRefreshing) {
+      debugPrint('🔄 Already refreshing, skipping check');
       return;
     }
 
     try {
       final prefs = await SharedPreferences.getInstance();
       final needsRefresh = prefs.getBool('marketplace_refresh_needed') ?? false;
+      debugPrint('🔄 Checking refresh flag: $needsRefresh');
 
       if (needsRefresh) {
         _isRefreshing = true;
+        debugPrint('🔄 Refresh flag detected, clearing flag and refreshing marketplace');
 
         await prefs.remove('marketplace_refresh_needed');
 
@@ -434,10 +477,12 @@ class _MarketplaceViewState extends State<MarketplaceView>
       } else if (result is Map) {
         final deleted = result['deleted'] == true;
         final id = result['id']?.toString();
+        debugPrint('🗑️ Marketplace received deletion result: deleted=$deleted, id=$id');
         if (deleted && id != null) {
           setState(() {
             _displayedProducts.removeWhere((p) => p.id == id);
           });
+          AppToast.showSuccess('Product removed from your listings');
         }
       }
     } catch (error) {

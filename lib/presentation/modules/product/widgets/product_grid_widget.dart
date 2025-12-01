@@ -100,7 +100,10 @@ class _ProductGridWidgetState extends State<ProductGridWidget> {
   ) {
     return GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap: () => widget.onProductTap(product),
+          onTap: () {
+            debugPrint('🔗 ProductGridWidget tapped: ${product.id} - ${product.title}');
+            widget.onProductTap(product);
+          },
           child: Container(
             decoration: BoxDecoration(
               color: AppColors.white,

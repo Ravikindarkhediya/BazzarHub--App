@@ -89,17 +89,27 @@ class _SellProductPageState extends State<SellProductPage> {
   Future<void> submitForm() async {
     final success = await _controller.submitProduct(context);
     if (success && mounted) {
+      // Show success message before navigation
+      HapticFeedback.heavyImpact();
+      AppToast.showSuccess(isEditMode ? 'Product updated successfully!' : 'Product listed successfully!');
+      
       setState(() => _isSubmitted = true);
-      if (isEditMode) {
-        Get.offAllNamed(
-          AppRoutes.homeWrapper,
-          arguments: {'initialTab': 2},
-        );
-      } else {
-        Get.offAllNamed(
-          AppRoutes.homeWrapper,
-          arguments: {'initialTab': 2},
-        );
+      
+      // Add small delay to ensure toast is shown before navigation
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      if (mounted) {
+        if (isEditMode) {
+          Get.offAllNamed(
+            AppRoutes.homeWrapper,
+            arguments: {'initialTab': 2},
+          );
+        } else {
+          Get.offAllNamed(
+            AppRoutes.homeWrapper,
+            arguments: {'initialTab': 2},
+          );
+        }
       }
     }
   }

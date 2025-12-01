@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
@@ -332,10 +333,21 @@ class CommonReportReasonsPage extends StatelessWidget {
                           if (!context.mounted) return;
 
                           if (success) {
+                            // Set marketplace refresh flag if reporting marketplace item
+                            if (type == 'marketplace') {
+                              debugPrint('🔄 Setting marketplace refresh flag after successful report');
+                              final prefs = await SharedPreferences.getInstance();
+                              await prefs.setBool('marketplace_refresh_needed', true);
+                              debugPrint('🔄 Marketplace refresh flag set successfully');
+                            }
+
                             // Close bottom sheet
                             Navigator.pop(context);
 
                             // Close report reasons page
+                            Navigator.pop(context);
+
+                            // Close product detail page
                             Navigator.pop(context);
 
                             // Show success message

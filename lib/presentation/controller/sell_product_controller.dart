@@ -20,6 +20,7 @@ import '../services/models/marketplace/marketplace_model.dart';
 /// Sell Product Controller with Edit Mode Support
 class SellProductController extends ChangeNotifier implements ImageUploadController {
   final List<TextEditingController> _allControllers = [];
+  bool _isDisposed = false;
 
   final titleController = TextEditingController();
   final descriptionController = TextEditingController();
@@ -201,7 +202,7 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
       }
     }
 
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   bool _isVideoUrl(String url) {
@@ -222,7 +223,7 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
     try {
       // await _locationRepo.initialize();
       _statesList = _locationRepo.getStates();
-      notifyListeners();
+      safeNotifyListeners();
     } catch (e) {
       debugPrint('Error loading location data: $e');
     }
@@ -237,7 +238,7 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
     _subDistrictsList = [];
     _villagesList = [];
     _showSubDistrict = false;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void selectDistrict(String district) {
@@ -267,7 +268,7 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
         }
       }
     }
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void selectSubDistrict(String subDistrict) {
@@ -284,13 +285,13 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
 
       _villagesList = villages;
     }
-    notifyListeners();
+    safeNotifyListeners();
   }
 
 
   void selectVillage(String village) {
     _selectedVillage = village;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   Future<void> loadCategories() async {
@@ -303,7 +304,7 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
     } catch (e) {
       debugPrint("Error loading categories: $e");
     }
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   @override
@@ -388,12 +389,12 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
       isCompressing: true,
     );
     _images.add(productImage);
-    notifyListeners();
+    safeNotifyListeners();
     await Future.delayed(const Duration(milliseconds: 800));
     final index = _images.indexWhere((img) => img.id == imageId);
     if (index != -1) {
       _images[index] = _images[index].copyWith(isCompressing: false);
-      notifyListeners();
+      safeNotifyListeners();
     }
   }
 
@@ -408,17 +409,17 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
     while (retryCount < maxRetries) {
       try {
         _images[index] = _images[index].copyWith(uploadProgress: 0.1, uploadError: null);
-        notifyListeners();
+        safeNotifyListeners();
         final apiClient = await getApiClient();
         final fileName = productImage.file!.path.split('/').last;
         final multipartFile = await MultipartFile.fromFile(productImage.file!.path, filename: fileName);
         _images[index] = _images[index].copyWith(uploadProgress: 0.3);
-        notifyListeners();
+        safeNotifyListeners();
         final response = await apiClient.uploadFile(multipartFile);
         if (response.data.status && response.data.data != null) {
           final uploadedUrl = response.data.data!.url;
           _images[index] = _images[index].copyWith(uploadProgress: 1.0, isUploaded: true, uploadedUrl: uploadedUrl, uploadError: null);
-          notifyListeners();
+          safeNotifyListeners();
           return true;
         } else {
           throw Exception(response.data.message ?? 'Upload failed');
@@ -428,7 +429,7 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
         debugPrint('Upload error (attempt $retryCount/$maxRetries): $e');
         if (retryCount >= maxRetries) {
           _images[index] = _images[index].copyWith(uploadProgress: 0.0, isUploaded: false, uploadError: e.toString());
-          notifyListeners();
+          safeNotifyListeners();
           return false;
         }
         await Future.delayed(Duration(seconds: retryCount));
@@ -440,7 +441,7 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
   Future<bool> uploadAllImages() async {
     if (_images.isEmpty) return true;
     _isUploading = true;
-    notifyListeners();
+    safeNotifyListeners();
     try {
       for (var image in _images) {
         if (!image.isUploaded || image.uploadedUrl == null) {
@@ -448,19 +449,19 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
             final success = await _uploadImage(image);
             if (!success) {
               _isUploading = false;
-              notifyListeners();
+              safeNotifyListeners();
               return false;
             }
           }
         }
       }
       _isUploading = false;
-      notifyListeners();
+      safeNotifyListeners();
       return true;
     } catch (e) {
       debugPrint('Error uploading images: $e');
       _isUploading = false;
-      notifyListeners();
+      safeNotifyListeners();
       return false;
     }
   }
@@ -477,7 +478,7 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
       if (permission == LocationPermission.deniedForever) return;
       Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
       _currentCoordinates = CoordinatesModel(latitude: position.latitude, longitude: position.longitude);
-      notifyListeners();
+      safeNotifyListeners();
     } catch (e) {
       debugPrint('Error getting coordinates: $e');
     }
@@ -486,7 +487,7 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
   @override
   void removeImage(String imageId) {
     _images.removeWhere((img) => img.id == imageId);
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   @override
@@ -494,17 +495,17 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
     if (oldIndex < newIndex) newIndex--;
     final item = _images.removeAt(oldIndex);
     _images.insert(newIndex, item);
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void selectCategory(String? categoryId) {
     _selectedCategoryId = categoryId;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void selectCondition(String condition) {
     _selectedCondition = condition;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   String _mapConditionToApiValue(String condition) {
@@ -514,7 +515,7 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
 
   void selectType(String value) {
     _selectedType = value;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   String? validateForm() {
@@ -543,13 +544,13 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
       return false;
     }
     _isLoading = true;
-    notifyListeners();
+    safeNotifyListeners();
     try {
       await getCurrentCoordinates();
       if (!await uploadAllImages()) {
         _showError(context, 'Failed to upload some images. Please try again.');
         _isLoading = false;
-        notifyListeners();
+        safeNotifyListeners();
         return false;
       }
       final uploadedUrls = _images
@@ -559,7 +560,7 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
       if (uploadedUrls.isEmpty) {
         _showError(context, 'No images were uploaded successfully.');
         _isLoading = false;
-        notifyListeners();
+        safeNotifyListeners();
         return false;
       }
       final locationData = <String, dynamic>{
@@ -598,11 +599,8 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
         final response = await apiClient.updateMarketplace(_editProductId!, payload);
         if (response.data.status && response.data.data != null) {
           HapticFeedback.heavyImpact();
-          if (context.mounted) {
-            _showSuccess(context, 'Product updated successfully!');
-          }
           _isLoading = false;
-          notifyListeners();
+          safeNotifyListeners();
 
           return true;
         } else {
@@ -613,12 +611,9 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
         final response = await apiClient.createMarketplace(payload);
         if (response.data.status && response.data.data != null) {
           HapticFeedback.heavyImpact();
-          if (context.mounted) {
-            _showSuccess(context, 'Product listed successfully!');
-          }
           clearForm();
           _isLoading = false;
-          notifyListeners();
+          safeNotifyListeners();
 
           return true;
         } else {
@@ -631,7 +626,7 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
         _showError(context, 'Failed to submit product: ${e.toString()}');
       }
       _isLoading = false;
-      notifyListeners();
+      safeNotifyListeners();
       return false;
     }
   }
@@ -652,18 +647,22 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
     _isEditMode = false;
     _editProductId = null;
     _originalProduct = null;
-    notifyListeners();
+    safeNotifyListeners();
   }
 
   void _showError(BuildContext context, String message) {
-    HapticFeedback.heavyImpact();
-    AppToast.showError(message);
+    if (context.mounted) {
+      HapticFeedback.heavyImpact();
+      AppToast.showError(message);
+    }
   }
 
   void _showSuccess(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.green, behavior: SnackBarBehavior.floating),
-    );
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message), backgroundColor: Colors.green, behavior: SnackBarBehavior.floating),
+      );
+    }
   }
 
   bool get isProfileComplete {
@@ -676,9 +675,16 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
 
   @override
   void dispose() {
+    _isDisposed = true;
     for (var c in _allControllers) {
       c.dispose();
     }
     super.dispose();
+  }
+
+  void safeNotifyListeners() {
+    if (!_isDisposed) {
+      notifyListeners();
+    }
   }
 }

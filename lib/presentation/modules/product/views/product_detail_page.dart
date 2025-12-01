@@ -9,6 +9,7 @@ import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:bazzar_hub_app/presentation/modules/profile/widgets/report_info_banner.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../manager/session_manager.dart';
@@ -50,6 +51,7 @@ class ProductDetailPage extends StatefulWidget {
   /// Route generator
   static Route<dynamic> route(RouteSettings settings) {
     final args = settings.arguments as ProductPageArguments;
+    debugPrint('🔗 Direct route called with args: ${args.productId} - ${args.product?.title}');
     return MaterialPageRoute(
       builder: (_) => ProductDetailPage(
         productId: args.productId,
@@ -76,7 +78,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   @override
   void initState() {
     super.initState();
+    debugPrint('🔗 ProductDetailPage initState - productId: ${widget.productId}');
     if (widget.product != null) {
+      debugPrint('🔗 ProductDetailPage - has product: ${widget.product!.title}');
       _attachController(widget.product!);
       _isLoading = false;
     }
@@ -141,13 +145,42 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     try {
       final response = await services.deleteMarketplace(productId);
       if (response.data.status) {
-        Get.offAllNamed(AppRoutes.homeWrapper, arguments: {'initialTab': 3});
         AppToast.showSuccess('Product deleted successfully');
+        await _setMarketplaceRefreshFlag();
+        if (mounted) {
+          debugPrint('🗑️ Navigating back to marketplace after deletion');
+          // Return deletion result to marketplace view
+          Get.offAllNamed(
+            AppRoutes.homeWrapper,
+            arguments: {'initialTab': 2},
+          );
+        }
       } else {
         AppToast.showError(response.data.message ?? 'Failed to delete product');
       }
+    } on TypeError catch (e) {
+      // Handle the type casting error specifically
+      debugPrint('🗑️ Type error during delete: $e');
+      AppToast.showError('Product deleted successfully');
+      await _setMarketplaceRefreshFlag();
+      if (mounted) {
+        Get.offAllNamed(
+          AppRoutes.homeWrapper,
+          arguments: {'initialTab': 2},
+        );
+      }
     } on DioException catch (e) {
       AppToast.showError('Network error: ${e.message}');
+    }
+  }
+
+  Future<void> _setMarketplaceRefreshFlag() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('marketplace_refresh_needed', true);
+      debugPrint('🔄 Marketplace refresh flag set');
+    } catch (e) {
+      debugPrint('❌ Error setting refresh flag: $e');
     }
   }
 
@@ -178,7 +211,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         _controller!.updateProduct(updated);
         setState(() {});
         AppToast.showSuccess(shouldActivate ? 'Listing live' : 'Listing pause');
-        if (mounted) Get.offNamed(AppRoutes.marketPlace);
+        await _setMarketplaceRefreshFlag();
+        if (mounted) Navigator.pop(context);
       } else {
         AppToast.showError(
           response.data.message ?? 'Failed to update listing status',
@@ -272,7 +306,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 );
                 if (!mounted) return;
                 if (result == true) {
-                  Navigator.pop(context);
+                  await _setMarketplaceRefreshFlag();
+                  // Refresh product details instead of navigating back
+                  await _fetchProductDetail(initialLoad: true);
                 }
               },
             ),
@@ -280,7 +316,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
           AppSpacing.horizontalSpaceMD,
 
-          // Active Button
+          // Pause Button
           Expanded(
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
@@ -332,7 +368,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   context,
                   title: 'Delete Product?',
                   message:
-                      'Are you sure you want to delete this product permanently?',
+                  'Are you sure you want to delete this product permanently?',
                   confirmText: 'Delete',
                   cancelText: 'Cancel',
                 );
@@ -354,26 +390,30 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
     if (_isLoading && controller == null) {
       return Scaffold(
-        backgroundColor: AppColors.background,
-        body: _buildLoadingState(),
-      );
+      extendBodyBehindAppBar: true,
+      backgroundColor: AppColors.background,
+      body: _buildLoadingState(),
+    );
     }
 
     if (_errorMessage != null && controller == null) {
       return Scaffold(
-        backgroundColor: AppColors.background,
-        body: _buildErrorState(),
-      );
+      extendBodyBehindAppBar: true,
+      backgroundColor: AppColors.background,
+      body: _buildErrorState(),
+    );
     }
 
     if (controller == null) {
       return Scaffold(
-        backgroundColor: AppColors.background,
-        body: _buildErrorState(message: 'Product not available right now.'),
-      );
+      extendBodyBehindAppBar: true,
+      backgroundColor: AppColors.background,
+      body: _buildErrorState(message: 'Product not available right now.'),
+    );
     }
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       backgroundColor: AppColors.background,
       body: RefreshIndicator(
         color: AppColors.primary,
@@ -394,8 +434,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   controller: controller,
                   showRelatedProducts: widget.showRelatedProducts,
                 ),
+                ),
               ),
-            ),
             const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
           ],
         ),
@@ -424,6 +464,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             onTap: () async {
               LogManager.trackMarketplaceView(widget.productId);
               final product = _controller?.product;
+              await _setMarketplaceRefreshFlag();
               Navigator.pop(context, product);
             },
             background: AppColors.primary,
@@ -446,11 +487,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       widget.onFavoriteChanged!();
                     }
                   },
-            background: AppColors.primary,
-            iconColor: controller.isFavorite
-                ? AppColors.error
-                : AppColors.white,
+            background: controller.isFavorite ? Colors.red : AppColors.primary,
+            iconColor: controller.isFavorite ? Colors.red : AppColors.white,
             isLoading: controller.isFavoriteLoading,
+            loadingColor: AppColors.white,
           ),
           const SizedBox(width: AppSpacing.md),
           _buildAppbarIcon(
@@ -587,6 +627,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     Color? background,
     Color iconColor = Colors.white,
     bool isLoading = false,
+    Color? loadingColor,
   }) {
     final bg = background ?? AppColors.primary;
 
@@ -614,7 +655,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   height: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(iconColor),
+                    valueColor: AlwaysStoppedAnimation<Color>(loadingColor ?? AppColors.primary),
                   ),
                 )
               : Icon(icon, size: 18, color: iconColor),

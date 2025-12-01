@@ -5,6 +5,7 @@ import 'package:bazzar_hub_app/presentation/modules/news/views/news_view.dart';
 import 'package:bazzar_hub_app/presentation/modules/otherUserProfile/views/other_user_profile.dart';
 import 'package:bazzar_hub_app/presentation/modules/profile/views/report_list_view.dart';
 import 'package:bazzar_hub_app/presentation/modules/profile/views/your_Post_view.dart';
+import 'package:flutter/foundation.dart';
 
 import '../modules/auth/views/sign_in.dart';
 import '../modules/auth/views/signup_page.dart';
@@ -64,8 +65,10 @@ class AppPages {
     GetPage(
       name: ProductDetailPage.routeName,
       page: () {
+        debugPrint('🔗 Route handler - Get.arguments type: ${Get.arguments.runtimeType}');
         if (Get.arguments is ProductPageArguments) {
           final args = Get.arguments as ProductPageArguments;
+          debugPrint('🔗 Route handler - received ProductPageArguments: ${args.productId}');
           return ProductDetailPage(
             productId: args.productId,
             product: args.product,
@@ -73,11 +76,13 @@ class AppPages {
           );
         } else if (Get.parameters.containsKey('productId')) {
           // Handle direct navigation with productId in parameters
+          debugPrint('🔗 Route handler - using productId parameter: ${Get.parameters['productId']}');
           return ProductDetailPage(
             productId: Get.parameters['productId']!,
           );
         } else {
           // Fallback with empty product
+          debugPrint('🔗 Route handler - using fallback empty product');
           return const ProductDetailPage(
             productId: '',
           );

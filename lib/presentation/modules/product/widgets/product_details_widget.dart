@@ -74,10 +74,16 @@ class ProductDetailsWidget extends StatelessWidget {
               ProductGridWidget(
                 products: product.list!,
                 onProductTap: (selectedProduct) {
-                  Get.to(
-                    () => ProductDetailPage(
-                      productId: selectedProduct.id,
-                      product: selectedProduct,
+                  debugPrint('🔗 Tapping related product: ${selectedProduct.id} - ${selectedProduct.title}');
+                  Navigator.push(
+                    context,
+                    ProductDetailPage.route(
+                      RouteSettings(
+                        arguments: ProductPageArguments(
+                          productId: selectedProduct.id,
+                          product: selectedProduct,
+                        ),
+                      ),
                     ),
                   );
                 },

@@ -163,7 +163,7 @@ abstract class ApiServices {
   );
 
   @DELETE("${Endpoints.MARKETPLACE}/{id}")
-  Future<HttpResponse<BaseModel<MarketplaceModel>>> deleteMarketplace(
+  Future<HttpResponse<BaseModel<dynamic>>> deleteMarketplace(
     @Path("id") String id,
   );
 
