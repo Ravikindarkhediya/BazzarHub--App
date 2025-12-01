@@ -8,18 +8,14 @@ import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
 import '../../../commons/dialogs/app_toasts.dart';
-import '../../../routes/app_routes.dart';
 import '../../../services/api_service.dart';
 import '../../../services/models/Common/location_model.dart';
 import '../../../services/models/marketplace/marketplace_model.dart';
 import '../../../services/models/news/favorite_news_model.dart';
-import '../../../services/models/base/base_model.dart';
 import '../../../services/models/categorie/categorie_model.dart';
 import '../../../services/models/Common/multi_lang_text_model.dart';
 import '../../../services/models/news/news_model.dart';
 import '../../../services/models/user/user_model.dart';
-import '../widgets/product_grid_widget.dart';
-import '../../../modules/news/widgets/featured_news_card.dart';
 import '../../../modules/news/views/news_detail_view.dart';
 import 'package:bazzar_hub_app/presentation/modules/product/views/product_detail_page.dart';
 import 'package:bazzar_hub_app/presentation/modules/product/views/product_detail_page.dart' show ProductPageArguments;
@@ -34,19 +30,18 @@ class FavoritesPage extends StatefulWidget {
 class _FavoritesPageState extends State<FavoritesPage>
     with TickerProviderStateMixin {
   late TabController _tabController;
-
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  late ScrollController _scrollController;
 
-  // Marketplace state variables
+  late ScrollController _newsScrollController;
+  late ScrollController _marketplaceScrollController;
+
   List<MarketplaceModel> _favoriteMarketplaces = [];
   bool _isLoadingMarketplaces = false;
   bool _hasMoreMarketplaces = true;
   int _marketplacePage = 1;
   final int _marketplaceLimit = 10;
 
-  // News state variables
   List<FavoriteNewsModel> _favoriteNews = [];
   bool _isLoadingNews = false;
   bool _hasMoreNews = true;
@@ -82,16 +77,23 @@ class _FavoritesPageState extends State<FavoritesPage>
 
     _animationController.forward();
 
-    _scrollController = ScrollController();
-    _scrollController.addListener(_scrollListener);
+    _newsScrollController = ScrollController()..addListener(_newsScrollListener);
+    _marketplaceScrollController = ScrollController()..addListener(_marketplaceScrollListener);
   }
 
-  void _scrollListener() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent * 0.8) {
-      if (_tabController.index == 0 && !_isLoadingNews && _hasMoreNews) {
+  void _newsScrollListener() {
+    if (_newsScrollController.position.pixels >=
+        _newsScrollController.position.maxScrollExtent * 0.8) {
+      if (!_isLoadingNews && _hasMoreNews) {
         _getFavoriteNews();
-      } else if (_tabController.index == 1 && !_isLoadingMarketplaces && _hasMoreMarketplaces) {
+      }
+    }
+  }
+
+  void _marketplaceScrollListener() {
+    if (_marketplaceScrollController.position.pixels >=
+        _marketplaceScrollController.position.maxScrollExtent * 0.8) {
+      if (!_isLoadingMarketplaces && _hasMoreMarketplaces) {
         _getFavoriteMarketplaces();
       }
     }
@@ -101,7 +103,8 @@ class _FavoritesPageState extends State<FavoritesPage>
   void dispose() {
     _tabController.dispose();
     _animationController.dispose();
-    _scrollController.dispose();
+    _newsScrollController.dispose();
+    _marketplaceScrollController.dispose();
     super.dispose();
   }
 
@@ -137,8 +140,7 @@ class _FavoritesPageState extends State<FavoritesPage>
               _favoriteMarketplaces.addAll(newMarketplaces);
             }
 
-            _hasMoreMarketplaces =
-                newMarketplaces.length == _marketplaceLimit;
+            _hasMoreMarketplaces = newMarketplaces.length == _marketplaceLimit;
 
             if (!isRefresh) _marketplacePage++;
           });
@@ -158,7 +160,6 @@ class _FavoritesPageState extends State<FavoritesPage>
   }
 
   void _handleProductTap(MarketplaceModel product) {
-    // Navigate to product detail page with the product
     if (product.id != null) {
       Get.toNamed(
         ProductDetailPage.routeName,
@@ -175,7 +176,7 @@ class _FavoritesPageState extends State<FavoritesPage>
   Future<void> _handleFavoriteToggle(MarketplaceModel product, bool isFavorite) async {
     try {
       var services = await getApiClient();
-      final response = await services.addToFavorite({'listingId':  product.id});
+      final response = await services.addToFavorite({'listingId': product.id});
       if (response.data.status) {
         AppToast.showSuccess('Removed from favorites');
         setState(() {
@@ -188,37 +189,6 @@ class _FavoritesPageState extends State<FavoritesPage>
       }
     }
   }
-
-  // void _handleProductTap(MarketplaceModel product) async {
-  //   await Navigator.push(
-  //     context,
-  //     MaterialPageRoute(
-  //       builder: (context) => ProductDetailPage(
-  //         productId: product.id,
-  //         product: product,
-  //         onFavoriteChanged: () {
-  //           _getFavoriteMarketplaces(isRefresh: true);
-  //         },
-  //       ),
-  //     ),
-  //   );
-  // }
-
-  // Null _handleFavoriteToggle(MarketplaceModel product, bool isFavorite) {
-  //   setState(() {
-  //     if (!isFavorite) {
-  //       _favoriteMarketplaces
-  //           .removeWhere((item) => item.id == product.id);
-  //     }
-  //   });
-  //
-  //   AppToast.showSuccess(
-  //     isFavorite
-  //         ? 'Added ${product.title} to favorites'
-  //         : 'Removed ${product.title} from favorites',
-  //   );
-  //   return null;
-  // }
 
   Future<void> _getFavoriteNews({bool isRefresh = false}) async {
     if (_isLoadingNews) return;
@@ -269,7 +239,6 @@ class _FavoritesPageState extends State<FavoritesPage>
     }
   }
 
-  // Convert FavoriteNewsModel to NewsModel for use with FeaturedNewsCard
   NewsModel _convertToNewsModel(FavoriteNewsModel favoriteNews) {
     return NewsModel(
       id: favoriteNews.id,
@@ -308,136 +277,149 @@ class _FavoritesPageState extends State<FavoritesPage>
 
   void _navigateToNewsDetail(NewsModel news) {
     Get.to(
-      () => NewsDetailView(newsId: news.id),
+          () => NewsDetailView(newsId: news.id),
       transition: Transition.cupertino,
       duration: const Duration(milliseconds: 300),
     );
   }
 
+  // ✅ Fixed News Item Widget
   Widget _buildNewsItem(FavoriteNewsModel news, {bool showDivider = true}) {
     final newsModel = _convertToNewsModel(news);
 
-    return InkWell(
-      onTap: () => _navigateToNewsDetail(newsModel),
-      child: Column(
+    return Column(
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // News Image
               Stack(
+                clipBehavior: Clip.none,
                 children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(12),
-                      topRight: Radius.circular(12),
-                    ),
-                    child: news.media.isNotEmpty && news.media.first.url.isNotEmpty
-                        ? Image.network(
-                      news.media.first.url,
-                      height: 180,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
+                  InkWell(
+                    onTap: () => _navigateToNewsDetail(newsModel),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: news.media.isNotEmpty && news.media.first.url.isNotEmpty
+                          ? Image.network(
+                        news.media.first.url,
                         height: 180,
-                        color: Colors.grey[200],
-                        child: const Icon(Icons.image_not_supported, size: 40),
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          height: 180,
+                          width: double.infinity,
+                          color: Colors.grey[200],
+                          child: const Icon(Icons.image_not_supported, size: 40),
+                        ),
+                      )
+                          : Container(
+                        height: 180,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.article_outlined, size: 40),
                       ),
-                    )
-                        : Container(
-                      height: 180,
-                      color: Colors.grey[200],
-                      child: const Icon(Icons.article_outlined, size: 40),
                     ),
                   ),
+
                   Positioned(
-                    top: 5,
-                    right: -5,
-                    child: Container(
-                      height: 30,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
+                    top: 8,
+                    right: 8,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => _handleNewsFavoriteToggle(news),
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.15),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: IconButton(
-                        icon: const Icon(Icons.favorite, color: Colors.red),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        iconSize: 20,
-                        onPressed: () => _handleNewsFavoriteToggle(news),
+                          child: const Icon(
+                            Icons.favorite,
+                            color: Colors.red,
+                            size: 20,
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
 
-              // News Details
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      news.title ?? 'No Title',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      maxLines: 2,
-                    ),
-                    const SizedBox(height: 8),
-                    if (news.content?.isNotEmpty == true)
+              InkWell(
+                onTap: () => _navigateToNewsDetail(newsModel),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        news.content!,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
+                        news.title ?? 'No Title',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
                           overflow: TextOverflow.ellipsis,
                         ),
                         maxLines: 2,
                       ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        if (news.location?.village?.isNotEmpty == true)
-                          Row(
-                            children: [
-                              Icon(Icons.location_on_outlined,
-                                  size: 14, color: Colors.grey[500]),
-                              const SizedBox(width: 4),
-                              Text(
-                                news.location!.village!,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          )
-                        else
-                          const SizedBox.shrink(),
+                      const SizedBox(height: 8),
+                      if (news.content?.isNotEmpty == true)
                         Text(
-                          _formatDate(news.createdAt ?? ''),
+                          news.content!,
                           style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[500],
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                            overflow: TextOverflow.ellipsis,
                           ),
+                          maxLines: 2,
                         ),
-                      ],
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          if (news.location?.village?.isNotEmpty == true)
+                            Row(
+                              children: [
+                                Icon(Icons.location_on_outlined,
+                                    size: 14, color: Colors.grey[500]),
+                                const SizedBox(width: 4),
+                                Text(
+                                  news.location!.village!,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            )
+                          else
+                            const SizedBox.shrink(),
+                          Text(
+                            _formatDate(news.createdAt ?? ''),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -455,9 +437,8 @@ class _FavoritesPageState extends State<FavoritesPage>
             ),
           )
       ],
-    ));
+    );
   }
-
 
   Widget _buildNewsContent() {
     if (_isLoadingNews && _favoriteNews.isEmpty) {
@@ -465,15 +446,37 @@ class _FavoritesPageState extends State<FavoritesPage>
     }
 
     if (_favoriteNews.isEmpty) {
-      return const Center(
-        child: Text('No favorite news found'),
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.favorite_border, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'No favorite news yet',
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Start adding news to your favorites',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[500],
+              ),
+            ),
+          ],
+        ),
       );
     }
 
     return RefreshIndicator(
       onRefresh: () => _getFavoriteNews(isRefresh: true),
       child: ListView.builder(
-        controller: _scrollController,
+        controller: _newsScrollController,
         itemCount: _favoriteNews.length + (_hasMoreNews ? 1 : 0),
         itemBuilder: (context, index) {
           if (index < _favoriteNews.length) {
@@ -502,7 +505,6 @@ class _FavoritesPageState extends State<FavoritesPage>
           child: SafeArea(
             child: Column(
               children: [
-                // TITLE + BACK BUTTON
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.md,
@@ -537,7 +539,6 @@ class _FavoritesPageState extends State<FavoritesPage>
                   ),
                 ),
 
-                // PROPER MATERIAL TABBAR
                 SizedBox(
                   height: 50,
                   child: TabBar(
@@ -549,8 +550,7 @@ class _FavoritesPageState extends State<FavoritesPage>
                     labelStyle: AppTextStyles.bodyLarge.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
-                    unselectedLabelStyle:
-                    AppTextStyles.bodyLarge.copyWith(
+                    unselectedLabelStyle: AppTextStyles.bodyLarge.copyWith(
                       fontWeight: FontWeight.w500,
                     ),
                     tabs: const [
@@ -563,9 +563,7 @@ class _FavoritesPageState extends State<FavoritesPage>
             ),
           ),
         ),
-
         backgroundColor: AppColors.background,
-
         body: TabBarView(
           controller: _tabController,
           children: [
@@ -615,7 +613,7 @@ class _FavoritesPageState extends State<FavoritesPage>
     return RefreshIndicator(
       onRefresh: () => _getFavoriteMarketplaces(isRefresh: true),
       child: GridView.builder(
-        controller: _scrollController,
+        controller: _marketplaceScrollController,
         padding: const EdgeInsets.all(16),
         shrinkWrap: true,
         physics: const AlwaysScrollableScrollPhysics(),
@@ -624,7 +622,7 @@ class _FavoritesPageState extends State<FavoritesPage>
           childAspectRatio: 0.7,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
-          mainAxisExtent: 250, // Fixed height for each item
+          mainAxisExtent: 250,
         ),
         itemCount: _favoriteMarketplaces.length + (_hasMoreMarketplaces ? 1 : 0),
         itemBuilder: (context, index) {
@@ -648,17 +646,12 @@ class _FavoritesPageState extends State<FavoritesPage>
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  minHeight: 0,
-                  maxHeight: double.infinity,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                  // Product Image
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
                   Stack(
+                    clipBehavior: Clip.none,
                     children: [
                       ClipRRect(
                         borderRadius: const BorderRadius.only(
@@ -672,33 +665,40 @@ class _FavoritesPageState extends State<FavoritesPage>
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) => Container(
                             height: 120,
+                            width: double.infinity,
                             color: Colors.grey[200],
                             child: const Icon(Icons.image_not_supported, size: 40),
                           ),
                         ),
                       ),
                       Positioned(
-                        top: 5,
-                        right: -5,
-                        child: Container(
-                          height: 30,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
+                        top: 8,
+                        right: 8,
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => _handleFavoriteToggle(product, false),
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.15),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                          child: IconButton(
-                            icon: const Icon(Icons.favorite, color: Colors.red),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            iconSize: 20,
-                            onPressed: () => _handleFavoriteToggle(product, false),
+                              child: const Icon(
+                                Icons.favorite,
+                                color: Colors.red,
+                                size: 20,
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -732,7 +732,7 @@ class _FavoritesPageState extends State<FavoritesPage>
                         const SizedBox(height: 4),
                         if (product.location != null &&
                             (product.location!.village.isNotEmpty ||
-                             product.location!.district.isNotEmpty))
+                                product.location!.district.isNotEmpty))
                           Row(
                             children: [
                               Icon(
@@ -759,7 +759,6 @@ class _FavoritesPageState extends State<FavoritesPage>
                   ),
                   const Spacer(),
                 ],
-              ),
               ),
             ),
           );
@@ -791,14 +790,12 @@ class _FavoritesPageState extends State<FavoritesPage>
           response.data.message ?? 'Removed from favorites',
         );
 
-        // Update UI immediately
         if (mounted) {
           setState(() {
             _favoriteNews.removeWhere((item) => item.id == news.id);
           });
         }
 
-        // Refresh data in background
         if (mounted) {
           _getFavoriteNews(isRefresh: true);
         }
