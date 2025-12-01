@@ -39,84 +39,82 @@ class ReportBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
+    final safePadding = MediaQuery.of(context).padding.bottom;
     String title = type == "news" ? "Report News" : "Report Listing";
 
-    return SafeArea(
-      bottom: true,
-      child: Container(
-        height: screenHeight * 0.25,
-        decoration: const BoxDecoration(
-          color: AppColors.background,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(AppSpacing.radiusXL),
+    return Container(
+      height: (screenHeight * 0.25) + safePadding,
+      decoration: const BoxDecoration(
+        color: AppColors.background,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppSpacing.radiusXL),
+        ),
+      ),
+      child: Column(
+        children: [
+          /// Drag Handle
+          Container(
+            margin: const EdgeInsets.only(top: AppSpacing.sm),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.grey300,
+              borderRadius: BorderRadius.circular(AppSpacing.radiusCircle),
+            ),
           ),
-        ),
-        child: Column(
-          children: [
-            /// Drag Handle
-            Container(
-              margin: const EdgeInsets.only(top: AppSpacing.sm),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.grey300,
-                borderRadius: BorderRadius.circular(AppSpacing.radiusCircle),
-              ),
+
+          AppSpacing.verticalSpaceSM,
+
+          // ✅ Report option - Opens full page
+          ListTile(
+            leading: const Icon(
+              Icons.report_problem_outlined,
+              color: Colors.red,
             ),
-
-            AppSpacing.verticalSpaceSM,
-
-            // ✅ Report option - Opens full page
-            ListTile(
-              leading: const Icon(
-                Icons.report_problem_outlined,
+            title: Text(
+              title,
+              style: const TextStyle(
                 color: Colors.red,
+                fontWeight: FontWeight.w500,
               ),
-              title: Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.red,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              onTap: () {
-                // Close bottom sheet
-                Navigator.pop(context);
-
-                // ✅ Open full report reasons page
-                CommonReportReasonsPage.show(
-                  context: context,
-                  itemId: id,
-                  type: type,
-                );
-              },
             ),
+            onTap: () {
+              // Close bottom sheet
+              Navigator.pop(context);
 
-            // Share option
-            ListTile(
-              leading: const Icon(Icons.share_outlined),
-              title: const Text('Share'),
-              onTap: () {
-                Navigator.pop(context);
-                _shareItem(context);
-              },
-            ),
+              // ✅ Open full report reasons page
+              CommonReportReasonsPage.show(
+                context: context,
+                itemId: id,
+                type: type,
+              );
+            },
+          ),
 
-            // Cancel button
-            const Divider(height: 1),
+          // Share option
+          ListTile(
+            leading: const Icon(Icons.share_outlined),
+            title: const Text('Share'),
+            onTap: () {
+              Navigator.pop(context);
+              _shareItem(context);
+            },
+          ),
 
-            ListTile(
-              leading: const Icon(Icons.close),
-              title: const Text('Cancel'),
-              onTap: () => Navigator.pop(context),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      )
-          .animate()
-          .slideY(begin: 1, end: 0, duration: 300.ms, curve: Curves.easeOut),
-    );
+          // Cancel button
+          const Divider(height: 1),
+
+          ListTile(
+            leading: const Icon(Icons.close),
+            title: const Text('Cancel'),
+            onTap: () => Navigator.pop(context),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    )
+        .animate()
+        .slideY(begin: 1, end: 0, duration: 300.ms, curve: Curves.easeOut);
   }
 
   void _shareItem(BuildContext context) {

@@ -7,11 +7,13 @@ import '../../../../app/data/constants/app_text_style.dart';
 class LocationBarWidget extends StatelessWidget {
 
   final VoidCallback onLocationTap;
+  final VoidCallback? onClearLocation;
   final String? location;
 
   const LocationBarWidget({
     super.key,
     required this.onLocationTap,
+    this.onClearLocation,
     required this.location,
   });
 
@@ -70,6 +72,22 @@ class LocationBarWidget extends StatelessWidget {
                 overflow: TextOverflow.visible,
               ),
             ),
+
+            /// Clear Location Button (only show when location is set)
+            if (location != null && 
+                location!.trim().isNotEmpty && 
+                onClearLocation != null)
+              GestureDetector(
+                onTap: onClearLocation,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  child: Icon(
+                    Icons.clear,
+                    size: AppSpacing.iconSM,
+                    color: AppColors.textHint,
+                  ),
+                ),
+              ),
           ],
         ),
       ),

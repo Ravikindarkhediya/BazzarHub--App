@@ -450,6 +450,32 @@ class LocationController extends GetxController {
   }
 
   // ─────────────────────────────────────────────────────────────
+  // CLEAR USER LOCATION
+  // ─────────────────────────────────────────────────────────────
+  Future<void> clearUserLocation() async {
+    // Clear observable values
+    selectedState.value = null;
+    selectedDistrict.value = null;
+    selectedTaluka.value = null;
+    selectedVillage.value = null;
+    
+    // Clear lists
+    districtsList.clear();
+    talukasList.clear();
+    villagesList.clear();
+    
+    // Clear from SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('user_state');
+    await prefs.remove('user_district');
+    await prefs.remove('user_taluka');
+    await prefs.remove('user_village');
+    await prefs.remove('user_full_address');
+    
+    debugPrint('✅ User location cleared from storage and memory');
+  }
+
+  // ─────────────────────────────────────────────────────────────
   // RESET
   // ─────────────────────────────────────────────────────────────
   void reset() {

@@ -39,3 +39,4 @@ class NewsReportItemModel {
     return null;
   }
 }
+

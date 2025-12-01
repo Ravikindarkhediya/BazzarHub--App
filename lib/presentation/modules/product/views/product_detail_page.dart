@@ -450,6 +450,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             iconColor: controller.isFavorite
                 ? AppColors.error
                 : AppColors.white,
+            isLoading: controller.isFavoriteLoading,
           ),
           const SizedBox(width: AppSpacing.md),
           _buildAppbarIcon(
@@ -470,7 +471,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       flexibleSpace: FlexibleSpaceBar(
         background: MediaCarousel(
           mediaUrls: controller.images,
-          height: 370,
+          height: 390,
           onPageChanged: (index) {
             controller.updateImageIndex(index);
           },
@@ -585,6 +586,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     VoidCallback? onTap,
     Color? background,
     Color iconColor = Colors.white,
+    bool isLoading = false,
   }) {
     final bg = background ?? AppColors.primary;
 
@@ -592,7 +594,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(50),
-        onTap: onTap,
+        onTap: isLoading ? null : onTap,
         child: Container(
           decoration: BoxDecoration(
             color: AppColors.black.withOpacity(0.5),
@@ -606,7 +608,16 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             ],
           ),
           padding: const EdgeInsets.all(10),
-          child: Icon(icon, size: 18, color: iconColor),
+          child: isLoading
+              ? SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(iconColor),
+                  ),
+                )
+              : Icon(icon, size: 18, color: iconColor),
         ),
       ),
     );

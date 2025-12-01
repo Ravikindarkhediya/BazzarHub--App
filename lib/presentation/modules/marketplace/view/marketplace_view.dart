@@ -351,6 +351,33 @@ class _MarketplaceViewState extends State<MarketplaceView>
     );
   }
 
+  // ✅ CLEAR LOCATION FILTER
+  Future<void> _handleClearLocation() async {
+    try {
+      // Clear location from query params
+      queryParams.remove("state");
+      queryParams.remove("district");
+      queryParams.remove("taluko");
+      queryParams.remove("village");
+      
+      // Clear location from controller
+      await _locationController.clearUserLocation();
+      
+      // Clear display location
+      setState(() {
+        _currentLocation = "";
+      });
+      
+      // Fetch products without location filter
+      await _getMarketplace();
+      
+      AppToast.showSuccess('Location filter cleared');
+    } catch (e) {
+      debugPrint('❌ Error clearing location: $e');
+      AppToast.showError('Error clearing location filter');
+    }
+  }
+
   // ✅ FILTER LOCATION
   void _handleFilterLocation() {
     LocationSelectionBottomSheet.show(
@@ -455,6 +482,7 @@ class _MarketplaceViewState extends State<MarketplaceView>
 
               return LocationBarWidget(
                 onLocationTap: _handleFilterLocation,
+                onClearLocation: (displayLocation!.isNotEmpty) ? _handleClearLocation : null,
                 location: displayLocation,
               );
             }),
