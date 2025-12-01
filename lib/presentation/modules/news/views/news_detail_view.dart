@@ -616,7 +616,7 @@ class _NewsDetailViewState extends State<NewsDetailView>
               final loggedUserId = (await SessionManager().getUser())?.id ?? '';
 
               if (sellerId == loggedUserId) {
-                Get.offAllNamed(
+                Get.toNamed(
                   AppRoutes.homeWrapper,
                   arguments: {'initialTab': 3},
                 );
@@ -628,7 +628,7 @@ class _NewsDetailViewState extends State<NewsDetailView>
           ),
           const SizedBox(height: 16),
 
-          // ✅ HTML Content with ALL formatting support
+          //  HTML Content with ALL formatting support
           Html(
             data: cleanedContent,
             style: {

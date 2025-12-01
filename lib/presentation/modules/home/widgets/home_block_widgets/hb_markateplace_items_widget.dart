@@ -5,7 +5,6 @@ import '../../../../../app/data/constants/app_colors.dart';
 import '../../../../../app/data/constants/app_text_style.dart';
 import '../../../../services/models/marketplace/marketplace_model.dart';
 import '../../../product/views/product_detail_page.dart';
-import '../product_grid_widget.dart';
 
 class HbMarkateplaceItemsWidget extends StatelessWidget {
   final List<MarketplaceModel> products;

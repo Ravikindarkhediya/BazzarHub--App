@@ -845,7 +845,7 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
     bool required = false,
     TextInputType? keyboardType,
   }) {
-    final displayLabel = required ? '$label' : label;
+    final displayLabel = required ? label : label;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1030,7 +1030,7 @@ class _RichTextFieldWidgetState extends State<RichTextFieldWidget> {
   }
 
   void _initializeEditor() {
-    // ✅ Use passed QuillController or create new one
+    // Use passed QuillController or create new one
     if (widget.quillController != null) {
       _quillController = widget.quillController!;
     } else {
@@ -1049,7 +1049,7 @@ class _RichTextFieldWidgetState extends State<RichTextFieldWidget> {
   }
 
   void _syncToController() {
-    // ✅ Sync plain text to TextEditingController (for validation)
+    // Sync plain text to TextEditingController (for validation)
     final plainText = _quillController.document.toPlainText();
     if (widget.controller.text != plainText) {
       widget.controller.text = plainText;
@@ -1059,7 +1059,7 @@ class _RichTextFieldWidgetState extends State<RichTextFieldWidget> {
   @override
   void dispose() {
     _quillController.removeListener(_syncToController);
-    // ✅ Only dispose if we created it
+    //  Only dispose if we created it
     if (widget.quillController == null) {
       _quillController.dispose();
     }

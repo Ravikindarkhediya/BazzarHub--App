@@ -46,7 +46,7 @@ class _ApiServices implements ApiServices {
         (json) => UserTokenModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -80,7 +80,7 @@ class _ApiServices implements ApiServices {
         (json) => UserTokenModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -114,7 +114,7 @@ class _ApiServices implements ApiServices {
         (json) => UserTokenModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -148,7 +148,7 @@ class _ApiServices implements ApiServices {
         (json) => UserModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -179,7 +179,7 @@ class _ApiServices implements ApiServices {
         (json) => json as dynamic,
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -213,7 +213,7 @@ class _ApiServices implements ApiServices {
         (json) => UserModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -247,7 +247,7 @@ class _ApiServices implements ApiServices {
         (json) => json as dynamic,
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -283,7 +283,7 @@ class _ApiServices implements ApiServices {
             CategoryListResponseModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -320,7 +320,7 @@ class _ApiServices implements ApiServices {
         (json) => MarketplaceModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -357,7 +357,7 @@ class _ApiServices implements ApiServices {
         (json) => MarketplaceModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -391,7 +391,7 @@ class _ApiServices implements ApiServices {
         (json) => MarketplaceModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -424,7 +424,7 @@ class _ApiServices implements ApiServices {
         (json) => MarketplaceModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -459,7 +459,7 @@ class _ApiServices implements ApiServices {
         (json) => MarketplaceModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -492,7 +492,7 @@ class _ApiServices implements ApiServices {
         (json) => MarketplaceModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -526,7 +526,7 @@ class _ApiServices implements ApiServices {
         (json) => json as dynamic,
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -563,7 +563,7 @@ class _ApiServices implements ApiServices {
         (json) => MarketplaceModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -597,7 +597,7 @@ class _ApiServices implements ApiServices {
         (json) => json as dynamic,
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -632,7 +632,7 @@ class _ApiServices implements ApiServices {
         (json) => json as dynamic,
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -663,7 +663,7 @@ class _ApiServices implements ApiServices {
         (json) => CategoryModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -694,7 +694,7 @@ class _ApiServices implements ApiServices {
         (json) => NewsTagModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -728,7 +728,7 @@ class _ApiServices implements ApiServices {
         (json) => NewsModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -762,7 +762,7 @@ class _ApiServices implements ApiServices {
         (json) => json as dynamic,
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -793,7 +793,7 @@ class _ApiServices implements ApiServices {
         (json) => NewsModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -828,7 +828,7 @@ class _ApiServices implements ApiServices {
         (json) => json as dynamic,
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -859,7 +859,7 @@ class _ApiServices implements ApiServices {
         (json) => json as dynamic,
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -890,7 +890,7 @@ class _ApiServices implements ApiServices {
         (json) => json as dynamic,
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -925,7 +925,7 @@ class _ApiServices implements ApiServices {
         (json) => json as dynamic,
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -963,7 +963,7 @@ class _ApiServices implements ApiServices {
             FavoriteNewsListResponse.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -997,7 +997,7 @@ class _ApiServices implements ApiServices {
         (json) => json as dynamic,
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -1028,7 +1028,7 @@ class _ApiServices implements ApiServices {
         (json) => NewsModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -1070,7 +1070,7 @@ class _ApiServices implements ApiServices {
         (json) => UploadResponseModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -1104,7 +1104,7 @@ class _ApiServices implements ApiServices {
         (json) => UserModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -1138,7 +1138,7 @@ class _ApiServices implements ApiServices {
         (json) => UserModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -1171,7 +1171,7 @@ class _ApiServices implements ApiServices {
         (json) => UserModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -1206,7 +1206,7 @@ class _ApiServices implements ApiServices {
         (json) => NewsModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -1245,7 +1245,7 @@ class _ApiServices implements ApiServices {
         (json) => MarketplaceModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -1281,7 +1281,7 @@ class _ApiServices implements ApiServices {
         (json) => ReportResponseModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -1318,7 +1318,7 @@ class _ApiServices implements ApiServices {
         (json) => ReportResponseModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -1351,7 +1351,7 @@ class _ApiServices implements ApiServices {
         (json) => json as dynamic,
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -1382,7 +1382,7 @@ class _ApiServices implements ApiServices {
         (json) => WalletModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);
@@ -1413,7 +1413,7 @@ class _ApiServices implements ApiServices {
         (json) => WalletModel.fromJson(json as Map<String, dynamic>),
       );
     } on Object catch (e, s) {
-      errorLogger?.logError(e, s, _options, _result);
+      errorLogger?.logError(e, s, _options);
       rethrow;
     }
     final httpResponse = HttpResponse(_value, _result);

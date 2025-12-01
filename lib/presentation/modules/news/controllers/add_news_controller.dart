@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
@@ -9,7 +10,6 @@ import 'package:get/get.dart' hide MultipartFile;
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
-
 import '../../../commons/dialogs/app_toasts.dart';
 import '../../../controller/location_repository.dart';
 import '../../../routes/app_routes.dart';
@@ -18,6 +18,8 @@ import '../../../services/models/categorie/categorie_model.dart';
 import '../../../services/models/news/news_model.dart';
 import '../../product/widgets/image_upload_section.dart';
 import 'news_controller.dart';
+import 'package:html/parser.dart' as html_parser;
+import 'package:html/dom.dart' as dom;
 
 class AddNewsController extends ChangeNotifier
     implements ImageUploadController {
@@ -34,8 +36,10 @@ class AddNewsController extends ChangeNotifier
   //  Text Controllers (Plain text for validation)
   final TextEditingController titleEnglishController = TextEditingController();
   final TextEditingController titleGujaratiController = TextEditingController();
-  final TextEditingController contentEnglishController = TextEditingController();
-  final TextEditingController contentGujaratiController = TextEditingController();
+  final TextEditingController contentEnglishController =
+      TextEditingController();
+  final TextEditingController contentGujaratiController =
+      TextEditingController();
   final TextEditingController tagsController = TextEditingController();
 
   //  Quill Controllers (Rich text format)
@@ -63,7 +67,7 @@ class AddNewsController extends ChangeNotifier
       selectedDistrict != null && subDistrictsList.isNotEmpty;
   bool get canSelectVillage =>
       (selectedSubDistrict != null || selectedDistrict != null) &&
-          villagesList.isNotEmpty;
+      villagesList.isNotEmpty;
   bool get hasSubDistrict =>
       selectedDistrict != null && subDistrictsList.isNotEmpty;
   bool get allowManualVillageEntry =>
@@ -107,7 +111,7 @@ class AddNewsController extends ChangeNotifier
   }
 
   // Convert Delta to HTML (simplified version)
-// ✅ Complete Delta to HTML converter
+  // ✅ Complete Delta to HTML converter
   String _deltaToHtml(Delta delta) {
     final buffer = StringBuffer();
     String? currentListType; // Track current list type (ul/ol/cl)
@@ -179,7 +183,9 @@ class AddNewsController extends ChangeNotifier
                 inList = true;
               }
               final checked = listType == 'checked' ? 'checked' : '';
-              buffer.write('<li><input type="checkbox" $checked disabled> $formattedContent</li>');
+              buffer.write(
+                '<li><input type="checkbox" $checked disabled> $formattedContent</li>',
+              );
             }
             continue;
           }
@@ -301,15 +307,205 @@ class AddNewsController extends ChangeNotifier
     return formatted;
   }
 
-  // Set rich text content from HTML (for edit mode)
   void _setHtmlContent(quill.QuillController controller, String html) {
     try {
-      // For now, just set as plain text
-      // You can use html_to_delta package for proper HTML parsing
-      controller.document = quill.Document()..insert(0, html);
-    } catch (e) {
-      debugPrint(' Error setting HTML content: $e');
+      debugPrint('🔄 Loading HTML content for editing...');
+      debugPrint('HTML (first 200 chars): ${html.substring(0, min(200, html.length))}...');
+
+      // Parse HTML properly
+      final delta = _htmlToDeltaAdvanced(html);
+
+      if (delta != null && delta.toList().isNotEmpty) {
+        controller.document = quill.Document.fromDelta(delta);
+        debugPrint('✅ Content loaded successfully with ${delta.toList().length} operations');
+      } else {
+        debugPrint('⚠️ Delta is empty, using plain text fallback');
+        final plainText = _htmlToPlainText(html);
+        controller.document = quill.Document()..insert(0, plainText);
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error: $e');
+      debugPrint('Stack: $stackTrace');
+
+      // Fallback to plain text
+      final plainText = _htmlToPlainText(html);
+      controller.document = quill.Document()..insert(0, plainText);
     }
+  }
+
+  // ✅ ADVANCED HTML to Delta converter using proper HTML parser
+  Delta? _htmlToDeltaAdvanced(String html) {
+    try {
+      final document = html_parser.parse(html);
+      final delta = Delta();
+
+      // Process body content
+      _processNode(document.body!, delta, {});
+
+      return delta;
+    } catch (e) {
+      debugPrint('❌ HTML parsing error: $e');
+      return null;
+    }
+  }
+
+  void _processNode(dom.Node node, Delta delta, Map<String, dynamic> inheritedAttrs) {
+    if (node is dom.Text) {
+      // Text node
+      final text = node.text;
+      if (text.trim().isNotEmpty) {
+        delta.insert(text, inheritedAttrs.isNotEmpty ? inheritedAttrs : null);
+      }
+    } else if (node is dom.Element) {
+      // Element node
+      final tagName = node.localName?.toLowerCase() ?? '';
+      final newAttrs = Map<String, dynamic>.from(inheritedAttrs);
+
+      // Handle different HTML tags
+      switch (tagName) {
+        case 'strong':
+        case 'b':
+          newAttrs['bold'] = true;
+          break;
+        case 'em':
+        case 'i':
+          newAttrs['italic'] = true;
+          break;
+        case 'u':
+          newAttrs['underline'] = true;
+          break;
+        case 's':
+        case 'strike':
+        case 'del':
+          newAttrs['strike'] = true;
+          break;
+        case 'code':
+          newAttrs['code'] = true;
+          break;
+        case 'a':
+          final href = node.attributes['href'];
+          if (href != null) {
+            newAttrs['link'] = href;
+          }
+          break;
+        case 'span':
+          _parseSpanStyle(node, newAttrs);
+          break;
+        case 'h1':
+          newAttrs['header'] = 1;
+          break;
+        case 'h2':
+          newAttrs['header'] = 2;
+          break;
+        case 'h3':
+          newAttrs['header'] = 3;
+          break;
+        case 'h4':
+          newAttrs['header'] = 4;
+          break;
+        case 'h5':
+          newAttrs['header'] = 5;
+          break;
+        case 'h6':
+          newAttrs['header'] = 6;
+          break;
+        case 'blockquote':
+          newAttrs['blockquote'] = true;
+          break;
+        case 'pre':
+          newAttrs['code-block'] = true;
+          break;
+        case 'ul':
+        case 'ol':
+          _processList(node, delta, tagName == 'ol' ? 'ordered' : 'bullet');
+          return; // Don't process children normally
+        case 'p':
+          _parseParagraphStyle(node, newAttrs);
+          break;
+        case 'br':
+          delta.insert('\n');
+          return;
+      }
+
+      // Process children with inherited attributes
+      for (var child in node.nodes) {
+        _processNode(child, delta, newAttrs);
+      }
+
+      // Add newline after block elements
+      if (_isBlockElement(tagName)) {
+        delta.insert('\n', newAttrs.isNotEmpty ? newAttrs : null);
+      }
+    }
+  }
+
+  void _processList(dom.Element listElement, Delta delta, String listType) {
+    for (var child in listElement.children) {
+      if (child.localName?.toLowerCase() == 'li') {
+        // Process list item content
+        final itemAttrs = {'list': listType};
+
+        for (var node in child.nodes) {
+          _processNode(node, delta, {});
+        }
+
+        // Add newline with list attribute
+        delta.insert('\n', itemAttrs);
+      }
+    }
+  }
+
+  void _parseSpanStyle(dom.Element element, Map<String, dynamic> attrs) {
+    final style = element.attributes['style'];
+    if (style != null) {
+      // Parse color
+      final colorMatch = RegExp(r'color:\s*([^;]+)').firstMatch(style);
+      if (colorMatch != null) {
+        attrs['color'] = colorMatch.group(1)!.trim();
+      }
+
+      // Parse background
+      final bgMatch = RegExp(r'background-color:\s*([^;]+)').firstMatch(style);
+      if (bgMatch != null) {
+        attrs['background'] = bgMatch.group(1)!.trim();
+      }
+    }
+  }
+
+  void _parseParagraphStyle(dom.Element element, Map<String, dynamic> attrs) {
+    final style = element.attributes['style'];
+    if (style != null) {
+      // Parse text alignment
+      final alignMatch = RegExp(r'text-align:\s*([^;]+)').firstMatch(style);
+      if (alignMatch != null) {
+        attrs['align'] = alignMatch.group(1)!.trim();
+      }
+    }
+  }
+
+  bool _isBlockElement(String tagName) {
+    return [
+      'p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+      'blockquote', 'pre', 'hr'
+    ].contains(tagName);
+  }
+
+  String _htmlToPlainText(String html) {
+    final document = html_parser.parse(html);
+    return document.body?.text ?? html;
+  }
+
+  Map<String, dynamic> _combineAttributes(List<Map<String, dynamic>> stack) {
+    final combined = <String, dynamic>{};
+
+    for (final attrs in stack) {
+      combined.addAll(attrs);
+    }
+
+    // Remove internal flags
+    combined.remove('_isList');
+
+    return combined;
   }
 
   // Load categories
@@ -348,13 +544,13 @@ class AddNewsController extends ChangeNotifier
 
     // Load existing data - title is String now
     if (news.title != null && news.title!.isNotEmpty) {
-      titleEnglishController.text = news.title!;  // ✅ Direct String
+      titleEnglishController.text = news.title!; // ✅ Direct String
       // Remove gujarati field since backend doesn't support it
     }
 
     // Load rich text content - content is String (HTML) now
     if (news.content != null && news.content!.isNotEmpty) {
-      contentEnglishController.text = news.content!;  // ✅ Direct String
+      contentEnglishController.text = news.content!; // ✅ Direct String
 
       // Set HTML content to Quill controller for editing
       _setHtmlContent(contentEnglishQuillController, news.content!);
@@ -494,9 +690,9 @@ class AddNewsController extends ChangeNotifier
   // Image picking methods
   @override
   Future<void> pickFromCamera(
-      BuildContext context, {
-        required String mediaType,
-      }) async {
+    BuildContext context, {
+    required String mediaType,
+  }) async {
     try {
       final picker = ImagePicker();
       XFile? pickedFile;
@@ -517,9 +713,9 @@ class AddNewsController extends ChangeNotifier
 
   @override
   Future<void> pickFromGallery(
-      BuildContext context, {
-        required String mediaType,
-      }) async {
+    BuildContext context, {
+    required String mediaType,
+  }) async {
     try {
       final picker = ImagePicker();
       if (mediaType == 'all') {
@@ -529,7 +725,7 @@ class AddNewsController extends ChangeNotifier
             if (images.length >= maxImages) break;
             final isVideo =
                 file.path.toLowerCase().endsWith('.mp4') ||
-                    file.path.toLowerCase().endsWith('.mov');
+                file.path.toLowerCase().endsWith('.mov');
             await _processPickedFile(file, isVideo: isVideo);
           }
         }
@@ -540,9 +736,9 @@ class AddNewsController extends ChangeNotifier
   }
 
   Future<void> _processPickedFile(
-      XFile pickedFile, {
-        required bool isVideo,
-      }) async {
+    XFile pickedFile, {
+    required bool isVideo,
+  }) async {
     if (images.length >= maxImages) {
       AppToast.showError('Maximum $maxImages images allowed');
       return;
@@ -661,7 +857,9 @@ class AddNewsController extends ChangeNotifier
 
       // Get rich text content as HTML
       final contentEnglishHtml = _getHtmlContent(contentEnglishQuillController);
-      final contentGujaratiHtml = _getHtmlContent(contentGujaratiQuillController);
+      final contentGujaratiHtml = _getHtmlContent(
+        contentGujaratiQuillController,
+      );
 
       // Prepare news data
       final newsData = {
@@ -671,13 +869,13 @@ class AddNewsController extends ChangeNotifier
         'media': uploadedUrls
             .map(
               (url) => {
-            'type': url.contains('.mp4') || url.contains('.mov')
-                ? 'video'
-                : 'image',
-            'url': url,
-            'thumbnail': url,
-          },
-        )
+                'type': url.contains('.mp4') || url.contains('.mov')
+                    ? 'video'
+                    : 'image',
+                'url': url,
+                'thumbnail': url,
+              },
+            )
             .toList(),
         'tags': tagsController.text
             .split(',')
@@ -712,16 +910,12 @@ class AddNewsController extends ChangeNotifier
             await Get.find<NewsController>().refresh();
           }
 
-          Get.offAllNamed(
-            AppRoutes.homeWrapper,
-            arguments: {'initialTab': 1},
-          );
+          Get.offAllNamed(AppRoutes.homeWrapper, arguments: {'initialTab': 1});
           return true;
         } else {
           debugPrint('Update failed: ${response.data.message}');
         }
       } else {
-
         final response = await apiService.createNews(newsData);
 
         if (response.data.status) {
@@ -734,10 +928,7 @@ class AddNewsController extends ChangeNotifier
             await Get.find<NewsController>().refresh();
           }
 
-          Get.offAllNamed(
-            AppRoutes.homeWrapper,
-            arguments: {'initialTab': 1},
-          );
+          Get.offAllNamed(AppRoutes.homeWrapper, arguments: {'initialTab': 1});
 
           return true;
         } else {
@@ -749,7 +940,6 @@ class AddNewsController extends ChangeNotifier
       notifyListeners();
       AppToast.showError('Failed to submit news');
       return false;
-
     } catch (e, s) {
       isLoading = false;
       notifyListeners();
