@@ -21,6 +21,8 @@ import 'news_controller.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:html/dom.dart' as dom;
 
+import 'news_detail_controller.dart';
+
 class AddNewsController extends ChangeNotifier implements ImageUploadController {
   // State variables
   @override
@@ -451,31 +453,73 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
         case 'strong':
         case 'b':
           newAttrs['bold'] = true;
-          break;
+          // ✅ Process children with bold attribute
+          for (var child in node.nodes) {
+            _processHtmlNode(child, delta, newAttrs);
+          }
+          return; // Don't process children again
+
         case 'em':
         case 'i':
           newAttrs['italic'] = true;
-          break;
+          // ✅ Process children with italic attribute
+          for (var child in node.nodes) {
+            _processHtmlNode(child, delta, newAttrs);
+          }
+          return;
+
         case 'u':
           newAttrs['underline'] = true;
-          break;
+          // ✅ Process children with underline attribute
+          for (var child in node.nodes) {
+            _processHtmlNode(child, delta, newAttrs);
+          }
+          return;
+
         case 's':
         case 'strike':
         case 'del':
           newAttrs['strike'] = true;
-          break;
+          // ✅ Process children with strike attribute
+          for (var child in node.nodes) {
+            _processHtmlNode(child, delta, newAttrs);
+          }
+          return;
+
         case 'code':
-          newAttrs['code'] = true;
-          break;
+        // ✅ Check if it's inline code or code block
+          if (node.parent?.localName == 'pre') {
+            // Code block - handled by 'pre' case
+            break;
+          } else {
+            // Inline code
+            newAttrs['code'] = true;
+            for (var child in node.nodes) {
+              _processHtmlNode(child, delta, newAttrs);
+            }
+            return;
+          }
+
         case 'a':
           final href = node.attributes['href'];
-          if (href != null) newAttrs['link'] = href;
-          break;
-        case 'span':
-          _parseSpanStyle(node, newAttrs);
+          if (href != null) {
+            newAttrs['link'] = href;
+            for (var child in node.nodes) {
+              _processHtmlNode(child, delta, newAttrs);
+            }
+            return;
+          }
           break;
 
-      //Handle headings properly
+        case 'span':
+          _parseSpanStyle(node, newAttrs);
+          // ✅ Process children with span styles
+          for (var child in node.nodes) {
+            _processHtmlNode(child, delta, newAttrs);
+          }
+          return;
+
+      // Handle headings properly
         case 'h1':
         case 'h2':
         case 'h3':
@@ -485,18 +529,18 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
           isBlockElement = true;
           final level = int.parse(tagName.substring(1));
 
-          //  Create block attributes for heading
+          // Create block attributes for heading
           final headingBlockAttrs = <String, dynamic>{'header': level};
           _parseParagraphStyle(node, headingBlockAttrs);
 
-          //  Process children with inline formatting only
+          // ✅ Process children - they may have inline formatting
           for (var child in node.nodes) {
             _processHtmlNode(child, delta, newAttrs);
           }
 
-          //  Add newline with heading attributes
+          // Add newline with heading attributes
           delta.insert('\n', headingBlockAttrs);
-          return; // Exit early to avoid double processing
+          return;
 
         case 'blockquote':
           isBlockElement = true;
@@ -556,18 +600,16 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
           return;
 
         case 'div':
-        //  Handle div elements (from checkbox preprocessing)
+        // Handle div elements (from checkbox preprocessing)
           for (var child in node.nodes) {
             _processHtmlNode(child, delta, newAttrs);
           }
           return;
       }
 
-      // For non-block elements, process children normally
-      if (!isBlockElement) {
-        for (var child in node.nodes) {
-          _processHtmlNode(child, delta, newAttrs);
-        }
+      // ✅ For any other elements, process children with inherited attributes
+      for (var child in node.nodes) {
+        _processHtmlNode(child, delta, newAttrs);
       }
     }
   }
@@ -604,7 +646,6 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
     }
   }
 
-//  Process lists with proper formatting
   void _processList(dom.Element listElement, Delta delta, String listType) {
     final isCheckList = listElement.attributes['style']?.contains('list-style:none') ?? false;
 
@@ -620,12 +661,10 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
           actualListType = isChecked ? 'checked' : 'unchecked';
         }
 
-        // Process list item content with inline formatting
         for (var node in child.nodes) {
           // Skip input checkbox elements
           if (node is dom.Element && node.localName == 'input') continue;
 
-          // Process other nodes (text, span, etc.)
           _processHtmlNode(node, delta, {});
         }
 
@@ -634,6 +673,7 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
       }
     }
   }
+
 
   String _htmlToPlainText(String html) {
     final document = html_parser.parse(html);
@@ -979,28 +1019,29 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
         final response = await apiService.updateNews(editingNews!.id, newsData);
 
         if (response.data.status) {
-          // Set loading false BEFORE navigation
           isLoading = false;
           notifyListeners();
 
           AppToast.showSuccess('News updated successfully');
 
-          //  Refresh in background (don't await)
+          // Refresh news list (background me)
           if (Get.isRegistered<NewsController>()) {
             Get.find<NewsController>().refresh();
+          }
+
+          if (Get.isRegistered<NewsDetailController>(tag: editingNews!.id)) {
+            Get.find<NewsDetailController>(tag: editingNews!.id).fetchNewsDetail();
           }
 
           // Delete controller first
           Get.delete<AddNewsController>(force: true);
 
-          // Navigate
-          Get.offAllNamed(AppRoutes.homeWrapper, arguments: {'initialTab': 1});
+          Get.back(result: true); // NewsDetailView pe wapas, updated content dikhega
 
           return true;
-        } else {
-          debugPrint('Update failed: ${response.data.message}');
         }
       } else {
+        // Create new news
         final response = await apiService.createNews(newsData);
 
         if (response.data.status) {
@@ -1014,13 +1055,13 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
           }
 
           Get.delete<AddNewsController>(force: true);
-          Get.offAllNamed(AppRoutes.homeWrapper, arguments: {'initialTab': 1});
 
+          // ✅ New news ke liye homeWrapper pe jao
+          Get.offAllNamed(AppRoutes.homeWrapper, arguments: {'initialTab': 1});
           return true;
-        } else {
-          debugPrint('Creation failed: ${response.data.message}');
         }
       }
+
 
       isLoading = false;
       notifyListeners();
