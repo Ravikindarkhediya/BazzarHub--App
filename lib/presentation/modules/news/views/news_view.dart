@@ -1,5 +1,6 @@
 import 'package:bazzar_hub_app/app/core/utils/app_spacing.dart';
 import 'package:bazzar_hub_app/app/core/utils/utils.dart';
+import 'package:bazzar_hub_app/presentation/commons/dialogs/app_toasts.dart';
 import 'package:bazzar_hub_app/presentation/commons/widgets/empty_state_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -105,11 +106,6 @@ class _NewsViewState extends State<NewsView>
                   child: GetBuilder<NewsController>(
                     id: 'news_list',
                     builder: (controller) {
-                      debugPrint('🔄 GetBuilder rebuilding. Count: ${controller.newsList.length}');
-
-                      if (controller.newsList.isNotEmpty) {
-                        debugPrint('📰 First news: ${controller.newsList.first.title}');
-                      }
 
                       // 1) LOADING
                       if (controller.isLoading.value) {
@@ -136,7 +132,6 @@ class _NewsViewState extends State<NewsView>
 
                       // 3) EMPTY LIST NO ERROR
                       if (controller.newsList.isEmpty) {
-                        // ✅ Wrap EmptyState with RefreshIndicator for pull-to-refresh
                         return RefreshIndicator(
                           onRefresh: () => controller.refresh(),
                           color: AppColors.primary,
@@ -157,9 +152,7 @@ class _NewsViewState extends State<NewsView>
                       return RefreshIndicator(
                         onRefresh: () => controller.refresh(),
                         color: AppColors.primary,
-                        // ✅ Ensure physics is enabled
                         child: ListView.builder(
-                          // ✅ CRITICAL: This enables pull-to-refresh even when list is short
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
@@ -184,13 +177,7 @@ class _NewsViewState extends State<NewsView>
 
                             void handleNewsTap() {
                               if (news.id == null || news.id!.isEmpty) {
-                                Get.snackbar(
-                                  'Error',
-                                  'Invalid news ID',
-                                  snackPosition: SnackPosition.BOTTOM,
-                                  backgroundColor: Colors.red,
-                                  colorText: Colors.white,
-                                );
+                                AppToast.showError('Invalid news ID');
                                 return;
                               }
 
@@ -204,16 +191,7 @@ class _NewsViewState extends State<NewsView>
                                   duration: const Duration(milliseconds: 300),
                                 );
                               } catch (e, stackTrace) {
-                                debugPrint('❌ Navigation error: $e');
-                                debugPrint('❌ Stack trace: $stackTrace');
-
-                                Get.snackbar(
-                                  'Error',
-                                  'Failed to open news detail: $e',
-                                  snackPosition: SnackPosition.BOTTOM,
-                                  backgroundColor: Colors.red,
-                                  colorText: Colors.white,
-                                );
+                                AppToast.showError('Failed to open news detail: $e');
                               }
                             }
 

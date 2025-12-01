@@ -1,7 +1,5 @@
 import 'package:bazzar_hub_app/presentation/commons/dialogs/appDialog.dart';
 import 'package:bazzar_hub_app/presentation/commons/dialogs/app_toasts.dart';
-import 'package:bazzar_hub_app/presentation/modules/news/views/news_view.dart';
-// import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:bazzar_hub_app/presentation/services/api_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
@@ -1096,12 +1094,9 @@ class _RichTextFieldWidgetState extends State<RichTextFieldWidget> {
 
         // Editor Container
         Container(
-          constraints: BoxConstraints(
-            minHeight: 200,
-            maxHeight: widget.maxLines * 60.0,
-          ),
+
           decoration: BoxDecoration(
-            color: AppColors.white,
+            color: AppColors.accent,
             borderRadius: AppSpacing.borderRadiusMD,
             border: Border.all(color: AppColors.borderLight),
           ),
@@ -1109,6 +1104,7 @@ class _RichTextFieldWidgetState extends State<RichTextFieldWidget> {
             children: [
               // Toolbar
               Container(
+
                 decoration: const BoxDecoration(
                   color: AppColors.white,
                   borderRadius: BorderRadius.vertical(
@@ -1157,7 +1153,7 @@ class _RichTextFieldWidgetState extends State<RichTextFieldWidget> {
               // Editor
               Container(
                 constraints: BoxConstraints(
-                  minHeight: 120,
+                  minHeight: 200,
                   maxHeight: widget.maxLines * 40.0,
                 ),
                 padding: const EdgeInsets.all(16),

@@ -78,7 +78,6 @@ class _MarketplaceViewState extends State<MarketplaceView>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    debugPrint('🔄 App lifecycle changed: $state');
     if (state == AppLifecycleState.resumed) {
       _checkAndReloadData();
     }
@@ -101,16 +100,12 @@ class _MarketplaceViewState extends State<MarketplaceView>
         // Perform full refresh
         await _refreshMarketplace();
         _isRefreshing = false;
-      } else {
-        debugPrint('ℹ️ No refresh needed');
       }
     } catch (e) {
-      debugPrint('❌ Error checking refresh flag: $e');
       _isRefreshing = false;
     }
   }
 
-  // ✅ FULL MARKETPLACE REFRESH
   Future<void> _refreshMarketplace() async {
 
     try {
@@ -140,7 +135,6 @@ class _MarketplaceViewState extends State<MarketplaceView>
     }
   }
 
-  // ✅ SYNC LOCATION FROM CONTROLLER TO QUERY PARAMS
   void _syncLocationFromController() {
 
     // Clear existing location params
@@ -170,7 +164,7 @@ class _MarketplaceViewState extends State<MarketplaceView>
 
   }
 
-  // ✅ LOAD LOCATION FROM CONTROLLER AND FETCH
+  //  LOAD LOCATION FROM CONTROLLER AND FETCH
   Future<void> _loadLocationAndFetch() async {
 
     try {
@@ -187,16 +181,15 @@ class _MarketplaceViewState extends State<MarketplaceView>
       await _getMarketplace();
 
     } catch (e) {
-      debugPrint('❌ Error loading location: $e');
+      debugPrint(' Error loading location: $e');
     }
   }
 
-  // ✅ GET CATEGORIES
+  //  GET CATEGORIES
   Future<void> _getCategory() async {
     setState(() => _isLoading = true);
 
     try {
-      debugPrint('📦 Fetching categories...');
       var services = await getApiClient();
       var response = await services.requestAllCategories();
 
@@ -217,7 +210,7 @@ class _MarketplaceViewState extends State<MarketplaceView>
     }
   }
 
-  // ✅ GET MARKETPLACE PRODUCTS
+  //  GET MARKETPLACE PRODUCTS
   Future<void> _getMarketplace() async {
     setState(() => _isLoadingProducts = true);
 
@@ -237,7 +230,6 @@ class _MarketplaceViewState extends State<MarketplaceView>
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) {
         _displayedProducts.clear();
-        debugPrint('ℹ️ No products found (404)');
       } else {
         AppToast.showError('Network error: ${e.message}');
       }
@@ -248,7 +240,7 @@ class _MarketplaceViewState extends State<MarketplaceView>
     }
   }
 
-  // ✅ BUILD LOCATION STRING
+  //  BUILD LOCATION STRING
   void _buildLocationFromMap() {
     const order = ["village", "taluko", "district", "state"];
     List<String> parts = [];
@@ -273,19 +265,17 @@ class _MarketplaceViewState extends State<MarketplaceView>
 
       if (fallbackParts.isEmpty) {
         _currentLocation = "";
-        debugPrint('📍 No location set');
         return;
       }
 
       _currentLocation = fallbackParts.join(", ");
-      debugPrint('📍 Location (fallback): $_currentLocation');
       return;
     }
 
     _currentLocation = parts.join(", ");
   }
 
-  // ✅ FILTER BY CATEGORY
+  //  FILTER BY CATEGORY
   void _filterByCategory(String categoryId) {
     setState(() {
       if (_selectedCategoryIds.contains(categoryId)) {
@@ -300,7 +290,7 @@ class _MarketplaceViewState extends State<MarketplaceView>
     });
   }
 
-  // ✅ REORDER CATEGORIES
+  // REORDER CATEGORIES
   void _reorderCategories() {
     if (_selectedCategoryIds.isEmpty) {
       _displayedCategories = List.from(_categories);
@@ -321,7 +311,7 @@ class _MarketplaceViewState extends State<MarketplaceView>
     _displayedCategories = [...selectedCategories, ...unselectedCategories];
   }
 
-  // ✅ UPDATE QUERY PARAMS AND FETCH
+  //  UPDATE QUERY PARAMS AND FETCH
   void _updateQueryParamsAndFetch() {
     if (_selectedCategoryIds.isNotEmpty) {
       queryParams["category"] = _selectedCategoryIds.join(',');
@@ -331,7 +321,7 @@ class _MarketplaceViewState extends State<MarketplaceView>
     _getMarketplace();
   }
 
-  // ✅ VIEW ALL CATEGORIES
+  // VIEW ALL CATEGORIES
   void _handleViewAllCategories() {
     CategorySelectionBottomSheet.show(
       context: context,
@@ -347,7 +337,7 @@ class _MarketplaceViewState extends State<MarketplaceView>
     );
   }
 
-  // ✅ CLEAR LOCATION FILTER
+  //  CLEAR LOCATION FILTER
   Future<void> _handleClearLocation() async {
     try {
       // Clear location from query params
@@ -369,12 +359,11 @@ class _MarketplaceViewState extends State<MarketplaceView>
       
       AppToast.showSuccess('Location filter cleared');
     } catch (e) {
-      debugPrint('❌ Error clearing location: $e');
       AppToast.showError('Error clearing location filter');
     }
   }
 
-  // ✅ FILTER LOCATION
+  // FILTER LOCATION
   void _handleFilterLocation() {
     LocationSelectionBottomSheet.show(
       context: context,
@@ -389,7 +378,7 @@ class _MarketplaceViewState extends State<MarketplaceView>
           _buildLocationFromMap();
         });
 
-        // ✅ Save via LocationController
+        //  Save via LocationController
         try {
           if (selectedLocations.containsKey('state')) {
             await _locationController.selectState(selectedLocations['state']);
@@ -417,7 +406,7 @@ class _MarketplaceViewState extends State<MarketplaceView>
     );
   }
 
-  // ✅ HANDLE PRODUCT TAP
+  //  HANDLE PRODUCT TAP
   Future<void> _handleProductTap(MarketplaceModel product) async {
     try {
       final productId = product.id;
@@ -452,7 +441,6 @@ class _MarketplaceViewState extends State<MarketplaceView>
         }
       }
     } catch (error) {
-      debugPrint('❌ Error opening product: $error');
       AppToast.showError('Error opening product: $error');
     }
   }
@@ -469,7 +457,7 @@ class _MarketplaceViewState extends State<MarketplaceView>
           children: [
             HeaderWidget(),
 
-            // ✅ REACTIVE LOCATION BAR WITH OBX
+            //  REACTIVE LOCATION BAR WITH OBX
             Obx(() {
               final controllerLocation = _locationController.getFullAddress();
               final displayLocation = controllerLocation.isNotEmpty

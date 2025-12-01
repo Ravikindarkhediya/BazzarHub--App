@@ -1,14 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:photo_view/photo_view.dart';
-import 'package:photo_view/photo_view_gallery.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:video_player/video_player.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../../../../manager/session_manager.dart';
 import '../../../commons/dialogs/app_toasts.dart';
 import '../../../commons/widgets/report_bottom_sheet.dart';
@@ -18,10 +12,8 @@ import '../../otherUserProfile/views/other_user_profile.dart';
 import '../../product/widgets/media_carousel.dart';
 import '../widgets/compact_news_card.dart';
 import '../../../../app/data/constants/app_colors.dart';
-import '../../../../app/data/constants/app_text_style.dart';
 import '../../profile/widgets/report_info_banner.dart';
 import '../controllers/news_detail_controller.dart';
-import '../widgets/news_report_reason_page.dart';
 import 'package:flutter_html/flutter_html.dart';
 
 class NewsDetailView extends StatefulWidget {
@@ -613,10 +605,7 @@ class _NewsDetailViewState extends State<NewsDetailView>
               final loggedUserId = (await SessionManager().getUser())?.id ?? '';
 
               if (sellerId == loggedUserId) {
-                Get.toNamed(
-                  AppRoutes.homeWrapper,
-                  arguments: {'initialTab': 3},
-                );
+                Get.toNamed(AppRoutes.profilePage);
               } else {
                 Get.to(() => OtherUserProfile(userId: sellerId));
               }
@@ -628,7 +617,6 @@ class _NewsDetailViewState extends State<NewsDetailView>
           Html(
             data: processedContent,
             style: {
-              // Body
               "body": Style(
                 margin: Margins.zero,
                 padding: HtmlPaddings.zero,

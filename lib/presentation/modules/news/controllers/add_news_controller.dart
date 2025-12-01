@@ -88,7 +88,7 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
     contentGujaratiQuillController = quill.QuillController.basic();
   }
 
-  // ✅ FIXED: Delta to HTML converter with proper formatting
+  //  Delta to HTML converter with proper formatting
   String _getHtmlContent(quill.QuillController controller) {
     try {
       final delta = controller.document.toDelta();
@@ -101,7 +101,7 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
       return '<p>${controller.document.toPlainText()}</p>';
     }
   }
-// ✅ COMPLETE FIXED: Delta to HTML converter
+//  Delta to HTML converter
   String _deltaToHtml(Delta delta) {
     final buffer = StringBuffer();
     String? currentListType;
@@ -320,7 +320,7 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
     return buffer.toString();
   }
 
-// ✅ Apply inline formatting (NO block attributes)
+//  Apply inline formatting (NO block attributes)
   String _applyInlineFormatting(String text, Map<String, dynamic>? attrs) {
     if (attrs == null || attrs.isEmpty) return text;
 
@@ -400,7 +400,7 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
     return formatted;
   }
 
-  // ✅ IMPROVED: HTML to Delta converter
+  //  HTML to Delta converter
   void _setHtmlContent(quill.QuillController controller, String html) {
     try {
       debugPrint('🔄 Loading HTML content...');
@@ -421,7 +421,7 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
     }
   }
 
-  // ✅ HTML to Delta converter
+  // HTML to Delta converter
   Delta? _htmlToDelta(String html) {
     try {
       final document = html_parser.parse(html);
@@ -475,7 +475,7 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
           _parseSpanStyle(node, newAttrs);
           break;
 
-      // ✅ FIXED: Handle headings properly
+      //Handle headings properly
         case 'h1':
         case 'h2':
         case 'h3':
@@ -485,16 +485,16 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
           isBlockElement = true;
           final level = int.parse(tagName.substring(1));
 
-          // ✅ Create block attributes for heading
+          //  Create block attributes for heading
           final headingBlockAttrs = <String, dynamic>{'header': level};
           _parseParagraphStyle(node, headingBlockAttrs);
 
-          // ✅ Process children with inline formatting only
+          //  Process children with inline formatting only
           for (var child in node.nodes) {
             _processHtmlNode(child, delta, newAttrs);
           }
 
-          // ✅ Add newline with heading attributes
+          //  Add newline with heading attributes
           delta.insert('\n', headingBlockAttrs);
           return; // Exit early to avoid double processing
 
@@ -556,14 +556,14 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
           return;
 
         case 'div':
-        // ✅ Handle div elements (from checkbox preprocessing)
+        //  Handle div elements (from checkbox preprocessing)
           for (var child in node.nodes) {
             _processHtmlNode(child, delta, newAttrs);
           }
           return;
       }
 
-      // ✅ For non-block elements, process children normally
+      // For non-block elements, process children normally
       if (!isBlockElement) {
         for (var child in node.nodes) {
           _processHtmlNode(child, delta, newAttrs);
@@ -572,7 +572,7 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
     }
   }
 
-// ✅ IMPROVED: Parse span styles (handle color formats)
+// parse span styles (handle color formats)
   void _parseSpanStyle(dom.Element element, Map<String, dynamic> attrs) {
     final style = element.attributes['style'];
     if (style != null) {
@@ -593,7 +593,7 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
     }
   }
 
-// ✅ Parse paragraph/heading alignment
+//  Parse paragraph/heading alignment
   void _parseParagraphStyle(dom.Element element, Map<String, dynamic> attrs) {
     final style = element.attributes['style'];
     if (style != null) {
@@ -604,7 +604,7 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
     }
   }
 
-// ✅ IMPROVED: Process lists with proper formatting
+//  Process lists with proper formatting
   void _processList(dom.Element listElement, Delta delta, String listType) {
     final isCheckList = listElement.attributes['style']?.contains('list-style:none') ?? false;
 
@@ -620,7 +620,7 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
           actualListType = isChecked ? 'checked' : 'unchecked';
         }
 
-        // ✅ Process list item content with inline formatting
+        // Process list item content with inline formatting
         for (var node in child.nodes) {
           // Skip input checkbox elements
           if (node is dom.Element && node.localName == 'input') continue;
@@ -858,7 +858,7 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
           thumbnailFile: thumbnail,
           isCompressing: false,
         );
-        // ✅ Add hasListeners check
+        // Add hasListeners check
         if (hasListeners) {
           notifyListeners();
         }
@@ -882,7 +882,7 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
           file: compressedFile,
           isCompressing: false,
         );
-        // ✅ Add hasListeners check
+        // Add hasListeners check
         if (hasListeners) {
           notifyListeners();
         }
@@ -979,21 +979,21 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
         final response = await apiService.updateNews(editingNews!.id, newsData);
 
         if (response.data.status) {
-          // ✅ Set loading false BEFORE navigation
+          // Set loading false BEFORE navigation
           isLoading = false;
           notifyListeners();
 
           AppToast.showSuccess('News updated successfully');
 
-          // ✅ Refresh in background (don't await)
+          //  Refresh in background (don't await)
           if (Get.isRegistered<NewsController>()) {
             Get.find<NewsController>().refresh();
           }
 
-          // ✅ Delete controller first
+          // Delete controller first
           Get.delete<AddNewsController>(force: true);
 
-          // ✅ Navigate
+          // Navigate
           Get.offAllNamed(AppRoutes.homeWrapper, arguments: {'initialTab': 1});
 
           return true;
@@ -1069,7 +1069,7 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
                 uploadProgress: 1.0,
                 isUploaded: true,
               );
-              // ✅ Check before notify
+              //  Check before notify
               if (hasListeners) notifyListeners();
             }
           } catch (e) {

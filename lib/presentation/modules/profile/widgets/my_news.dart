@@ -255,7 +255,6 @@ class MyNews extends StatelessWidget {
                         (context as Element).markNeedsBuild();
                       }
 
-                      debugPrint('✅ Refresh complete');
                     }
 
                     // Callback
@@ -296,7 +295,6 @@ class MyNews extends StatelessWidget {
                   );
 
                   if (confirmed) {
-                    debugPrint('🗑️ Deleting news: $newsId');
 
                     // Delete
                     onTapdDelete(newsId);

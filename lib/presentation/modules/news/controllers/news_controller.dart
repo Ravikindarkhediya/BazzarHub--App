@@ -34,14 +34,11 @@ class NewsController extends GetxController {
     await fetchNews();
   }
 
-  // ✅ MAIN FIX: Simple refresh method (called after edit)
   Future<void> refresh() async {
     if (_isRefreshing) {
-      debugPrint('⚠️ Refresh already in progress, skipping duplicate call.');
       return;
     }
     _isRefreshing = true;
-    debugPrint('🔄 Refreshing news list...');
 
     // Add timestamp to force fresh data
     final tempParams = Map<String, dynamic>.from(queryParams);
@@ -54,22 +51,18 @@ class NewsController extends GetxController {
       final response = await _apiService.getNews(tempParams);
 
       if (response.data.status) {
-        // ✅ Clear and update list
         newsList.clear();
         newsList.value = response.data.data ?? [];
 
-        // ✅ Force UI update
         newsList.refresh();
         update(); // Global update for GetBuilder
         update(['news_list']); // Specific update for GetBuilder with ID
 
-        debugPrint('✅ News refreshed. Count: ${newsList.length}');
         if (newsList.isNotEmpty) {
           debugPrint('First news: ${newsList.first.title}');
         }
       }
     } catch (e, s) {
-      debugPrint('❌ Refresh error: $e');
       errorMessage('Failed to refresh news');
     } finally {
       isLoading(false);
@@ -77,9 +70,7 @@ class NewsController extends GetxController {
     }
   }
 
-  // ✅ Force refresh (clears all filters temporarily)
   Future<void> forceRefresh() async {
-    debugPrint('🔄 Force refreshing news...');
 
     try {
       isLoading(true);
@@ -106,17 +97,14 @@ class NewsController extends GetxController {
         update();
         update(['news_list']);
 
-        debugPrint('✅ Force refresh done. Count: ${newsList.length}');
       }
     } catch (e) {
-      debugPrint('❌ Force refresh error: $e');
       errorMessage('Failed to refresh news');
     } finally {
       isLoading(false);
     }
   }
 
-  // ✅ Update single news item (for edit)
   void updateNewsItem(NewsModel updatedNews) {
     final index = newsList.indexWhere((news) => news.id == updatedNews.id);
 
@@ -125,9 +113,7 @@ class NewsController extends GetxController {
       newsList.refresh();
       update();
       update(['news_list']);
-      debugPrint('✅ News item updated at index $index');
     } else {
-      debugPrint('⚠️ News item not found, refreshing list...');
       refresh();
     }
   }
@@ -144,9 +130,6 @@ class NewsController extends GetxController {
       newsList.refresh();
       update();
       update(['news_list']);
-      debugPrint('✅ News item removed: $id (Count: ${newsList.length})');
-    } else {
-      debugPrint('⚠️ News item not found: $id');
     }
   }
 
@@ -227,7 +210,6 @@ class NewsController extends GetxController {
       }
     } catch (e, s) {
       errorMessage('Failed to load news: ${e.toString()}');
-      debugPrint('❌ Error: $e');
     } finally {
       isLoading(false);
     }
@@ -245,7 +227,6 @@ class NewsController extends GetxController {
       }
     } catch (e, s) {
       errorMessage('Failed to load categories: ${e.toString()}');
-      debugPrint('❌ Error: $e');
     }
   }
 }
