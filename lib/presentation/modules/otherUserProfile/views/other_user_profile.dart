@@ -252,7 +252,13 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                     products: _profileController.productList.value,
                     isLoading: false,
                     onProductTap: (p) => Get.to(
-                          () => ProductDetailPage(productId: p.id),
+                          () => ProductDetailPage(
+                        productId: p.id,
+                        onFavoriteChanged: () {
+                          // Refresh the product list when favorite is changed
+                          _profileController.refresh();
+                        },
+                      ),
                     ),
                     onFavoriteToggle: null,
                     showHeartIcon: false,
