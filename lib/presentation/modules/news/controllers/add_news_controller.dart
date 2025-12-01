@@ -21,8 +21,7 @@ import 'news_controller.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:html/dom.dart' as dom;
 
-class AddNewsController extends ChangeNotifier
-    implements ImageUploadController {
+class AddNewsController extends ChangeNotifier implements ImageUploadController {
   // State variables
   @override
   final List<ProductImage> images = [];
@@ -33,16 +32,14 @@ class AddNewsController extends ChangeNotifier
   List<CategoryModel> categories = [];
   String? selectedCategoryId;
 
-  //  Text Controllers (Plain text for validation)
+  // Text Controllers (Plain text for validation)
   final TextEditingController titleEnglishController = TextEditingController();
   final TextEditingController titleGujaratiController = TextEditingController();
-  final TextEditingController contentEnglishController =
-      TextEditingController();
-  final TextEditingController contentGujaratiController =
-      TextEditingController();
+  final TextEditingController contentEnglishController = TextEditingController();
+  final TextEditingController contentGujaratiController = TextEditingController();
   final TextEditingController tagsController = TextEditingController();
 
-  //  Quill Controllers (Rich text format)
+  // Quill Controllers (Rich text format)
   late quill.QuillController contentEnglishQuillController;
   late quill.QuillController contentGujaratiQuillController;
 
@@ -61,17 +58,11 @@ class AddNewsController extends ChangeNotifier
   bool showSubDistrict = false;
 
   bool isLocationDataReady = false;
-  bool get canSelectDistrict =>
-      selectedState != null && districtsList.isNotEmpty;
-  bool get canSelectSubDistrict =>
-      selectedDistrict != null && subDistrictsList.isNotEmpty;
-  bool get canSelectVillage =>
-      (selectedSubDistrict != null || selectedDistrict != null) &&
-      villagesList.isNotEmpty;
-  bool get hasSubDistrict =>
-      selectedDistrict != null && subDistrictsList.isNotEmpty;
-  bool get allowManualVillageEntry =>
-      selectedDistrict != null || selectedSubDistrict != null;
+  bool get canSelectDistrict => selectedState != null && districtsList.isNotEmpty;
+  bool get canSelectSubDistrict => selectedDistrict != null && subDistrictsList.isNotEmpty;
+  bool get canSelectVillage => (selectedSubDistrict != null || selectedDistrict != null) && villagesList.isNotEmpty;
+  bool get hasSubDistrict => selectedDistrict != null && subDistrictsList.isNotEmpty;
+  bool get allowManualVillageEntry => selectedDistrict != null || selectedSubDistrict != null;
   final LocationRepository _locationRepo = LocationRepository.instance;
 
   @override
@@ -87,7 +78,7 @@ class AddNewsController extends ChangeNotifier
   NewsModel? editingNews;
   bool get isEditMode => editingNews != null;
 
-  //  Constructor - Initialize Quill Controllers
+  // Constructor - Initialize Quill Controllers
   AddNewsController() {
     _initializeQuillControllers();
   }
@@ -97,67 +88,183 @@ class AddNewsController extends ChangeNotifier
     contentGujaratiQuillController = quill.QuillController.basic();
   }
 
-  //  Get rich text content as HTML
+  // ✅ FIXED: Delta to HTML converter with proper formatting
   String _getHtmlContent(quill.QuillController controller) {
     try {
-      // Convert Delta to HTML
       final delta = controller.document.toDelta();
       final html = _deltaToHtml(delta);
+
+      debugPrint('✅ Generated HTML: $html');
       return html;
     } catch (e) {
       debugPrint('❌ Error converting to HTML: $e');
-      return controller.document.toPlainText();
+      return '<p>${controller.document.toPlainText()}</p>';
     }
   }
-
-  // Convert Delta to HTML (simplified version)
-  // ✅ Complete Delta to HTML converter
+// ✅ COMPLETE FIXED: Delta to HTML converter
   String _deltaToHtml(Delta delta) {
     final buffer = StringBuffer();
-    String? currentListType; // Track current list type (ul/ol/cl)
+    String? currentListType;
     bool inList = false;
 
-    for (var i = 0; i < delta.toList().length; i++) {
-      final op = delta.toList()[i];
+    final ops = delta.toList();
+    int i = 0;
 
-      if (op.data is String) {
-        String text = op.data as String;
-        final attrs = op.attributes;
+    while (i < ops.length) {
+      final op = ops[i];
 
-        // Handle newlines and block elements
-        if (text == '\n' && attrs != null) {
-          // Close any open lists
+      if (op.data is! String) {
+        i++;
+        continue;
+      }
+
+      String text = op.data as String;
+      final attrs = op.attributes;
+
+      // Handle newlines (block-level formatting)
+      if (text == '\n') {
+        // Check next operation for block attributes
+        final blockAttrs = attrs;
+
+        if (blockAttrs != null && blockAttrs.isNotEmpty) {
+          // Handle lists
+          if (blockAttrs.containsKey('list')) {
+            final listType = blockAttrs['list'];
+
+            // Get previous text (formatted content)
+            String content = '';
+            if (i > 0 && ops[i - 1].data is String && ops[i - 1].data != '\n') {
+              // Content already added to buffer, we just need to wrap it
+              // Extract last added content from buffer
+              final bufferStr = buffer.toString();
+
+              // Find where to insert list tags
+              int lastTagEnd = bufferStr.lastIndexOf('>');
+              if (lastTagEnd == -1) lastTagEnd = 0;
+
+              // Start new list if needed
+              if (listType == 'bullet') {
+                if (currentListType != 'ul') {
+                  if (inList) buffer.write('</$currentListType>');
+                  buffer.write('<ul>');
+                  currentListType = 'ul';
+                  inList = true;
+                }
+                buffer.write('<li>');
+              } else if (listType == 'ordered') {
+                if (currentListType != 'ol') {
+                  if (inList) buffer.write('</$currentListType>');
+                  buffer.write('<ol>');
+                  currentListType = 'ol';
+                  inList = true;
+                }
+                buffer.write('<li>');
+              } else if (listType == 'checked' || listType == 'unchecked') {
+                if (currentListType != 'ul-check') {
+                  if (inList) buffer.write('</$currentListType>');
+                  buffer.write('<ul style="list-style:none;padding-left:0;">');
+                  currentListType = 'ul-check';
+                  inList = true;
+                }
+                final checked = listType == 'checked' ? 'checked' : '';
+                buffer.write('<li style="list-style-type:\'${listType == 'checked' ? '\\2611' : '\\2610'}\';padding-left:0.5em;" data-checked="$listType">');
+                buffer.write('<input type="checkbox" $checked disabled> ');
+              }
+              buffer.write('</li>');
+              i++;
+              continue;
+            }
+          } else {
+            // Close any open list
+            if (inList) {
+              buffer.write('</$currentListType>');
+              inList = false;
+              currentListType = null;
+            }
+
+            // Handle headings
+            if (blockAttrs.containsKey('header')) {
+              final level = blockAttrs['header'];
+              final align = blockAttrs.containsKey('align') ? ' style="text-align:${blockAttrs['align']}"' : '';
+              buffer.write('<h$level$align></h$level>');
+              i++;
+              continue;
+            }
+
+            // Handle blockquote
+            if (blockAttrs.containsKey('blockquote')) {
+              buffer.write('<blockquote></blockquote>');
+              i++;
+              continue;
+            }
+
+            // Handle code block
+            if (blockAttrs.containsKey('code-block')) {
+              buffer.write('<pre><code></code></pre>');
+              i++;
+              continue;
+            }
+
+            // Handle paragraph with alignment
+            if (blockAttrs.containsKey('align')) {
+              buffer.write('<p style="text-align:${blockAttrs['align']}"></p>');
+              i++;
+              continue;
+            }
+          }
+        } else {
+          // Empty newline without attributes
           if (inList) {
             buffer.write('</$currentListType>');
             inList = false;
             currentListType = null;
           }
+        }
 
-          // Handle block-level attributes
-          String blockContent = '';
+        i++;
+        continue;
+      }
 
-          // Get text before newline (from previous op if exists)
-          if (i > 0) {
-            final prevOp = delta.toList()[i - 1];
-            if (prevOp.data is String) {
-              blockContent = prevOp.data as String;
+      // Regular text - check if it's part of a block element
+      if (i + 1 < ops.length && ops[i + 1].data == '\n') {
+        final nextAttrs = ops[i + 1].attributes;
 
-              // Remove the previously added text from buffer
-              final bufferStr = buffer.toString();
-              final lastIndex = bufferStr.lastIndexOf(blockContent);
-              if (lastIndex != -1) {
-                buffer.clear();
-                buffer.write(bufferStr.substring(0, lastIndex));
-              }
-            }
+        if (nextAttrs != null && nextAttrs.isNotEmpty) {
+          // Close list before block element (if not a list item)
+          if (inList && !nextAttrs.containsKey('list')) {
+            buffer.write('</$currentListType>');
+            inList = false;
+            currentListType = null;
           }
 
-          // Apply inline formatting to block content
-          String formattedContent = _applyInlineFormatting(blockContent, attrs);
+          final formattedText = _applyInlineFormatting(text, attrs);
 
-          // Handle lists
-          if (attrs.containsKey('list')) {
-            final listType = attrs['list'];
+          // Handle heading
+          if (nextAttrs.containsKey('header')) {
+            final level = nextAttrs['header'];
+            final align = nextAttrs.containsKey('align') ? ' style="text-align:${nextAttrs['align']}"' : '';
+            buffer.write('<h$level$align>$formattedText</h$level>');
+            i += 2; // Skip text and newline
+            continue;
+          }
+
+          // Handle blockquote
+          if (nextAttrs.containsKey('blockquote')) {
+            buffer.write('<blockquote>$formattedText</blockquote>');
+            i += 2;
+            continue;
+          }
+
+          // Handle code block
+          if (nextAttrs.containsKey('code-block')) {
+            buffer.write('<pre><code>$formattedText</code></pre>');
+            i += 2;
+            continue;
+          }
+
+          // Handle list item
+          if (nextAttrs.containsKey('list')) {
+            final listType = nextAttrs['list'];
 
             if (listType == 'bullet') {
               if (currentListType != 'ul') {
@@ -166,7 +273,7 @@ class AddNewsController extends ChangeNotifier
                 currentListType = 'ul';
                 inList = true;
               }
-              buffer.write('<li>$formattedContent</li>');
+              buffer.write('<li>$formattedText</li>');
             } else if (listType == 'ordered') {
               if (currentListType != 'ol') {
                 if (inList) buffer.write('</$currentListType>');
@@ -174,63 +281,38 @@ class AddNewsController extends ChangeNotifier
                 currentListType = 'ol';
                 inList = true;
               }
-              buffer.write('<li>$formattedContent</li>');
+              buffer.write('<li>$formattedText</li>');
             } else if (listType == 'checked' || listType == 'unchecked') {
-              if (currentListType != 'ul') {
+              if (currentListType != 'ul-check') {
                 if (inList) buffer.write('</$currentListType>');
-                buffer.write('<ul style="list-style: none; padding-left: 0;">');
-                currentListType = 'ul';
+                buffer.write('<ul style="list-style:none;padding-left:0;">');
+                currentListType = 'ul-check';
                 inList = true;
               }
               final checked = listType == 'checked' ? 'checked' : '';
-              buffer.write(
-                '<li><input type="checkbox" $checked disabled> $formattedContent</li>',
-              );
+              buffer.write('<li style="list-style-type:\'${listType == 'checked' ? '\\2611' : '\\2610'}\';padding-left:0.5em;" data-checked="$listType">');
+              buffer.write('<input type="checkbox" $checked disabled> $formattedText</li>');
             }
+            i += 2; // Skip text and newline
             continue;
           }
 
-          // Handle headings
-          if (attrs.containsKey('header')) {
-            final level = attrs['header'];
-            buffer.write('<h$level>$formattedContent</h$level>');
+          // Handle paragraph with alignment
+          if (nextAttrs.containsKey('align')) {
+            buffer.write('<p style="text-align:${nextAttrs['align']}">$formattedText</p>');
+            i += 2;
             continue;
           }
-
-          // Handle blockquotes
-          if (attrs.containsKey('blockquote')) {
-            buffer.write('<blockquote>$formattedContent</blockquote>');
-            continue;
-          }
-
-          // Handle code blocks
-          if (attrs.containsKey('code-block')) {
-            buffer.write('<pre>de>$formattedContent</code></pre>');
-            continue;
-          }
-
-          // Handle alignment
-          String alignment = '';
-          if (attrs.containsKey('align')) {
-            final align = attrs['align'];
-            alignment = ' style="text-align: $align"';
-          }
-
-          // Regular paragraph
-          if (formattedContent.isNotEmpty) {
-            buffer.write('<p$alignment>$formattedContent</p>');
-          } else {
-            buffer.write('<br>');
-          }
-        } else if (text != '\n') {
-          // Regular text with inline formatting
-          String formattedText = _applyInlineFormatting(text, attrs);
-          buffer.write(formattedText);
         }
       }
+
+      // Just regular inline text
+      final formattedText = _applyInlineFormatting(text, attrs);
+      buffer.write(formattedText);
+      i++;
     }
 
-    // Close any remaining open lists
+    // Close any remaining open list
     if (inList) {
       buffer.write('</$currentListType>');
     }
@@ -238,24 +320,35 @@ class AddNewsController extends ChangeNotifier
     return buffer.toString();
   }
 
+// ✅ Apply inline formatting (NO block attributes)
   String _applyInlineFormatting(String text, Map<String, dynamic>? attrs) {
     if (attrs == null || attrs.isEmpty) return text;
+
+    // Create a copy and remove block-level attributes
+    final inlineAttrs = Map<String, dynamic>.from(attrs);
+    inlineAttrs.remove('header');
+    inlineAttrs.remove('blockquote');
+    inlineAttrs.remove('code-block');
+    inlineAttrs.remove('list');
+    inlineAttrs.remove('align');
+
+    if (inlineAttrs.isEmpty) return text;
 
     String formatted = text;
     List<String> openTags = [];
     List<String> closeTags = [];
 
-    // Handle color and background first (as span)
+    // Handle colors and background FIRST
     bool needsSpan = false;
     String spanStyle = '';
 
-    if (attrs.containsKey('color')) {
-      spanStyle += 'color:${attrs['color']};';
+    if (inlineAttrs.containsKey('color')) {
+      spanStyle += 'color:${inlineAttrs['color']};';
       needsSpan = true;
     }
 
-    if (attrs.containsKey('background')) {
-      spanStyle += 'background-color:${attrs['background']};';
+    if (inlineAttrs.containsKey('background')) {
+      spanStyle += 'background-color:${inlineAttrs['background']};';
       needsSpan = true;
     }
 
@@ -264,39 +357,39 @@ class AddNewsController extends ChangeNotifier
       closeTags.insert(0, '</span>');
     }
 
-    // Handle text formatting
-    if (attrs.containsKey('bold')) {
+    // Handle text formatting (in correct order for proper nesting)
+    if (inlineAttrs.containsKey('bold')) {
       openTags.add('<strong>');
       closeTags.insert(0, '</strong>');
     }
 
-    if (attrs.containsKey('italic')) {
+    if (inlineAttrs.containsKey('italic')) {
       openTags.add('<em>');
       closeTags.insert(0, '</em>');
     }
 
-    if (attrs.containsKey('underline')) {
+    if (inlineAttrs.containsKey('underline')) {
       openTags.add('<u>');
       closeTags.insert(0, '</u>');
     }
 
-    if (attrs.containsKey('strike')) {
+    if (inlineAttrs.containsKey('strike')) {
       openTags.add('<s>');
       closeTags.insert(0, '</s>');
     }
 
-    if (attrs.containsKey('code')) {
-      openTags.add('de>');
+    if (inlineAttrs.containsKey('code')) {
+      openTags.add('<code>');
       closeTags.insert(0, '</code>');
     }
 
     // Handle links
-    if (attrs.containsKey('link')) {
-      openTags.add('<a href="${attrs['link']}">');
+    if (inlineAttrs.containsKey('link')) {
+      openTags.add('<a href="${inlineAttrs['link']}" target="_blank">');
       closeTags.insert(0, '</a>');
     }
 
-    // Combine all tags
+    // Apply all tags
     for (var tag in openTags) {
       formatted = tag + formatted;
     }
@@ -307,40 +400,34 @@ class AddNewsController extends ChangeNotifier
     return formatted;
   }
 
+  // ✅ IMPROVED: HTML to Delta converter
   void _setHtmlContent(quill.QuillController controller, String html) {
     try {
-      debugPrint('🔄 Loading HTML content for editing...');
-      debugPrint('HTML (first 200 chars): ${html.substring(0, min(200, html.length))}...');
+      debugPrint('🔄 Loading HTML content...');
 
-      // Parse HTML properly
-      final delta = _htmlToDeltaAdvanced(html);
+      final delta = _htmlToDelta(html);
 
       if (delta != null && delta.toList().isNotEmpty) {
         controller.document = quill.Document.fromDelta(delta);
-        debugPrint('✅ Content loaded successfully with ${delta.toList().length} operations');
+        debugPrint('✅ Content loaded with ${delta.toList().length} operations');
       } else {
-        debugPrint('⚠️ Delta is empty, using plain text fallback');
         final plainText = _htmlToPlainText(html);
         controller.document = quill.Document()..insert(0, plainText);
       }
     } catch (e, stackTrace) {
       debugPrint('❌ Error: $e');
-      debugPrint('Stack: $stackTrace');
-
-      // Fallback to plain text
       final plainText = _htmlToPlainText(html);
       controller.document = quill.Document()..insert(0, plainText);
     }
   }
 
-  // ✅ ADVANCED HTML to Delta converter using proper HTML parser
-  Delta? _htmlToDeltaAdvanced(String html) {
+  // ✅ HTML to Delta converter
+  Delta? _htmlToDelta(String html) {
     try {
       final document = html_parser.parse(html);
       final delta = Delta();
 
-      // Process body content
-      _processNode(document.body!, delta, {});
+      _processHtmlNode(document.body!, delta, {});
 
       return delta;
     } catch (e) {
@@ -349,19 +436,17 @@ class AddNewsController extends ChangeNotifier
     }
   }
 
-  void _processNode(dom.Node node, Delta delta, Map<String, dynamic> inheritedAttrs) {
+  void _processHtmlNode(dom.Node node, Delta delta, Map<String, dynamic> inheritedAttrs) {
     if (node is dom.Text) {
-      // Text node
       final text = node.text;
-      if (text.trim().isNotEmpty) {
+      if (text.isNotEmpty) {
         delta.insert(text, inheritedAttrs.isNotEmpty ? inheritedAttrs : null);
       }
     } else if (node is dom.Element) {
-      // Element node
       final tagName = node.localName?.toLowerCase() ?? '';
       final newAttrs = Map<String, dynamic>.from(inheritedAttrs);
+      bool isBlockElement = false;
 
-      // Handle different HTML tags
       switch (tagName) {
         case 'strong':
         case 'b':
@@ -384,42 +469,41 @@ class AddNewsController extends ChangeNotifier
           break;
         case 'a':
           final href = node.attributes['href'];
-          if (href != null) {
-            newAttrs['link'] = href;
-          }
+          if (href != null) newAttrs['link'] = href;
           break;
         case 'span':
           _parseSpanStyle(node, newAttrs);
           break;
         case 'h1':
-          newAttrs['header'] = 1;
-          break;
         case 'h2':
-          newAttrs['header'] = 2;
-          break;
         case 'h3':
-          newAttrs['header'] = 3;
-          break;
         case 'h4':
-          newAttrs['header'] = 4;
-          break;
         case 'h5':
-          newAttrs['header'] = 5;
-          break;
         case 'h6':
-          newAttrs['header'] = 6;
+          isBlockElement = true;
+          final level = int.parse(tagName.substring(1));
+          newAttrs.clear();
+          newAttrs['header'] = level;
+          _parseParagraphStyle(node, newAttrs);
           break;
         case 'blockquote':
+          isBlockElement = true;
+          newAttrs.clear();
           newAttrs['blockquote'] = true;
           break;
         case 'pre':
+          isBlockElement = true;
+          newAttrs.clear();
           newAttrs['code-block'] = true;
           break;
         case 'ul':
+          _processList(node, delta, 'bullet');
+          return;
         case 'ol':
-          _processList(node, delta, tagName == 'ol' ? 'ordered' : 'bullet');
-          return; // Don't process children normally
+          _processList(node, delta, 'ordered');
+          return;
         case 'p':
+          isBlockElement = true;
           _parseParagraphStyle(node, newAttrs);
           break;
         case 'br':
@@ -427,30 +511,47 @@ class AddNewsController extends ChangeNotifier
           return;
       }
 
-      // Process children with inherited attributes
+      // Process children
       for (var child in node.nodes) {
-        _processNode(child, delta, newAttrs);
+        _processHtmlNode(child, delta, newAttrs);
       }
 
-      // Add newline after block elements
-      if (_isBlockElement(tagName)) {
-        delta.insert('\n', newAttrs.isNotEmpty ? newAttrs : null);
+      // Add newline for block elements
+      if (isBlockElement) {
+        final blockAttrs = <String, dynamic>{};
+        if (newAttrs.containsKey('header')) blockAttrs['header'] = newAttrs['header'];
+        if (newAttrs.containsKey('blockquote')) blockAttrs['blockquote'] = true;
+        if (newAttrs.containsKey('code-block')) blockAttrs['code-block'] = true;
+        if (newAttrs.containsKey('align')) blockAttrs['align'] = newAttrs['align'];
+
+        delta.insert('\n', blockAttrs.isNotEmpty ? blockAttrs : null);
       }
     }
   }
 
   void _processList(dom.Element listElement, Delta delta, String listType) {
+    final isCheckList = listElement.attributes['style']?.contains('list-style:none') ?? false;
+
     for (var child in listElement.children) {
       if (child.localName?.toLowerCase() == 'li') {
-        // Process list item content
-        final itemAttrs = {'list': listType};
+        // Check for checkbox
+        final checkbox = child.querySelector('input[type="checkbox"]');
+        String actualListType = listType;
 
+        if (checkbox != null || isCheckList || child.attributes['data-checked'] != null) {
+          final isChecked = checkbox?.attributes['checked'] != null ||
+              child.attributes['data-checked'] == 'checked';
+          actualListType = isChecked ? 'checked' : 'unchecked';
+        }
+
+        // Process list item content (skip checkbox element)
         for (var node in child.nodes) {
-          _processNode(node, delta, {});
+          if (node is dom.Element && node.localName == 'input') continue;
+          _processHtmlNode(node, delta, {});
         }
 
         // Add newline with list attribute
-        delta.insert('\n', itemAttrs);
+        delta.insert('\n', {'list': actualListType});
       }
     }
   }
@@ -458,13 +559,11 @@ class AddNewsController extends ChangeNotifier
   void _parseSpanStyle(dom.Element element, Map<String, dynamic> attrs) {
     final style = element.attributes['style'];
     if (style != null) {
-      // Parse color
       final colorMatch = RegExp(r'color:\s*([^;]+)').firstMatch(style);
       if (colorMatch != null) {
         attrs['color'] = colorMatch.group(1)!.trim();
       }
 
-      // Parse background
       final bgMatch = RegExp(r'background-color:\s*([^;]+)').firstMatch(style);
       if (bgMatch != null) {
         attrs['background'] = bgMatch.group(1)!.trim();
@@ -475,7 +574,6 @@ class AddNewsController extends ChangeNotifier
   void _parseParagraphStyle(dom.Element element, Map<String, dynamic> attrs) {
     final style = element.attributes['style'];
     if (style != null) {
-      // Parse text alignment
       final alignMatch = RegExp(r'text-align:\s*([^;]+)').firstMatch(style);
       if (alignMatch != null) {
         attrs['align'] = alignMatch.group(1)!.trim();
@@ -483,30 +581,12 @@ class AddNewsController extends ChangeNotifier
     }
   }
 
-  bool _isBlockElement(String tagName) {
-    return [
-      'p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-      'blockquote', 'pre', 'hr'
-    ].contains(tagName);
-  }
-
   String _htmlToPlainText(String html) {
     final document = html_parser.parse(html);
     return document.body?.text ?? html;
   }
 
-  Map<String, dynamic> _combineAttributes(List<Map<String, dynamic>> stack) {
-    final combined = <String, dynamic>{};
-
-    for (final attrs in stack) {
-      combined.addAll(attrs);
-    }
-
-    // Remove internal flags
-    combined.remove('_isList');
-
-    return combined;
-  }
+  // ... (keep all other existing methods unchanged - loadCategories, loadLocationData, etc.)
 
   // Load categories
   Future<void> loadCategories() async {
@@ -542,20 +622,13 @@ class AddNewsController extends ChangeNotifier
   Future<void> initializeForEdit(NewsModel news) async {
     editingNews = news;
 
-    // Load existing data - title is String now
     if (news.title != null && news.title!.isNotEmpty) {
-      titleEnglishController.text = news.title!; // ✅ Direct String
-      // Remove gujarati field since backend doesn't support it
+      titleEnglishController.text = news.title!;
     }
 
-    // Load rich text content - content is String (HTML) now
     if (news.content != null && news.content!.isNotEmpty) {
-      contentEnglishController.text = news.content!; // ✅ Direct String
-
-      // Set HTML content to Quill controller for editing
+      contentEnglishController.text = _htmlToPlainText(news.content!);
       _setHtmlContent(contentEnglishQuillController, news.content!);
-
-      // Remove gujarati field since backend doesn't support it
     }
 
     if (news.tags.isNotEmpty) {
@@ -564,47 +637,28 @@ class AddNewsController extends ChangeNotifier
 
     selectedCategoryId = news.category?.id;
 
-    // Load images
     for (var media in news.media) {
-      if (media.type == 'image') {
-        images.add(
-          ProductImage(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
-            networkUrl: media.url,
-            isVideo: false,
-            isUploaded: true,
-          ),
-        );
-      } else if (media.type == 'video') {
-        images.add(
-          ProductImage(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
-            networkUrl: media.url,
-            isVideo: true,
-            isUploaded: true,
-          ),
-        );
-      }
+      images.add(
+        ProductImage(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          networkUrl: media.url,
+          isVideo: media.type == 'video',
+          isUploaded: true,
+        ),
+      );
     }
 
-    // Load location
     await loadLocationData();
 
     if (news.location != null) {
       selectedState = news.location!.state;
-      if (selectedState != null) {
-        selectState(selectedState!);
-      }
+      if (selectedState != null) selectState(selectedState!);
 
       selectedDistrict = news.location!.district;
-      if (selectedDistrict != null) {
-        selectDistrict(selectedDistrict!);
-      }
+      if (selectedDistrict != null) selectDistrict(selectedDistrict!);
 
       selectedSubDistrict = news.location!.taluko;
-      if (selectedSubDistrict != null) {
-        selectSubDistrict(selectedSubDistrict!);
-      }
+      if (selectedSubDistrict != null) selectSubDistrict(selectedSubDistrict!);
 
       selectedVillage = news.location!.village;
     }
@@ -640,20 +694,14 @@ class AddNewsController extends ChangeNotifier
       showSubDistrict = _locationRepo.hasSubDistricts(selectedState!, district);
 
       if (showSubDistrict) {
-        subDistrictsList = _locationRepo.getSubDistricts(
-          selectedState!,
-          district,
-        );
-
+        subDistrictsList = _locationRepo.getSubDistricts(selectedState!, district);
         if (!subDistrictsList.contains(district)) {
           subDistrictsList = [district, ...subDistrictsList];
         }
-
         villagesList = [];
       } else {
         subDistrictsList = [];
         villagesList = _locationRepo.getVillages(selectedState!, district);
-
         if (!villagesList.contains(district)) {
           villagesList = [district, ...villagesList];
         }
@@ -689,10 +737,7 @@ class AddNewsController extends ChangeNotifier
 
   // Image picking methods
   @override
-  Future<void> pickFromCamera(
-    BuildContext context, {
-    required String mediaType,
-  }) async {
+  Future<void> pickFromCamera(BuildContext context, {required String mediaType}) async {
     try {
       final picker = ImagePicker();
       XFile? pickedFile;
@@ -712,10 +757,7 @@ class AddNewsController extends ChangeNotifier
   }
 
   @override
-  Future<void> pickFromGallery(
-    BuildContext context, {
-    required String mediaType,
-  }) async {
+  Future<void> pickFromGallery(BuildContext context, {required String mediaType}) async {
     try {
       final picker = ImagePicker();
       if (mediaType == 'all') {
@@ -723,8 +765,7 @@ class AddNewsController extends ChangeNotifier
         if (pickedFiles.isNotEmpty) {
           for (var file in pickedFiles) {
             if (images.length >= maxImages) break;
-            final isVideo =
-                file.path.toLowerCase().endsWith('.mp4') ||
+            final isVideo = file.path.toLowerCase().endsWith('.mp4') ||
                 file.path.toLowerCase().endsWith('.mov');
             await _processPickedFile(file, isVideo: isVideo);
           }
@@ -735,10 +776,7 @@ class AddNewsController extends ChangeNotifier
     }
   }
 
-  Future<void> _processPickedFile(
-    XFile pickedFile, {
-    required bool isVideo,
-  }) async {
+  Future<void> _processPickedFile(XFile pickedFile, {required bool isVideo}) async {
     if (images.length >= maxImages) {
       AppToast.showError('Maximum $maxImages images allowed');
       return;
@@ -765,7 +803,10 @@ class AddNewsController extends ChangeNotifier
           thumbnailFile: thumbnail,
           isCompressing: false,
         );
-        notifyListeners();
+        // ✅ Add hasListeners check
+        if (hasListeners) {
+          notifyListeners();
+        }
       }
     } else {
       images.add(
@@ -786,7 +827,10 @@ class AddNewsController extends ChangeNotifier
           file: compressedFile,
           isCompressing: false,
         );
-        notifyListeners();
+        // ✅ Add hasListeners check
+        if (hasListeners) {
+          notifyListeners();
+        }
       }
     }
   }
@@ -808,8 +852,7 @@ class AddNewsController extends ChangeNotifier
   Future<File> _compressImage(File file) async {
     try {
       final dir = await getTemporaryDirectory();
-      final targetPath =
-          '${dir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final targetPath = '${dir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg';
 
       final result = await FlutterImageCompress.compressAndGetFile(
         file.absolute.path,
@@ -845,9 +888,7 @@ class AddNewsController extends ChangeNotifier
       isLoading = true;
       notifyListeners();
 
-      // Upload images first
       final uploadedUrls = await _uploadImages();
-
       if (uploadedUrls.isEmpty) {
         AppToast.showError('Failed to upload images');
         isLoading = false;
@@ -855,33 +896,18 @@ class AddNewsController extends ChangeNotifier
         return false;
       }
 
-      // Get rich text content as HTML
       final contentEnglishHtml = _getHtmlContent(contentEnglishQuillController);
-      final contentGujaratiHtml = _getHtmlContent(
-        contentGujaratiQuillController,
-      );
 
-      // Prepare news data
       final newsData = {
         'title': titleEnglishController.text.trim(),
         'content': contentEnglishHtml,
         'category': selectedCategoryId,
-        'media': uploadedUrls
-            .map(
-              (url) => {
-                'type': url.contains('.mp4') || url.contains('.mov')
-                    ? 'video'
-                    : 'image',
-                'url': url,
-                'thumbnail': url,
-              },
-            )
-            .toList(),
-        'tags': tagsController.text
-            .split(',')
-            .map((tag) => tag.trim())
-            .where((tag) => tag.isNotEmpty)
-            .toList(),
+        'media': uploadedUrls.map((url) => {
+          'type': url.contains('.mp4') || url.contains('.mov') ? 'video' : 'image',
+          'url': url,
+          'thumbnail': url,
+        }).toList(),
+        'tags': tagsController.text.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList(),
         'location': {
           'village': selectedVillage ?? '',
           'taluko': selectedSubDistrict ?? '',
@@ -891,26 +917,30 @@ class AddNewsController extends ChangeNotifier
         },
       };
 
-      debugPrint('📤 Submitting news data: $newsData');
-
       final apiService = await getApiClient();
 
       if (isEditMode) {
         debugPrint('🔧 Updating news with ID: ${editingNews!.id}');
-
         final response = await apiService.updateNews(editingNews!.id, newsData);
 
         if (response.data.status) {
+          // ✅ Set loading false BEFORE navigation
           isLoading = false;
           notifyListeners();
 
           AppToast.showSuccess('News updated successfully');
 
+          // ✅ Refresh in background (don't await)
           if (Get.isRegistered<NewsController>()) {
-            await Get.find<NewsController>().refresh();
+            Get.find<NewsController>().refresh();
           }
 
+          // ✅ Delete controller first
+          Get.delete<AddNewsController>(force: true);
+
+          // ✅ Navigate
           Get.offAllNamed(AppRoutes.homeWrapper, arguments: {'initialTab': 1});
+
           return true;
         } else {
           debugPrint('Update failed: ${response.data.message}');
@@ -925,9 +955,10 @@ class AddNewsController extends ChangeNotifier
           AppToast.showSuccess('News added successfully');
 
           if (Get.isRegistered<NewsController>()) {
-            await Get.find<NewsController>().refresh();
+            Get.find<NewsController>().refresh();
           }
 
+          Get.delete<AddNewsController>(force: true);
           Get.offAllNamed(AppRoutes.homeWrapper, arguments: {'initialTab': 1});
 
           return true;
@@ -953,7 +984,7 @@ class AddNewsController extends ChangeNotifier
   Future<List<String>> _uploadImages() async {
     try {
       isUploading = true;
-      notifyListeners();
+      if (hasListeners) notifyListeners(); // ✅ Check before notify
 
       final uploadedUrls = <String>[];
       final apiService = await getApiClient();
@@ -983,7 +1014,8 @@ class AddNewsController extends ChangeNotifier
                 uploadProgress: 1.0,
                 isUploaded: true,
               );
-              notifyListeners();
+              // ✅ Check before notify
+              if (hasListeners) notifyListeners();
             }
           } catch (e) {
             continue;
@@ -992,16 +1024,15 @@ class AddNewsController extends ChangeNotifier
       }
 
       isUploading = false;
-      notifyListeners();
+      if (hasListeners) notifyListeners();
 
       return uploadedUrls;
     } catch (e) {
       isUploading = false;
-      notifyListeners();
+      if (hasListeners) notifyListeners();
       return [];
     }
   }
-
   @override
   void dispose() {
     titleEnglishController.dispose();

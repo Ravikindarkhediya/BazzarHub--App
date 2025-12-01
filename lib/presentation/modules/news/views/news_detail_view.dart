@@ -166,7 +166,10 @@ class _NewsDetailViewState extends State<NewsDetailView>
               icon: Icons.arrow_back_rounded,
               background: AppColors.primary,
               iconColor: AppColors.white,
-              onTap: () => Get.back(),
+              onTap: () => Get.toNamed(
+                AppRoutes.homeWrapper,
+                arguments: {'initialTab': 3},
+              ),
             ),
           ),
           body: Center(
@@ -233,75 +236,74 @@ class _NewsDetailViewState extends State<NewsDetailView>
         backgroundColor: Colors.white,
 
         /// ---------------------- TOP APP BAR ------------------------
-          appBar: AppBar(
-            backgroundColor: Colors.white,
-            elevation: 0,
-            leadingWidth: 56, // ✅ Width for button + margin
-            leading: Align(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                margin: const EdgeInsets.only(left: 12), // ✅ Left margin
-                child: _buildAppbarIcon(
-                  icon: Icons.arrow_back_rounded,
-                  background: AppColors.black.withOpacity(0.5),
-                  iconColor: AppColors.white,
-                  onTap: () => Get.back(),
-                ),
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leadingWidth: 56,
+          leading: Align(
+            alignment: Alignment.centerLeft,
+            child: Container(
+              margin: const EdgeInsets.only(left: 12),
+              child: _buildAppbarIcon(
+                icon: Icons.arrow_back_rounded,
+                background: AppColors.black.withOpacity(0.5),
+                iconColor: AppColors.white,
+                onTap: () => Get.back(),
               ),
             ),
-            actions: [
-              if (!widget.hideAppBarActions) ...[
-                // ✅ 1. Favorite button with loading state
-                Obx(() {
-                  final isFavorite = controller.isFavorite.value;
-                  final isLoading = controller.isFavoriteLoading.value;
+          ),
+          actions: [
+            if (!widget.hideAppBarActions) ...[
+              Obx(() {
+                final isFavorite = controller.isFavorite.value;
+                final isLoading = controller.isFavoriteLoading.value;
 
-                  return Container(
-                    margin: const EdgeInsets.only(right: 8.0),
-                    child: isLoading
-                        ? SizedBox(
-                      width: 36,
-                      height: 36,
-                      child: Center(
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              AppColors.primary,
+                return Container(
+                  margin: const EdgeInsets.only(right: 8.0),
+                  child: isLoading
+                      ? SizedBox(
+                          width: 36,
+                          height: 36,
+                          child: Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppColors.primary,
+                                ),
+                              ),
                             ),
                           ),
+                        )
+                      : _buildAppbarIcon(
+                          icon: isFavorite
+                              ? Icons.favorite
+                              : Icons.favorite_border,
+                          background: Colors.black45,
+                          iconColor: isFavorite ? Colors.red : Colors.white,
+                          onTap: () => controller.toggleFavorite(),
                         ),
-                      ),
-                    )
-                        : _buildAppbarIcon(
-                      icon: isFavorite ? Icons.favorite : Icons.favorite_border,
-                      background: Colors.black45,
-                      iconColor: isFavorite ? Colors.red : Colors.white,
-                      onTap: () => controller.toggleFavorite(),
-                    ),
-                  );
-                }),
+                );
+              }),
 
-                // ✅ 2. More options button
-                Padding(
-                  padding: const EdgeInsets.only(right: 12.0),
-                  child: _buildAppbarIcon(
-                    icon: Icons.more_vert,
-                    background: Colors.black45,
-                    iconColor: Colors.white,
-                    onTap: () => ReportBottomSheet.show(
-                      context: context,
-                      type: 'news',
-                      id: widget.newsId,
-                    ),
+              Padding(
+                padding: const EdgeInsets.only(right: 12.0),
+                child: _buildAppbarIcon(
+                  icon: Icons.more_vert,
+                  background: Colors.black45,
+                  iconColor: Colors.white,
+                  onTap: () => ReportBottomSheet.show(
+                    context: context,
+                    type: 'news',
+                    id: widget.newsId,
                   ),
                 ),
-              ],
+              ),
             ],
-          ),
-
+          ],
+        ),
 
         /// ---------------------- BODY CONTENT ------------------------
         body: RefreshIndicator(
@@ -448,7 +450,6 @@ class _NewsDetailViewState extends State<NewsDetailView>
     );
   }
 
-
   Widget _buildAppbarIcon({
     required IconData icon,
     VoidCallback? onTap,
@@ -477,9 +478,7 @@ class _NewsDetailViewState extends State<NewsDetailView>
                 ),
               ],
             ),
-            child: Center(
-              child: Icon(icon, size: 18, color: iconColor),
-            ),
+            child: Center(child: Icon(icon, size: 18, color: iconColor)),
           ),
         ),
       ),
@@ -488,9 +487,9 @@ class _NewsDetailViewState extends State<NewsDetailView>
 
   // Build Media Gallery
   Widget _buildMediaGallery(
-      List<Map<String, dynamic>>? media,
-      NewsDetailController controller,
-      ) {
+    List<Map<String, dynamic>>? media,
+    NewsDetailController controller,
+  ) {
     if (media == null || media.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -517,7 +516,6 @@ class _NewsDetailViewState extends State<NewsDetailView>
       ),
     );
   }
-
 
   // Build author profile section
   Widget _buildAuthorProfile() {

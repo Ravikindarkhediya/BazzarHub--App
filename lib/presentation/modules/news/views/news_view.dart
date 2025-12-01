@@ -98,7 +98,7 @@ class _NewsViewState extends State<NewsView>
                   }),
                 ),
 
-                // MAIN CONTENT AREA -
+                // MAIN CONTENT AREA
                 Expanded(
                   child: GetBuilder<NewsController>(
                     id: 'news_list',
@@ -134,26 +134,37 @@ class _NewsViewState extends State<NewsView>
 
                       // 3) EMPTY LIST NO ERROR
                       if (controller.newsList.isEmpty) {
-                        return SizedBox.expand(
-                          child: Center(
-                            child: EmptyStateWidget.news(),
+                        // ✅ Wrap EmptyState with RefreshIndicator for pull-to-refresh
+                        return RefreshIndicator(
+                          onRefresh: () => controller.refresh(),
+                          color: AppColors.primary,
+                          child: CustomScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            slivers: [
+                              SliverFillRemaining(
+                                child: Center(
+                                  child: EmptyStateWidget.news(),
+                                ),
+                              ),
+                            ],
                           ),
                         );
                       }
 
                       // 4) SHOW LIST WITH REFRESH INDICATOR
                       return RefreshIndicator(
-                        onRefresh: () => controller.refreshNews(),
+                        onRefresh: () => controller.refresh(),
                         color: AppColors.primary,
+                        // ✅ Ensure physics is enabled
                         child: ListView.builder(
+                          // ✅ CRITICAL: This enables pull-to-refresh even when list is short
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 8,
                           ),
-                          itemCount: controller.newsList.length + controller.newsList.length - 1, // items + separators
-                          // Replace lines 143-151 and 152-160
-
+                          itemCount: controller.newsList.length +
+                              controller.newsList.length - 1,
                           itemBuilder: (context, index) {
                             // Handle separators
                             if (index.isOdd) {
@@ -170,7 +181,6 @@ class _NewsViewState extends State<NewsView>
                             final news = controller.newsList[newsIndex];
 
                             void handleNewsTap() {
-
                               if (news.id == null || news.id!.isEmpty) {
                                 Get.snackbar(
                                   'Error',
@@ -182,9 +192,7 @@ class _NewsViewState extends State<NewsView>
                                 return;
                               }
 
-
                               try {
-
                                 Get.to(
                                       () => NewsDetailView(
                                     newsId: news.id!,
@@ -193,8 +201,6 @@ class _NewsViewState extends State<NewsView>
                                   transition: Transition.cupertino,
                                   duration: const Duration(milliseconds: 300),
                                 );
-
-
                               } catch (e, stackTrace) {
                                 debugPrint('❌ Navigation error: $e');
                                 debugPrint('❌ Stack trace: $stackTrace');
@@ -230,10 +236,10 @@ class _NewsViewState extends State<NewsView>
                       );
                     },
                   ),
-                )
+                ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );

@@ -731,6 +731,7 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
     _fetchTags();
   }
 
+
   Future<void> _fetchTags() async {
     print('API Calling...........');
     if (!mounted) return;

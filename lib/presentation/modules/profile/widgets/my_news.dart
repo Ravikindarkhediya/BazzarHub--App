@@ -248,7 +248,7 @@ class MyNews extends StatelessWidget {
 
                     if (Get.isRegistered<NewsController>()) {
                       final controller = Get.find<NewsController>();
-                      await controller.refreshAfterEdit();
+                      await controller.refresh();
 
                       if (context.mounted) {
                         // This ensures the widget tree rebuilds
@@ -303,7 +303,7 @@ class MyNews extends StatelessWidget {
 
                     // Refresh
                     if (Get.isRegistered<NewsController>()) {
-                      await Get.find<NewsController>().refreshNews();
+                      await Get.find<NewsController>().refresh();
                     }
 
                     // Callback
