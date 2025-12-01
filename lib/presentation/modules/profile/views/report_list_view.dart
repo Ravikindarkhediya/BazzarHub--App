@@ -9,7 +9,7 @@ import 'package:bazzar_hub_app/presentation/services/api_service.dart';
 import 'package:bazzar_hub_app/presentation/services/models/base/base_list_model.dart';
 import 'package:bazzar_hub_app/presentation/services/models/report/report_response_model.dart';
 import 'package:intl/intl.dart';
-
+import '../../../commons/widgets/empty_state_widget.dart';
 import '../../../services/models/report/report_response_item_model.dart';
 import 'report_marketplace_view.dart';
 import 'report_news_detail_view.dart';
@@ -31,19 +31,6 @@ class ReportItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final item = isNewsReport ? report.news : report.listing;
-    // String categoryText = 'General';
-    // if (item?.category != null) {
-    //   if (item!.category is Map) {
-    //     final categoryMap = item.category as Map<String, dynamic>;
-    //     categoryText = (categoryMap['english'] as String?) ??
-    //         (categoryMap['en'] as String?) ??
-    //         'General';
-    //   } else if (item.category is String) {
-    //     categoryText = (item.category as String).isNotEmpty
-    //         ? item.category as String
-    //         : 'General';
-    //   }
-    // }
 
     Widget cardBody = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,16 +64,6 @@ class ReportItemCard extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-
-        // if (categoryText.isNotEmpty) ...[
-        //   Text(
-        //     'Category: $categoryText',
-        //     style: AppTextStyles.bodySmall.copyWith(
-        //       color: AppColors.textSecondary,
-        //     ),
-        //   ),
-        //   const SizedBox(height: 4),
-        // ],
 
         Text(
           'Reason:  ${_formatReason(report.reason)}',
@@ -141,19 +118,17 @@ class ReportItemCard extends StatelessWidget {
 
         if (isNewsReport) {
           Get.to(() => ReportNewsDetailView(
-                newsId: item.id,
-                reportInfo: reportPayload,
-                reportResponseModel: report,
-              ))?.then((_) {
-            // Refresh news reports when coming back from detail view
+            newsId: item.id,
+            reportInfo: reportPayload,
+            reportResponseModel: report,
+          ))?.then((_) {
             onRefreshNews?.call();
           });
         } else {
           Get.to(() => ReportMarketplaceView(
-                listingId: item.id,
-                reportInfo: reportPayload,
-              ))?.then((_) {
-            // Refresh marketplace reports when coming back from detail view
+            listingId: item.id,
+            reportInfo: reportPayload,
+          ))?.then((_) {
             onRefreshMarketplace?.call();
           });
         }
@@ -206,7 +181,10 @@ class ReportListView extends StatefulWidget {
 class _ReportListViewState extends State<ReportListView>
     with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late TabController _tabController;
-  late ScrollController _scrollController;
+
+  // ✅ Separate ScrollControllers for each tab
+  late ScrollController _newsScrollController;
+  late ScrollController _marketplaceScrollController;
 
   // Marketplace Reports State
   final List<ReportResponseModel> _marketplaceReports = [];
@@ -231,18 +209,20 @@ class _ReportListViewState extends State<ReportListView>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(_loadCurrentTabData);
-    _scrollController = ScrollController()..addListener(_scrollListener);
-    // Load news data first since it's the first tab
+
+    _newsScrollController = ScrollController()..addListener(_newsScrollListener);
+    _marketplaceScrollController = ScrollController()..addListener(_marketplaceScrollListener);
+
     _loadNewsReports();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
-    _scrollController.removeListener(_scrollListener);
-    _scrollController.dispose();
+    _newsScrollController.dispose();
+    _marketplaceScrollController.dispose();
     super.dispose();
   }
 
@@ -251,24 +231,27 @@ class _ReportListViewState extends State<ReportListView>
       if (_newsReports.isEmpty && !_isLoadingNews) {
         _loadNewsReports();
       }
-    } else {
+    } else if (_tabController.index == 1) {
       if (_marketplaceReports.isEmpty && !_isLoadingMarketplace) {
         _loadMarketplaceReports();
       }
     }
   }
 
-  void _scrollListener() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent * 0.8) {
-      if (_tabController.index == 0) {
-        if (!_isLoadingMarketplace && _hasMoreMarketplace) {
-          _loadMarketplaceReports();
-        }
-      } else {
-        if (!_isLoadingNews && _hasMoreNews) {
-          _loadNewsReports();
-        }
+  void _newsScrollListener() {
+    if (_newsScrollController.position.pixels >=
+        _newsScrollController.position.maxScrollExtent * 0.8) {
+      if (!_isLoadingNews && _hasMoreNews) {
+        _loadNewsReports();
+      }
+    }
+  }
+
+  void _marketplaceScrollListener() {
+    if (_marketplaceScrollController.position.pixels >=
+        _marketplaceScrollController.position.maxScrollExtent * 0.8) {
+      if (!_isLoadingMarketplace && _hasMoreMarketplace) {
+        _loadMarketplaceReports();
       }
     }
   }
@@ -373,7 +356,7 @@ class _ReportListViewState extends State<ReportListView>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    super.build(context);
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: PreferredSize(
@@ -419,6 +402,7 @@ class _ReportListViewState extends State<ReportListView>
                 tabs: const [
                   Tab(text: 'News'),
                   Tab(text: 'Marketplace'),
+                  Tab(text: 'User'),
                 ],
                 labelColor: AppColors.primary,
                 unselectedLabelColor: AppColors.textSecondary,
@@ -433,6 +417,7 @@ class _ReportListViewState extends State<ReportListView>
         children: [
           _buildNewsTab(),
           _buildMarketplaceTab(),
+          _buildUserTab(),
         ],
       ),
     );
@@ -444,27 +429,27 @@ class _ReportListViewState extends State<ReportListView>
       child: _marketplaceReports.isEmpty && _isLoadingMarketplace
           ? const Center(child: CircularProgressIndicator())
           : _marketplaceReports.isEmpty && _marketplaceError == null
-              ? _buildEmptyState("No marketplace reports found", Icons.shopping_bag_outlined)
-              : _marketplaceError != null
-                  ? _buildErrorState(_marketplaceError!, () => _loadMarketplaceReports(isRefresh: true))
-                  : ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.only(top: 8, bottom: 16),
-                      itemCount: _marketplaceReports.length + (_hasMoreMarketplace ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index >= _marketplaceReports.length) {
-                          return const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 16.0),
-                            child: Center(child: CircularProgressIndicator()),
-                          );
-                        }
-                        return ReportItemCard(
-                          report: _marketplaceReports[index],
-                          isNewsReport: false,
-                          onRefreshMarketplace: () => _loadMarketplaceReports(isRefresh: true),
-                        );
-                      },
-                    ),
+          ? _buildEmptyState("No marketplace reports found", Icons.shopping_bag_outlined)
+          : _marketplaceError != null
+          ? _buildErrorState(_marketplaceError!, () => _loadMarketplaceReports(isRefresh: true))
+          : ListView.builder(
+        controller: _marketplaceScrollController,
+        padding: const EdgeInsets.only(top: 8, bottom: 16),
+        itemCount: _marketplaceReports.length + (_hasMoreMarketplace ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index >= _marketplaceReports.length) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16.0),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          return ReportItemCard(
+            report: _marketplaceReports[index],
+            isNewsReport: false,
+            onRefreshMarketplace: () => _loadMarketplaceReports(isRefresh: true),
+          );
+        },
+      ),
     );
   }
 
@@ -474,44 +459,69 @@ class _ReportListViewState extends State<ReportListView>
       child: _newsReports.isEmpty && _isLoadingNews
           ? const Center(child: CircularProgressIndicator())
           : _newsReports.isEmpty && _newsError == null
-              ? _buildEmptyState("No news reports found", Icons.article_outlined)
-              : _newsError != null
-                  ? _buildErrorState(_newsError!, () => _loadNewsReports(isRefresh: true))
-                  : ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.only(top: 8, bottom: 16),
-                      itemCount: _newsReports.length + (_hasMoreNews ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index >= _newsReports.length) {
-                          return const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 16.0),
-                            child: Center(child: CircularProgressIndicator()),
-                          );
-                        }
-                        return ReportItemCard(
-                          report: _newsReports[index],
-                          isNewsReport: true,
-                          onRefreshNews: () => _loadNewsReports(isRefresh: true),
-                        );
-                      },
-                    ),
+          ? _buildEmptyState("No news reports found", Icons.article_outlined)
+          : _newsError != null
+          ? _buildErrorState(_newsError!, () => _loadNewsReports(isRefresh: true))
+          : ListView.builder(
+        controller: _newsScrollController,
+        padding: const EdgeInsets.only(top: 8, bottom: 16),
+        itemCount: _newsReports.length + (_hasMoreNews ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index >= _newsReports.length) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16.0),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          return ReportItemCard(
+            report: _newsReports[index],
+            isNewsReport: true,
+            onRefreshNews: () => _loadNewsReports(isRefresh: true),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildUserTab() {
+    return RefreshIndicator(
+      onRefresh: () async {
+        return;
+      },
+      child: _buildEmptyState(
+        "No user reports found",
+        Icons.person_off_outlined,
+      ),
     );
   }
 
   Widget _buildEmptyState(String message, IconData icon) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 64, color: Colors.grey[400]),
-          const SizedBox(height: 16),
-          Text(
-            message,
-            style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return ListView(
+          children: [
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: constraints.maxHeight,
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(icon, size: 64, color: Colors.grey[400]),
+                    const SizedBox(height: 16),
+                    Text(
+                      message,
+                      style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -531,18 +541,4 @@ class _ReportListViewState extends State<ReportListView>
       ),
     );
   }
-
-  // Widget _buildLoadingIndicator() {
-  //   final isLoading = (_tabController.index == 0 && _isLoadingNews) ||
-  //       (_tabController.index == 1 && _isLoadingMarketplace);
-  //
-  //   return Padding(
-  //     padding: const EdgeInsets.symmetric(vertical: 16.0),
-  //     child: Center(
-  //       child: isLoading
-  //           ? const CircularProgressIndicator()
-  //           : const SizedBox.shrink(),
-  //     ),
-  //   );
-  // }
 }

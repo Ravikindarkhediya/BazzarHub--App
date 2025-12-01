@@ -49,6 +49,15 @@ class EmptyStateWidget extends StatelessWidget {
     );
   }
 
+  factory EmptyStateWidget.user() {
+    return EmptyStateWidget(
+      title: 'No User Reports Yet',
+      subtitle: 'You have not reported any users.\nReports you make will appear here.',
+      icon: Icons.person_off_outlined,  // 👈 Best matching icon for "reported/blocked user"
+    );
+  }
+
+
   /// Factory for blocked users empty state
   factory EmptyStateWidget.blockedUsers() {
     return EmptyStateWidget(
