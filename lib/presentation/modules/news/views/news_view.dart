@@ -38,7 +38,7 @@ class _NewsViewState extends State<NewsView>
     _tabController = TabController(
       length: Utils.newsLocationCategories.length,
       vsync: this,
-      initialIndex: _selectedCategoryIndex,
+      initialIndex: _newsController.currentLocationTabIndex.value,
     );
     _tabController.addListener(_handleTabSelection);
   }
@@ -69,11 +69,11 @@ class _NewsViewState extends State<NewsView>
           HeaderWidget(
             isFromNewsTab: true,
             tabController: _tabController,
-            selectedIndex: _selectedCategoryIndex,
+            selectedIndex: _newsController.currentLocationTabIndex.value,
             onTabSelect: (index) {
               setState(() {
                 _selectedCategoryIndex = index;
-                _tabController.index = index;
+                _newsController.updateLocationTabIndex(index);
                 _newsController.callNewApi(false, index);
               });
             },

@@ -19,6 +19,8 @@ class NewsController extends GetxController {
   String? categoryID = "";
   UserModel? userModel;
   RxInt selectedSubCatIndex = (-1).obs;
+  RxInt currentLocationTabIndex = 0.obs;
+
 
   Map<String, dynamic> queryParams = {
     "page": 1,
@@ -32,6 +34,10 @@ class NewsController extends GetxController {
     queryParams.addAll(prepareLocationQuery(0));
     fetchNewsCategories();
     await fetchNews();
+  }
+
+  void updateLocationTabIndex(int index) {
+    currentLocationTabIndex.value = index;
   }
 
   Future<void> refresh() async {

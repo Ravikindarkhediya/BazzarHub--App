@@ -52,7 +52,7 @@ class _AddNewsViewState extends State<AddNewsView> {
       await _controller.initializeForEdit(widget.news!);
     } else {
       await _controller
-          .loadLocationData(); // Only load location data for new news
+          .loadLocationData();
     }
 
     if (mounted) {
@@ -94,10 +94,7 @@ class _AddNewsViewState extends State<AddNewsView> {
             ? 'News updated successfully'
             : 'News published successfully',
       );
-      Get.offAllNamed(
-        AppRoutes.homeWrapper,
-        arguments: {'initialTab': 1},
-      );
+      Get.back(result: true);
     }
   }
 

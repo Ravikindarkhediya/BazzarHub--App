@@ -977,10 +977,6 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
   // Submit news with rich text
   Future<bool> submitNews(BuildContext context) async {
     try {
-      // ========================================
-      // ✅ STEP 1: VALIDATE ALL REQUIRED FIELDS
-      // ========================================
-
       // Validation 1: Title
       if (titleEnglishController.text.trim().isEmpty) {
         AppToast.showError('Please enter news title');
@@ -1030,13 +1026,6 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
         return false;
       }
 
-      // ========================================
-      // ✅ STEP 2: ALL VALIDATIONS PASSED - START SUBMISSION
-      // ========================================
-
-      debugPrint('✅ All validations passed. Starting submission...');
-      debugPrint('📍 Location: $selectedState > $selectedDistrict > ${selectedSubDistrict ?? "N/A"} > $selectedVillage');
-
       isLoading = true;
       notifyListeners();
 
@@ -1048,8 +1037,6 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
         notifyListeners();
         return false;
       }
-
-      debugPrint('✅ ${uploadedUrls.length} images uploaded successfully');
 
       // Generate HTML content
       final contentEnglishHtml = _getHtmlContent(contentEnglishQuillController);
@@ -1070,24 +1057,17 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
             .where((tag) => tag.isNotEmpty)
             .toList(),
         'location': {
-          'village': selectedVillage!,           // Non-null after validation
-          'taluko': selectedSubDistrict ?? '',   // Empty if not applicable
-          'district': selectedDistrict!,         // Non-null after validation
-          'state': selectedState!,               // Non-null after validation
+          'village': selectedVillage!,
+          'taluko': selectedSubDistrict ?? '',
+          'district': selectedDistrict!,
+          'state': selectedState!,
           'country': 'India',
         },
       };
 
-      debugPrint('📦 News Data: ${jsonEncode(newsData)}');
-
       final apiService = await getApiClient();
 
-      // ========================================
-      // ✅ STEP 3: SUBMIT TO API
-      // ========================================
-
       if (isEditMode) {
-        debugPrint('🔧 Updating news with ID: ${editingNews!.id}');
         final response = await apiService.updateNews(editingNews!.id, newsData);
 
         if (response.data.status) {
@@ -1119,7 +1099,6 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
         }
       } else {
         // Create new news
-        debugPrint('✅ Creating new news...');
         final response = await apiService.createNews(newsData);
 
         if (response.data.status) {
