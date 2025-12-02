@@ -96,10 +96,9 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
       final delta = controller.document.toDelta();
       final html = _deltaToHtml(delta);
 
-      debugPrint('✅ Generated HTML: $html');
       return html;
     } catch (e) {
-      debugPrint('❌ Error converting to HTML: $e');
+      debugPrint(' Error converting to HTML: $e');
       return '<p>${controller.document.toPlainText()}</p>';
     }
   }
@@ -405,19 +404,17 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
   //  HTML to Delta converter
   void _setHtmlContent(quill.QuillController controller, String html) {
     try {
-      debugPrint('🔄 Loading HTML content...');
 
       final delta = _htmlToDelta(html);
 
       if (delta != null && delta.toList().isNotEmpty) {
         controller.document = quill.Document.fromDelta(delta);
-        debugPrint('✅ Content loaded with ${delta.toList().length} operations');
       } else {
         final plainText = _htmlToPlainText(html);
         controller.document = quill.Document()..insert(0, plainText);
       }
     } catch (e, stackTrace) {
-      debugPrint('❌ Error: $e');
+      debugPrint(' Error: $e');
       final plainText = _htmlToPlainText(html);
       controller.document = quill.Document()..insert(0, plainText);
     }
@@ -433,7 +430,7 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
 
       return delta;
     } catch (e) {
-      debugPrint('❌ HTML parsing error: $e');
+      debugPrint(' HTML parsing error: $e');
       return null;
     }
   }
@@ -980,9 +977,70 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
   // Submit news with rich text
   Future<bool> submitNews(BuildContext context) async {
     try {
+      // ========================================
+      // ✅ STEP 1: VALIDATE ALL REQUIRED FIELDS
+      // ========================================
+
+      // Validation 1: Title
+      if (titleEnglishController.text.trim().isEmpty) {
+        AppToast.showError('Please enter news title');
+        return false;
+      }
+
+      // Validation 2: Content
+      final plainTextContent = contentEnglishQuillController.document.toPlainText().trim();
+      if (plainTextContent.isEmpty) {
+        AppToast.showError('Please enter news content');
+        return false;
+      }
+
+      // Validation 3: Category
+      if (selectedCategoryId == null || selectedCategoryId!.isEmpty) {
+        AppToast.showError('Please select a category');
+        return false;
+      }
+
+      // Validation 4: Images (at least 1 required)
+      if (images.isEmpty) {
+        AppToast.showError('Please add at least one image');
+        return false;
+      }
+
+      // Validation 5: State (REQUIRED)
+      if (selectedState == null || selectedState!.trim().isEmpty) {
+        AppToast.showError('Please select State');
+        return false;
+      }
+
+      // Validation 6: District (REQUIRED)
+      if (selectedDistrict == null || selectedDistrict!.trim().isEmpty) {
+        AppToast.showError('Please select District');
+        return false;
+      }
+
+      // Validation 7: Sub-District (REQUIRED if showSubDistrict is true)
+      if (showSubDistrict && (selectedSubDistrict == null || selectedSubDistrict!.trim().isEmpty)) {
+        AppToast.showError('Please select Sub-District');
+        return false;
+      }
+
+      // Validation 8: Village (REQUIRED)
+      if (selectedVillage == null || selectedVillage!.trim().isEmpty) {
+        AppToast.showError('Please select Village');
+        return false;
+      }
+
+      // ========================================
+      // ✅ STEP 2: ALL VALIDATIONS PASSED - START SUBMISSION
+      // ========================================
+
+      debugPrint('✅ All validations passed. Starting submission...');
+      debugPrint('📍 Location: $selectedState > $selectedDistrict > ${selectedSubDistrict ?? "N/A"} > $selectedVillage');
+
       isLoading = true;
       notifyListeners();
 
+      // Upload images
       final uploadedUrls = await _uploadImages();
       if (uploadedUrls.isEmpty) {
         AppToast.showError('Failed to upload images');
@@ -991,8 +1049,12 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
         return false;
       }
 
+      debugPrint('✅ ${uploadedUrls.length} images uploaded successfully');
+
+      // Generate HTML content
       final contentEnglishHtml = _getHtmlContent(contentEnglishQuillController);
 
+      // Build news data with NON-NULL location values
       final newsData = {
         'title': titleEnglishController.text.trim(),
         'content': contentEnglishHtml,
@@ -1002,17 +1064,27 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
           'url': url,
           'thumbnail': url,
         }).toList(),
-        'tags': tagsController.text.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList(),
+        'tags': tagsController.text
+            .split(',')
+            .map((tag) => tag.trim())
+            .where((tag) => tag.isNotEmpty)
+            .toList(),
         'location': {
-          'village': selectedVillage ?? '',
-          'taluko': selectedSubDistrict ?? '',
-          'district': selectedDistrict ?? '',
-          'state': selectedState ?? '',
+          'village': selectedVillage!,           // Non-null after validation
+          'taluko': selectedSubDistrict ?? '',   // Empty if not applicable
+          'district': selectedDistrict!,         // Non-null after validation
+          'state': selectedState!,               // Non-null after validation
           'country': 'India',
         },
       };
 
+      debugPrint('📦 News Data: ${jsonEncode(newsData)}');
+
       final apiService = await getApiClient();
+
+      // ========================================
+      // ✅ STEP 3: SUBMIT TO API
+      // ========================================
 
       if (isEditMode) {
         debugPrint('🔧 Updating news with ID: ${editingNews!.id}');
@@ -1024,24 +1096,30 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
 
           AppToast.showSuccess('News updated successfully');
 
-          // Refresh news list (background me)
+          // Refresh news list
           if (Get.isRegistered<NewsController>()) {
             Get.find<NewsController>().refresh();
           }
 
+          // Refresh detail view
           if (Get.isRegistered<NewsDetailController>(tag: editingNews!.id)) {
             Get.find<NewsDetailController>(tag: editingNews!.id).fetchNewsDetail();
           }
 
-          // Delete controller first
           Get.delete<AddNewsController>(force: true);
-
-          Get.back(result: true); // NewsDetailView pe wapas, updated content dikhega
+          Get.back(result: true);
 
           return true;
+        } else {
+          // Update failed
+          isLoading = false;
+          notifyListeners();
+          AppToast.showError(response.data.message ?? 'Failed to update news');
+          return false;
         }
       } else {
         // Create new news
+        debugPrint('✅ Creating new news...');
         final response = await apiService.createNews(newsData);
 
         if (response.data.status) {
@@ -1055,24 +1133,23 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
           }
 
           Get.delete<AddNewsController>(force: true);
-
-          // ✅ New news ke liye homeWrapper pe jao
           Get.offAllNamed(AppRoutes.homeWrapper, arguments: {'initialTab': 1});
+
           return true;
+        } else {
+          // Create failed
+          isLoading = false;
+          notifyListeners();
+          AppToast.showError(response.data.message ?? 'Failed to create news');
+          return false;
         }
       }
-
-
-      isLoading = false;
-      notifyListeners();
-      AppToast.showError('Failed to submit news');
-      return false;
     } catch (e, s) {
       isLoading = false;
       notifyListeners();
       AppToast.showError('Failed to submit news: ${e.toString()}');
-      debugPrint('Submit Exception: $e');
-      debugPrint('Stack: $s');
+      debugPrint('❌ Submit Exception: $e');
+      debugPrint('Stack Trace: $s');
       return false;
     }
   }

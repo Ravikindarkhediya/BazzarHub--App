@@ -1,5 +1,3 @@
-// lib/presentation/commons/pages/common_report_reasons_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,6 +6,7 @@ import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
 import '../../../commons/dialogs/app_toasts.dart';
 import '../../../services/api_service.dart';
+import '../controllers/news_controller.dart';
 
 class CommonReportReasonsPage extends StatelessWidget {
   final String itemId;
@@ -19,7 +18,6 @@ class CommonReportReasonsPage extends StatelessWidget {
     required this.type,
   });
 
-  // ✅ Static method to open the page
   static Future<void> show({
     required BuildContext context,
     required String itemId,
@@ -28,10 +26,8 @@ class CommonReportReasonsPage extends StatelessWidget {
     return Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CommonReportReasonsPage(
-          itemId: itemId,
-          type: type,
-        ),
+        builder: (context) =>
+            CommonReportReasonsPage(itemId: itemId, type: type),
       ),
     );
   }
@@ -99,15 +95,12 @@ class CommonReportReasonsPage extends StatelessWidget {
         ),
         title: Text(
           'Report this post',
-          style: AppTextStyles.h5.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
         ),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Subtitle
           Padding(
             padding: AppSpacing.paddingMD.add(
               const EdgeInsets.symmetric(vertical: 0),
@@ -120,7 +113,6 @@ class CommonReportReasonsPage extends StatelessWidget {
             ),
           ),
 
-          // Reasons List
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(
@@ -161,9 +153,7 @@ class CommonReportReasonsPage extends StatelessWidget {
                     ),
                     subtitle: Text(
                       reason['description'] as String,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        fontSize: 11,
-                      ),
+                      style: AppTextStyles.bodySmall.copyWith(fontSize: 11),
                     ),
                     trailing: const Icon(
                       Icons.chevron_right,
@@ -189,7 +179,6 @@ class CommonReportReasonsPage extends StatelessWidget {
     );
   }
 
-  // ✅ Show bottom sheet with TextField and buttons
   void _showReportDetailsBottomSheet(
       BuildContext context,
       String itemId,
@@ -221,7 +210,6 @@ class CommonReportReasonsPage extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Drag handle
                   Center(
                     child: Container(
                       width: 40,
@@ -229,12 +217,13 @@ class CommonReportReasonsPage extends StatelessWidget {
                       margin: const EdgeInsets.only(bottom: AppSpacing.md),
                       decoration: BoxDecoration(
                         color: AppColors.grey400,
-                        borderRadius: BorderRadius.circular(AppSpacing.radiusXS),
+                        borderRadius: BorderRadius.circular(
+                          AppSpacing.radiusXS,
+                        ),
                       ),
                     ),
                   ),
 
-                  // Selected reason display
                   Text(
                     'Selected reason:',
                     style: AppTextStyles.bodySmall.copyWith(
@@ -251,7 +240,6 @@ class CommonReportReasonsPage extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.md),
 
-                  // Additional details field label
                   Text(
                     'Additional details (optional)',
                     style: AppTextStyles.bodyMedium.copyWith(
@@ -260,14 +248,14 @@ class CommonReportReasonsPage extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.sm),
 
-                  // TextField
                   TextField(
                     controller: messageController,
                     maxLines: 4,
                     autofocus: true,
                     style: AppTextStyles.bodyMedium,
                     decoration: InputDecoration(
-                      hintText: 'Please provide more details about your report...',
+                      hintText:
+                      'Please provide more details about your report...',
                       hintStyle: AppTextStyles.bodyMedium.copyWith(
                         color: AppColors.textHint,
                       ),
@@ -297,7 +285,6 @@ class CommonReportReasonsPage extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.md),
 
-                  // Submit button
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -322,7 +309,6 @@ class CommonReportReasonsPage extends StatelessWidget {
                         try {
                           final message = messageController.text.trim();
 
-                          // ✅ Call API based on type
                           final success = await _submitReport(
                             itemId: itemId,
                             type: type,
@@ -333,12 +319,21 @@ class CommonReportReasonsPage extends StatelessWidget {
                           if (!context.mounted) return;
 
                           if (success) {
-                            // Set marketplace refresh flag if reporting marketplace item
+                            if (type == 'news') {
+                              debugPrint('🔄 Refreshing NewsController');
+                              if (Get.isRegistered<NewsController>()) {
+                                Get.find<NewsController>().refresh();
+                              }
+                            }
+                            //  Set refresh flag based on type
+                            final prefs = await SharedPreferences.getInstance();
+
                             if (type == 'marketplace') {
-                              debugPrint('🔄 Setting marketplace refresh flag after successful report');
-                              final prefs = await SharedPreferences.getInstance();
+                              debugPrint('🔄 Setting marketplace refresh flag');
                               await prefs.setBool('marketplace_refresh_needed', true);
-                              debugPrint('🔄 Marketplace refresh flag set successfully');
+                            } else if (type == 'news') {
+                              debugPrint('🔄 Setting news refresh flag');
+                              await prefs.setBool('news_refresh_needed', true);
                             }
 
                             // Close bottom sheet
@@ -347,26 +342,15 @@ class CommonReportReasonsPage extends StatelessWidget {
                             // Close report reasons page
                             Navigator.pop(context);
 
-                            // Close product detail page
+                            // Close detail page
                             Navigator.pop(context);
 
                             // Show success message
                             Future.delayed(
                               const Duration(milliseconds: 300),
                                   () {
-                                Get.snackbar(
-                                  'Success',
+                                AppToast.showSuccess(
                                   'Report submitted successfully',
-                                  snackPosition: SnackPosition.BOTTOM,
-                                  backgroundColor: AppColors.success,
-                                  colorText: AppColors.white,
-                                  margin: const EdgeInsets.all(AppSpacing.md),
-                                  borderRadius: AppSpacing.radiusMD,
-                                  duration: const Duration(seconds: 2),
-                                  icon: const Icon(
-                                    Icons.check_circle,
-                                    color: AppColors.white,
-                                  ),
                                 );
                               },
                             );
@@ -377,21 +361,8 @@ class CommonReportReasonsPage extends StatelessWidget {
                           if (!context.mounted) return;
 
                           setState(() => isSubmitting = false);
-
-                          // Show error
-                          Get.snackbar(
-                            'Error',
+                          AppToast.showError(
                             'Failed to submit report: ${e.toString()}',
-                            snackPosition: SnackPosition.BOTTOM,
-                            backgroundColor: AppColors.error,
-                            colorText: AppColors.white,
-                            margin: const EdgeInsets.all(AppSpacing.md),
-                            borderRadius: AppSpacing.radiusMD,
-                            duration: const Duration(seconds: 3),
-                            icon: const Icon(
-                              Icons.error,
-                              color: AppColors.white,
-                            ),
                           );
                         }
                       },
@@ -416,7 +387,6 @@ class CommonReportReasonsPage extends StatelessWidget {
                     ),
                   ),
 
-                  // Cancel button
                   const SizedBox(height: AppSpacing.sm),
                   SizedBox(
                     width: double.infinity,
@@ -445,7 +415,6 @@ class CommonReportReasonsPage extends StatelessWidget {
     );
   }
 
-  // ✅ Submit report API call
   Future<bool> _submitReport({
     required String itemId,
     required String type,
@@ -467,9 +436,7 @@ class CommonReportReasonsPage extends StatelessWidget {
       if (response.data.status) {
         return true;
       } else {
-        AppToast.showError(
-          response.data.message ?? 'Failed to submit report',
-        );
+        AppToast.showError(response.data.message ?? 'Failed to submit report');
         return false;
       }
     } catch (e) {

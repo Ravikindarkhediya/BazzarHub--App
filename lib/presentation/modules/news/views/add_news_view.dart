@@ -384,8 +384,10 @@ class _AddNewsViewState extends State<AddNewsView> {
   Widget _buildAddressStep() {
     return Consumer<AddNewsController>(
       builder: (context, controller, _) {
-        if (!controller.isLocationDataReady)
+        if (!controller.isLocationDataReady) {
           return _buildLocationLoadingState();
+        }
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -395,18 +397,21 @@ class _AddNewsViewState extends State<AddNewsView> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Select your location from the dropdowns below',
+              'All fields marked with * are required',
               style: AppTextStyles.bodySmall.copyWith(
                 color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: 24),
+
+            // Country (Read-only, no validation needed)
             _buildReadOnlyField(
               label: 'Country',
               value: 'India',
               icon: Icons.public,
             ),
             const SizedBox(height: 16),
+
             SearchableDropdown(
               label: 'State',
               hint: 'Select state',
@@ -415,42 +420,54 @@ class _AddNewsViewState extends State<AddNewsView> {
               onChanged: (v) => controller.selectState(v),
               enabled: controller.isLocationDataReady,
               icon: Icons.location_city,
+              isRequired: true,
             ),
             const SizedBox(height: 16),
+
             SearchableDropdown(
               label: 'District',
-              hint: 'Select district',
+              hint: controller.selectedState == null
+                  ? 'Select state first'
+                  : 'Select district',
               items: controller.districtsList,
               selectedValue: controller.selectedDistrict,
               onChanged: (v) => controller.selectDistrict(v),
               enabled: controller.canSelectDistrict,
               icon: Icons.location_on,
+              isRequired: true,
             ),
+
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 250),
               child: controller.showSubDistrict
                   ? Column(
-                      key: const ValueKey('sub-district'),
-                      children: [
-                        const SizedBox(height: 16),
-                        SearchableDropdown(
-                          label: 'Sub-District (Taluko)',
-                          hint: 'Select sub-district',
-                          items: controller.subDistrictsList,
-                          selectedValue: controller.selectedSubDistrict,
-                          onChanged: (v) => controller.selectSubDistrict(v),
-                          enabled: controller.canSelectSubDistrict,
-                          icon: Icons.map,
-                        ),
-                      ],
-                    )
+                key: const ValueKey('sub-district'),
+                children: [
+                  const SizedBox(height: 16),
+                  SearchableDropdown(
+                    label: 'Sub-District (Taluko)',
+                    hint: controller.selectedDistrict == null
+                        ? 'Select district first'
+                        : 'Select sub-district',
+                    items: controller.subDistrictsList,
+                    selectedValue: controller.selectedSubDistrict,
+                    onChanged: (v) => controller.selectSubDistrict(v),
+                    enabled: controller.canSelectSubDistrict,
+                    icon: Icons.map,
+                    isRequired: true,
+                  ),
+                ],
+              )
                   : const SizedBox(key: ValueKey('empty')),
             ),
             const SizedBox(height: 16),
+
             SearchableDropdown(
               label: 'Village',
               hint: controller.allowManualVillageEntry
                   ? 'Type village name'
+                  : controller.selectedDistrict == null
+                  ? 'Select district first'
                   : 'Select village',
               items: controller.villagesList,
               selectedValue: controller.selectedVillage,
@@ -458,6 +475,7 @@ class _AddNewsViewState extends State<AddNewsView> {
               enabled: controller.canSelectVillage,
               icon: Icons.home_work,
               allowManualEntry: controller.allowManualVillageEntry,
+              isRequired: true,
             ),
           ],
         ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);

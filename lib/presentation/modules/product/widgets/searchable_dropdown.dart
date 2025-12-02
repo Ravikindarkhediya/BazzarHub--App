@@ -16,6 +16,7 @@ class SearchableDropdown extends StatefulWidget {
   final bool enabled;
   final IconData icon;
   final bool allowManualEntry;
+  final bool isRequired; // ✅ NEW: Required indicator
 
   const SearchableDropdown({
     super.key,
@@ -27,6 +28,7 @@ class SearchableDropdown extends StatefulWidget {
     this.enabled = true,
     required this.icon,
     this.allowManualEntry = false,
+    this.isRequired = false,
   });
 
   @override
@@ -121,7 +123,6 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
           ),
           child: Column(
             children: [
-
               // Drag handle
               Container(
                 margin: const EdgeInsets.only(top: AppSpacing.sm),
@@ -159,7 +160,7 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
                 padding: AppSpacing.horizontalMD,
                 child: TextField(
                   controller: _searchController,
-                  autofocus: true, // important for smooth keyboard open
+                  autofocus: true,
                   decoration: InputDecoration(
                     hintText: 'Search ${widget.label.toLowerCase()}...',
                     prefixIcon: const Icon(Icons.search, color: AppColors.primary),
@@ -211,8 +212,8 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
                               const SizedBox(height: 16),
                               TextButton.icon(
                                 onPressed: () {
-                                  final customValue = _searchController.text
-                                      .trim();
+                                  final customValue =
+                                  _searchController.text.trim();
                                   if (customValue.isNotEmpty) {
                                     widget.onChanged(customValue);
                                     Navigator.pop(context);
@@ -229,7 +230,7 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
 
                     return ListView.separated(
                       padding: EdgeInsets.only(
-                        bottom: viewInsets + 24, // avoid keyboard overlap
+                        bottom: viewInsets + 24,
                         left: AppSpacing.md,
                         right: AppSpacing.md,
                       ),
@@ -243,12 +244,14 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
                           title: Text(
                             item,
                             style: AppTextStyles.bodyMedium.copyWith(
-                              fontWeight:
-                              isSelected ? FontWeight.bold : FontWeight.normal,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
                             ),
                           ),
                           trailing: isSelected
-                              ? const Icon(Icons.check_circle, color: AppColors.primary)
+                              ? const Icon(Icons.check_circle,
+                              color: AppColors.primary)
                               : null,
                           onTap: () {
                             widget.onChanged(item);
@@ -267,19 +270,30 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          widget.label,
-          style: AppTextStyles.bodyMedium.copyWith(
-            fontWeight: FontWeight.w600,
-            color: widget.enabled
-                ? AppColors.textPrimary
-                : AppColors.textDisabled,
+        RichText(
+          text: TextSpan(
+            text: widget.label,
+            style: AppTextStyles.bodyMedium.copyWith(
+              fontWeight: FontWeight.w600,
+              color: widget.enabled
+                  ? AppColors.textPrimary
+                  : AppColors.textDisabled,
+            ),
+            children: [
+              if (widget.isRequired)
+                TextSpan(
+                  text: ' *',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+            ],
           ),
         ),
         const SizedBox(height: 8),

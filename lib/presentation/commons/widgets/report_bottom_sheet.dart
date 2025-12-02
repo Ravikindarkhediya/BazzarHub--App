@@ -17,7 +17,7 @@ class ReportBottomSheet extends StatelessWidget {
     required this.id,
   });
 
-  // ✅ Static show method
+  //  Static show method
   static Future<void> show({
     required BuildContext context,
     required String type,
@@ -65,7 +65,7 @@ class ReportBottomSheet extends StatelessWidget {
 
           AppSpacing.verticalSpaceSM,
 
-          // ✅ Report option - Opens full page
+          //  Report option - Opens full page
           ListTile(
             leading: const Icon(
               Icons.report_problem_outlined,
@@ -82,7 +82,7 @@ class ReportBottomSheet extends StatelessWidget {
               // Close bottom sheet
               Navigator.pop(context);
 
-              // ✅ Open full report reasons page
+              // Open full report reasons page
               CommonReportReasonsPage.show(
                 context: context,
                 itemId: id,
