@@ -92,9 +92,19 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   @override
   void dispose() {
     _controller?.removeListener(_handleControllerUpdate);
-    _controller?.dispose();
+    _clearRefreshFlag();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _clearRefreshFlag() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('marketplace_refresh_needed');
+      debugPrint('🔄 Cleared marketplace refresh flag');
+    } catch (e) {
+      debugPrint('❌ Error clearing refresh flag: $e');
+    }
   }
 
   Future<void> _fetchProductDetail({bool initialLoad = false}) async {
@@ -150,10 +160,15 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         if (mounted) {
           debugPrint('🗑️ Navigating back to marketplace after deletion');
           // Return deletion result to marketplace view
-          Get.offAllNamed(
-            AppRoutes.homeWrapper,
-            arguments: {'initialTab': 2},
-          );
+          // In _deleteProduct success block
+          Get.offAllNamed(AppRoutes.homeWrapper, arguments: {'initialTab': 2});
+
+// OR better: pop with result before navigating
+          Navigator.pop(context, {
+            'action': 'deleted',
+            'productId': widget.productId,
+          });
+          Get.offAllNamed(AppRoutes.homeWrapper, arguments: {'initialTab': 2});
         }
       } else {
         AppToast.showError(response.data.message ?? 'Failed to delete product');
@@ -174,11 +189,14 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     }
   }
 
-  Future<void> _setMarketplaceRefreshFlag() async {
+  Future<void> _setMarketplaceRefreshFlag({bool force = false}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('marketplace_refresh_needed', true);
-      debugPrint('🔄 Marketplace refresh flag set');
+      // Only set the flag if we're not already in the process of returning to marketplace
+      if (force || !(ModalRoute.of(context)?.isCurrent ?? false)) {
+        await prefs.setBool('marketplace_refresh_needed', true);
+        debugPrint('🔄 Marketplace refresh flag set');
+      }
     } catch (e) {
       debugPrint('❌ Error setting refresh flag: $e');
     }
@@ -208,11 +226,14 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
       if (response.data.status && response.data.data != null) {
         final updated = response.data.data as MarketplaceModel;
+        // After successful pause/live
         _controller!.updateProduct(updated);
-        setState(() {});
-        AppToast.showSuccess(shouldActivate ? 'Listing live' : 'Listing pause');
-        await _setMarketplaceRefreshFlag();
-        if (mounted) Navigator.pop(context);
+        AppToast.showSuccess(shouldActivate ? 'Listing live' : 'Listing paused');
+
+        Navigator.pop(context, {
+          'action': 'status_changed',
+          'product': updated, // updated product
+        });
       } else {
         AppToast.showError(
           response.data.message ?? 'Failed to update listing status',
@@ -258,19 +279,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   }
 
   Widget _buildBottomNavigationBar() {
-    return Container(
-      padding: AppSpacing.horizontalMD.add(AppSpacing.verticalSM),
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.black.withOpacity(0.06),
-            blurRadius: 12,
-            offset: Offset(0, -2),
-          ),
-        ],
-        borderRadius: AppSpacing.borderRadiusTopMD,
-      ),
+    return BottomAppBar(
+      color: Colors.white,
+      height: 60,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
@@ -305,10 +316,14 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   () => SellProductPage(product: _controller?.product),
                 );
                 if (!mounted) return;
+                // In ProductDetailPage after edit
                 if (result == true) {
-                  await _setMarketplaceRefreshFlag();
-                  // Refresh product details instead of navigating back
                   await _fetchProductDetail(initialLoad: true);
+                  // Then pop with updated product
+                  Navigator.pop(context, {
+                    'action': 'edited',
+                    'product': _controller?.product,
+                  });
                 }
               },
             ),
@@ -415,29 +430,34 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: AppColors.background,
-      body: RefreshIndicator(
-        color: AppColors.primary,
-        onRefresh: () => _fetchProductDetail(initialLoad: true),
-        child: CustomScrollView(
-          controller: _scrollController,
-          physics: const BouncingScrollPhysics(
-            parent: AlwaysScrollableScrollPhysics(),
+      body: SafeArea(
+        bottom: true,
+        top: false,
+        maintainBottomViewPadding: true,
+        child: RefreshIndicator(
+          color: AppColors.primary,
+          onRefresh: () => _fetchProductDetail(initialLoad: true),
+          child: CustomScrollView(
+            controller: _scrollController,
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
+            slivers: [
+              _buildSliverAppBar(controller),
+              ..._buildErrorBanner(),
+              ..._buildReportInfoBanner(),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.md),
+                  child: ProductDetailsWidget(
+                    controller: controller,
+                    showRelatedProducts: widget.showRelatedProducts,
+                  ),
+                  ),
+                ),
+              const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
+            ],
           ),
-          slivers: [
-            _buildSliverAppBar(controller),
-            ..._buildErrorBanner(),
-            ..._buildReportInfoBanner(),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(top: AppSpacing.md),
-                child: ProductDetailsWidget(
-                  controller: controller,
-                  showRelatedProducts: widget.showRelatedProducts,
-                ),
-                ),
-              ),
-            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
-          ],
         ),
       ),
 
@@ -463,9 +483,17 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             icon: Icons.arrow_back_rounded,
             onTap: () async {
               LogManager.trackMarketplaceView(widget.productId);
-              final product = _controller?.product;
-              await _setMarketplaceRefreshFlag();
-              Navigator.pop(context, product);
+
+              // Only notify if favorite actually changed
+              if (widget.onFavoriteChanged != null &&
+                  _controller?.isFavorite != (_controller?.product.favorites == 1)) {
+                widget.onFavoriteChanged!();
+              }
+
+              // Return structured result instead of raw product
+              Navigator.pop(context, {
+                'action': 'viewed', // default: no change
+              });
             },
             background: AppColors.primary,
             iconColor: AppColors.white,

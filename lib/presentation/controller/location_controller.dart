@@ -356,22 +356,35 @@ class LocationController extends GetxController {
   // ─────────────────────────────────────────────────────────────
   // LOAD USER LOCATION FROM SHARED PREFERENCES
   // ─────────────────────────────────────────────────────────────
-  Future<void> loadUserLocation() async {
-    final prefs = await SharedPreferences.getInstance();
+  Future<bool> loadUserLocation() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
 
-    String? state = prefs.getString('user_state');
-    String? district = prefs.getString('user_district');
-    String? taluka = prefs.getString('user_taluka');
-    String? village = prefs.getString('user_village');
+      String? state = prefs.getString('user_state');
+      String? district = prefs.getString('user_district');
+      String? taluka = prefs.getString('user_taluka');
+      String? village = prefs.getString('user_village');
 
-    if (state != null && state.isNotEmpty) {
-      await initializeWithUserLocation(
-        state: state,
-        district: district,
-        taluka: taluka,
-        village: village,
-      );
-      debugPrint('✅ User location loaded from SharedPreferences');
+      if (state != null && state.isNotEmpty) {
+        await initializeWithUserLocation(
+          state: state,
+          district: district,
+          taluka: taluka,
+          village: village,
+        );
+        debugPrint('✅ User location loaded from SharedPreferences');
+        return true;
+      } else {
+        // If no saved location, reset to default session location
+        reset();
+        debugPrint('ℹ️ No saved location, using default session location');
+        return false;
+      }
+    } catch (e) {
+      debugPrint('❌ Error loading user location: $e');
+      // On error, reset to default session location
+      reset();
+      return false;
     }
   }
 
@@ -432,6 +445,64 @@ class LocationController extends GetxController {
     }
 
     return params;
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // CHECK IF CURRENT LOCATION MATCHES SESSION DEFAULT
+  // ─────────────────────────────────────────────────────────────
+  Future<bool> isUsingDefaultLocation() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      final currentLocation = getLocationData();
+      final savedState = prefs.getString('user_state');
+      final savedDistrict = prefs.getString('user_district');
+      final savedTaluka = prefs.getString('user_taluka');
+      final savedVillage = prefs.getString('user_village');
+
+      // If no saved location, return true if no location is selected
+      if (savedState == null || savedState.isEmpty) {
+        return currentLocation['state'] == null || currentLocation['state']!.isEmpty;
+      }
+
+      // Compare each level of location
+      return currentLocation['state'] == savedState &&
+          currentLocation['district'] == savedDistrict &&
+          currentLocation['taluka'] == savedTaluka &&
+          currentLocation['village'] == savedVillage;
+    } catch (e) {
+      debugPrint('❌ Error checking default location: $e');
+      return false;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // GET DISPLAY-FRIENDLY LOCATION STRING
+  // ─────────────────────────────────────────────────────────────
+  String getDisplayLocation({bool shortForm = false}) {
+    if (selectedVillage.value != null && selectedVillage.value!.isNotEmpty) {
+      return shortForm 
+          ? selectedVillage.value! 
+          : _buildFullAddress();
+    }
+    
+    if (selectedTaluka.value != null && selectedTaluka.value!.isNotEmpty) {
+      return shortForm 
+          ? '${selectedTaluka.value!}, ${selectedDistrict.value ?? ''}' 
+          : _buildFullAddress();
+    }
+    
+    if (selectedDistrict.value != null && selectedDistrict.value!.isNotEmpty) {
+      return shortForm 
+          ? '${selectedDistrict.value!}, ${selectedState.value ?? ''}' 
+          : _buildFullAddress();
+    }
+    
+    if (selectedState.value != null && selectedState.value!.isNotEmpty) {
+      return selectedState.value!;
+    }
+    
+    return shortForm ? 'Select Location' : 'Please select your location';
   }
 
   // ─────────────────────────────────────────────────────────────

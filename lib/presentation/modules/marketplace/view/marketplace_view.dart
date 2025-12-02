@@ -55,7 +55,7 @@ class _MarketplaceViewState extends State<MarketplaceView>
     WidgetsBinding.instance.addObserver(this);
     _initializeMarketplace();
   }
-  
+
   bool _routeObserverSubscribed = false;
 
   @override
@@ -138,14 +138,22 @@ class _MarketplaceViewState extends State<MarketplaceView>
         _isRefreshing = true;
         debugPrint('🔄 Refresh flag detected, clearing flag and refreshing marketplace');
 
+        // Clear the flag first to prevent multiple refreshes
         await prefs.remove('marketplace_refresh_needed');
 
-        // Perform full refresh
-        await _refreshMarketplace();
+        // Add a small delay to ensure the flag is cleared before refresh
+        await Future.delayed(const Duration(milliseconds: 300));
+
+        // Only refresh if we're still the current route
+        if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+          await _refreshMarketplace();
+        }
+
         _isRefreshing = false;
       }
     } catch (e) {
       _isRefreshing = false;
+      debugPrint('❌ Error in _checkAndReloadData: $e');
     }
   }
 
@@ -380,29 +388,25 @@ class _MarketplaceViewState extends State<MarketplaceView>
     );
   }
 
-  //  CLEAR LOCATION FILTER
+  //  HANDLE CLEAR LOCATION
   Future<void> _handleClearLocation() async {
     try {
-      // Clear location from query params
+      // Clear only the current location filter
+      _currentLocation = null;
+      
+      // Clear query parameters
       queryParams.remove("state");
       queryParams.remove("district");
       queryParams.remove("taluko");
       queryParams.remove("village");
       
-      // Clear location from controller
-      await _locationController.clearUserLocation();
-      
-      // Clear display location
-      setState(() {
-        _currentLocation = "";
-      });
-      
-      // Fetch products without location filter
+      // Refresh the marketplace with no location filter
       await _getMarketplace();
       
-      AppToast.showSuccess('Location filter cleared');
+      // Clear button will be hidden automatically by the UI logic
     } catch (e) {
-      AppToast.showError('Error clearing location filter');
+      debugPrint('❌ Error resetting to default location: $e');
+      AppToast.showError('Error resetting location');
     }
   }
 
@@ -467,26 +471,40 @@ class _MarketplaceViewState extends State<MarketplaceView>
         ),
       );
 
-      if (result is MarketplaceModel) {
-        setState(() {
-          final idx = _displayedProducts.indexWhere((p) => p.id == result.id);
-          if (idx != -1) {
-            _displayedProducts[idx] = result;
-          }
-        });
-      } else if (result is Map) {
-        final deleted = result['deleted'] == true;
-        final id = result['id']?.toString();
-        debugPrint('🗑️ Marketplace received deletion result: deleted=$deleted, id=$id');
-        if (deleted && id != null) {
-          setState(() {
-            _displayedProducts.removeWhere((p) => p.id == id);
-          });
-          AppToast.showSuccess('Product removed from your listings');
+      if (result is Map<String, dynamic>) {
+        final action = result['action'];
+
+        switch (action) {
+          case 'deleted':
+            final id = result['productId'] ?? result['id'];
+            setState(() {
+              _displayedProducts.removeWhere((p) => p.id == id);
+            });
+            AppToast.showSuccess('Product deleted');
+            break;
+
+          case 'status_changed':
+          case 'edited':
+            final updatedProduct = result['product'] as MarketplaceModel?;
+            if (updatedProduct != null) {
+              setState(() {
+                final index = _displayedProducts.indexWhere((p) => p.id == updatedProduct.id);
+                if (index != -1) {
+                  _displayedProducts[index] = updatedProduct;
+                }
+              });
+            }
+            break;
+
+          case 'viewed':
+          default:
+          // Do nothing — no refresh needed!
+            break;
         }
       }
     } catch (error) {
-      AppToast.showError('Error opening product: $error');
+      debugPrint('❌ Error in _handleProductTap: $error');
+      AppToast.showError('Error: ${error.toString()}');
     }
   }
 
@@ -505,16 +523,18 @@ class _MarketplaceViewState extends State<MarketplaceView>
             //  REACTIVE LOCATION BAR WITH OBX
             Obx(() {
               final controllerLocation = _locationController.getFullAddress();
-              final displayLocation = controllerLocation.isNotEmpty
-                  ? controllerLocation
-                  : _currentLocation;
-
+              final displayLocation = _currentLocation ?? controllerLocation;
+              
+              // Show clear button only when there's a custom location filter applied
+              // (not showing when using default location)
+              final showClearButton = _currentLocation != null && 
+                  _currentLocation!.isNotEmpty &&
+                  _currentLocation != controllerLocation;
+                  
               return LocationBarWidget(
                 onLocationTap: _handleFilterLocation,
-                onClearLocation: (displayLocation != null && displayLocation.isNotEmpty)
-                    ? _handleClearLocation
-                    : null,
-                location: displayLocation ?? '',
+                onClearLocation: showClearButton ? _handleClearLocation : null,
+                location: displayLocation,
               );
             }),
 

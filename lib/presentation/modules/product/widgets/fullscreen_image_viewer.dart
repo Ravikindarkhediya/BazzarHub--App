@@ -176,27 +176,54 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer>
     int index,
   ) async {
     try {
-      final controller = VideoPlayerController.networkUrl(Uri.parse(url));
-      await controller.initialize();
+      final controller = VideoPlayerController.networkUrl(
+        Uri.parse(url),
+        videoPlayerOptions: VideoPlayerOptions(
+          mixWithOthers: true,
+          allowBackgroundPlayback: false,
+        ),
+      );
+      
+      await controller.initialize().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw TimeoutException('Video initialization timed out');
+        },
+      );
+      
       controller.setLooping(true);
       _videoControllers[index] = controller;
       return controller;
-    } catch (error) {
+    } on TimeoutException catch (e) {
+      _videoErrors[index] = 'Video loading timed out';
+      debugPrint('Video initialization timeout: $e');
+    } on PlatformException catch (e) {
+      _videoErrors[index] = 'Video playback error: ${e.message}';
+      debugPrint('Platform error initializing video: $e');
+    } catch (e) {
       _videoErrors[index] = 'Unable to load video';
-      return null;
+      debugPrint('Error initializing video: $e');
     } finally {
       _videoLoading.remove(index);
       _videoInitFutures.remove(index);
       if (mounted) setState(() {});
     }
+    return null;
   }
 
   Future<void> _playVideo(int index) async {
-    final controller = await _initializeVideoController(index);
-    if (!mounted) return;
-    if (controller != null) {
-      controller.play();
-      setState(() {});
+    if (!_isVideoIndex(index)) return;
+    
+    try {
+      final controller = await _initializeVideoController(index);
+      if (!mounted || controller == null) return;
+      
+      await controller.play();
+      if (mounted) setState(() {});
+    } catch (e) {
+      _videoErrors[index] = 'Failed to play video';
+      if (mounted) setState(() {});
+      debugPrint('Error playing video: $e');
     }
   }
 

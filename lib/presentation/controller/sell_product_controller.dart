@@ -174,23 +174,23 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
         _districtsList = _locationRepo.getDistricts(loc.state!) ?? [];
 
         // Set district
-        if (loc.district != null && loc.district!.isNotEmpty) {
+        if (loc.district != null && loc.district.isNotEmpty) {
           _selectedDistrict = loc.district;
-          _showSubDistrict = _locationRepo.hasSubDistricts(_selectedState!, loc.district!);
+          _showSubDistrict = _locationRepo.hasSubDistricts(_selectedState!, loc.district);
 
           if (_showSubDistrict) {
-            _subDistrictsList = _locationRepo.getSubDistricts(_selectedState!, loc.district!);
+            _subDistrictsList = _locationRepo.getSubDistricts(_selectedState!, loc.district);
             // Set sub-district (taluko)
             if (loc.taluko != null && loc.taluko!.isNotEmpty) {
               _selectedSubDistrict = loc.taluko;
               _villagesList = _locationRepo.getVillages(_selectedState!, _selectedDistrict!, loc.taluko);
             }
           } else {
-            _villagesList = _locationRepo.getVillages(_selectedState!, loc.district!);
+            _villagesList = _locationRepo.getVillages(_selectedState!, loc.district);
           }
 
           // Set village
-          if (loc.village != null && loc.village!.isNotEmpty) {
+          if (loc.village != null && loc.village.isNotEmpty) {
             _selectedVillage = loc.village;
           }
         }
@@ -338,13 +338,45 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
         return;
       }
       HapticFeedback.mediumImpact();
-      if (mediaType == 'video') {
+      
+      if (mediaType == 'all') {
+        // Handle both photos and videos
+        final List<XFile> mediaFiles = await _picker.pickMultipleMedia(
+          maxWidth: 1920,
+          maxHeight: 1920,
+          imageQuality: 85,
+        );
+
+        if (mediaFiles.isNotEmpty) {
+          final slots = maxImages - _images.length;
+          final toAdd = mediaFiles.take(slots);
+
+          for (var media in toAdd) {
+            final isVideo = media.path.toLowerCase().endsWith('.mp4') ||
+                          media.path.toLowerCase().endsWith('.mov') ||
+                          media.path.toLowerCase().endsWith('.avi') ||
+                          media.path.toLowerCase().endsWith('.webm');
+            await _addImage(File(media.path), context, isVideo: isVideo);
+          }
+          
+          if (mediaFiles.length > slots) {
+            _showError(context, 'Only first $slots items added (max $maxImages)');
+          }
+        }
+      } else if (mediaType == 'video') {
+        // Handle video only
         final XFile? video = await _picker.pickVideo(source: ImageSource.gallery);
         if (video != null) {
           await _addImage(File(video.path), context, isVideo: true);
         }
       } else {
-        final List<XFile> images = await _picker.pickMultiImage(maxWidth: 1920, maxHeight: 1920, imageQuality: 85);
+        // Handle photos only (default)
+        final List<XFile> images = await _picker.pickMultiImage(
+          maxWidth: 1920, 
+          maxHeight: 1920, 
+          imageQuality: 85
+        );
+        
         if (images.isNotEmpty) {
           final slots = maxImages - _images.length;
           final toAdd = images.take(slots);
@@ -466,23 +498,6 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
     }
   }
 
-  Future<void> getCurrentCoordinates() async {
-    try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) return;
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) return;
-      }
-      if (permission == LocationPermission.deniedForever) return;
-      Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-      _currentCoordinates = CoordinatesModel(latitude: position.latitude, longitude: position.longitude);
-      safeNotifyListeners();
-    } catch (e) {
-      debugPrint('Error getting coordinates: $e');
-    }
-  }
 
   @override
   void removeImage(String imageId) {
@@ -543,26 +558,33 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
       _showError(context, error);
       return false;
     }
+
     _isLoading = true;
     safeNotifyListeners();
+
     try {
-      await getCurrentCoordinates();
+      // NO LOCATION PERMISSION, NO COORDINATES FETCHING
+      // Direct image upload
+
       if (!await uploadAllImages()) {
         _showError(context, 'Failed to upload some images. Please try again.');
         _isLoading = false;
         safeNotifyListeners();
         return false;
       }
+
       final uploadedUrls = _images
           .where((img) => img.uploadedUrl != null && img.uploadedUrl!.isNotEmpty)
           .map((img) => img.uploadedUrl!)
           .toList();
+
       if (uploadedUrls.isEmpty) {
         _showError(context, 'No images were uploaded successfully.');
         _isLoading = false;
         safeNotifyListeners();
         return false;
       }
+
       final locationData = <String, dynamic>{
         "village": _selectedVillage ?? "",
         "taluko": _selectedSubDistrict ?? "",
@@ -570,12 +592,7 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
         "state": _selectedState ?? "",
         "country": "India",
       };
-      if (_currentCoordinates != null) {
-        locationData["coordinates"] = {
-          "latitude": _currentCoordinates!.latitude,
-          "longitude": _currentCoordinates!.longitude,
-        };
-      }
+
       final payload = <String, dynamic>{
         "title": titleController.text.trim(),
         "description": descriptionController.text.trim(),
@@ -590,41 +607,34 @@ class SellProductController extends ChangeNotifier implements ImageUploadControl
           "email": [emailController.text.trim()],
         },
       };
-      debugPrint('Submitting product with payload: $payload');
+
       final apiClient = await getApiClient();
 
-      // Check if Edit Mode or Create Mode
-      if (_isEditMode && _editProductId != null) {
-        // Update existing product
+      if (isEditMode && _editProductId != null) {
         final response = await apiClient.updateMarketplace(_editProductId!, payload);
-        if (response.data.status && response.data.data != null) {
+        if (response.data.status) {
           HapticFeedback.heavyImpact();
           _isLoading = false;
           safeNotifyListeners();
-
           return true;
         } else {
-          throw Exception(response.data.message ?? 'Failed to update product');
+          throw Exception(response.data.message ?? 'Failed to update');
         }
       } else {
-        // Create new product
         final response = await apiClient.createMarketplace(payload);
-        if (response.data.status && response.data.data != null) {
+        if (response.data.status) {
           HapticFeedback.heavyImpact();
           clearForm();
           _isLoading = false;
           safeNotifyListeners();
-
           return true;
         } else {
-          throw Exception(response.data.message ?? 'Failed to create product');
+          throw Exception(response.data.message ?? 'Failed to create');
         }
       }
     } catch (e) {
-      debugPrint('Error submitting product: $e');
-      if (context.mounted) {
-        _showError(context, 'Failed to submit product: ${e.toString()}');
-      }
+      debugPrint('Error: $e');
+      if (context.mounted) _showError(context, 'Failed: ${e.toString()}');
       _isLoading = false;
       safeNotifyListeners();
       return false;

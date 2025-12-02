@@ -379,12 +379,20 @@ class ProductDetailsWidget extends StatelessWidget {
                     // /// Email Buttons
                     _buildContactButton(
                       icon: Icons.email,
-                      onTap: product.createdBy?.email == null
-                          ? null
-                          : () async {
+                      onTap: (product.contactInfo?.email?.isNotEmpty == true || product.createdBy?.email != null)
+                          ? () async {
+                              // Use the email from contactInfo if available, otherwise fall back to createdBy.email
+                              final email = product.contactInfo?.email?.isNotEmpty == true 
+                                  ? product.contactInfo!.email!.first 
+                                  : product.createdBy!.email!;
+                              
                               final Uri emailUri = Uri(
                                 scheme: 'mailto',
-                                path: product.createdBy?.email,
+                                path: email,
+                                queryParameters: {
+                                  'subject': 'Regarding your product: ${product.title}',
+                                  'body': 'Hello ${product.sellerName},\n\nI am interested in your product: ${product.title}\n\n',
+                                },
                               );
 
                               if (!await launchUrl(
@@ -393,7 +401,8 @@ class ProductDetailsWidget extends StatelessWidget {
                               )) {
                                 throw 'Could not open email';
                               }
-                            },
+                            }
+                          : null,
                     ),
                   ],
                 ),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -241,6 +243,22 @@ class _MediaCarouselState extends State<MediaCarousel> {
             style: AppTextStyles.bodySmall.copyWith(color: AppColors.white),
             textAlign: TextAlign.center,
           ),
+          AppSpacing.verticalSpaceSM,
+          ElevatedButton.icon(
+            onPressed: () {
+              _videoErrors.removeWhere((key, _) => key == _currentIndex);
+              _prepareVideo(_currentIndex);
+              if (mounted) setState(() {});
+            },
+            icon: const Icon(Icons.refresh, size: 16),
+            label: const Text('Retry'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              textStyle: AppTextStyles.caption,
+            ),
+          ),
         ],
       ),
     );
@@ -383,33 +401,45 @@ class _MediaCarouselState extends State<MediaCarousel> {
 
   void _prepareVideo(int index) {
     if (!_isValidIndex(index) || !_isVideo(index)) return;
-    if (_videoControllers.containsKey(index) ||
-        _initializingVideos.containsKey(index)) {
+    if (_videoControllers.containsKey(index) || 
+        _initializingVideos.containsKey(index) ||
+        _videoErrors.containsKey(index)) {
       return;
     }
 
     final url = widget.mediaUrls[index];
-    final controller = VideoPlayerController.networkUrl(Uri.parse(url));
-    controller
-      ..setLooping(true)
-      ..setVolume(0);
+    final controller = VideoPlayerController.networkUrl(
+      Uri.parse(url),
+      videoPlayerOptions: VideoPlayerOptions(
+        mixWithOthers: true,
+        allowBackgroundPlayback: false,
+      ),
+    );
+    
+    controller.setLooping(true);
+    controller.setVolume(0); // Start with volume off
 
-    final future = controller
-        .initialize()
+    final future = controller.initialize()
+        .timeout(const Duration(seconds: 10), onTimeout: () {
+          throw TimeoutException('Video initialization timed out');
+        })
         .then((_) {
           if (!mounted) return;
           _videoControllers[index] = controller;
           _initializingVideos.remove(index);
-          if (_currentIndex == index) {
-            controller.play();
-          }
           setState(() {});
         })
         .catchError((error) {
-          controller.dispose();
-          _videoErrors[index] = 'Video unavailable';
+          if (!mounted) return;
+          if (error is TimeoutException) {
+            _videoErrors[index] = 'Video loading timed out';
+          } else {
+            _videoErrors[index] = 'Failed to load video';
+          }
           _initializingVideos.remove(index);
+          controller.dispose();
           if (mounted) setState(() {});
+          debugPrint('Error initializing video: $error');
         });
 
     _initializingVideos[index] = future;
