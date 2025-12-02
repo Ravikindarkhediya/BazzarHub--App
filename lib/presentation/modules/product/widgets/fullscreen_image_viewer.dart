@@ -59,7 +59,7 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer>
     _startAutoHideTimer();
 
     if (_isVideoIndex(_currentIndex)) {
-      _playVideo(_currentIndex);
+      _initializeVideoController(_currentIndex);
     }
   }
 
@@ -140,7 +140,7 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer>
     setState(() => _currentIndex = index);
 
     if (_isVideoIndex(index)) {
-      _playVideo(index);
+      _initializeVideoController(index);
     }
   }
 
@@ -322,51 +322,46 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer>
   }
 
   Widget _buildVideoPage(String videoUrl, int index) {
-    _initializeVideoController(index);
-    final isLoading = _videoLoading.contains(index);
-    final error = _videoErrors[index];
-    final controller = _videoControllers[index];
-
-    Widget content;
-    if (error != null) {
-      content = _buildVideoError(error);
-    } else if (isLoading ||
-        controller == null ||
-        !controller.value.isInitialized) {
-      content = const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      );
-    } else {
-      content = ValueListenableBuilder<VideoPlayerValue>(
-        valueListenable: controller,
-        builder: (context, value, child) {
-          return Stack(
-            alignment: Alignment.center,
-            children: [
-              FittedBox(
-                fit: BoxFit.contain,
-                child: SizedBox(
-                  width: value.size.width,
-                  height: value.size.height,
-                  child: VideoPlayer(controller),
-                ),
-              ),
-              if (value.isBuffering)
-                const CircularProgressIndicator(
-                  color: AppColors.primary,
-                  strokeWidth: 2.5,
-                ),
-              if (!value.isPlaying)
-                _buildCenterPlayButton(() => _toggleVideoPlayback(controller)),
-            ],
+    return FutureBuilder<VideoPlayerController?>(
+      future: _initializeVideoController(index),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
           );
-        },
-      );
-    }
+        }
 
-    return Hero(
-      tag: 'product_image_$index',
-      child: Center(child: content),
+        final controller = snapshot.data;
+        if (controller == null || !controller.value.isInitialized) {
+          return _buildVideoError('Failed to initialize video');
+        }
+
+        return Hero(
+          tag: 'product_image_$index',
+          child: Center(
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                FittedBox(
+                  fit: BoxFit.contain,
+                  child: SizedBox(
+                    width: controller.value.size.width,
+                    height: controller.value.size.height,
+                    child: VideoPlayer(controller),
+                  ),
+                ),
+                if (controller.value.isBuffering)
+                  const CircularProgressIndicator(
+                    color: AppColors.primary,
+                    strokeWidth: 2.5,
+                  ),
+                if (!controller.value.isPlaying)
+                  _buildCenterPlayButton(() => _toggleVideoPlayback(controller)),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
