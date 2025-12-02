@@ -39,9 +39,14 @@ class _MediaCarouselState extends State<MediaCarousel> {
   void initState() {
     super.initState();
     _initializeCarousel();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _prepareVideo(_currentIndex);
-    });
+    // Initialize the first video immediately
+    if (widget.mediaUrls.isNotEmpty && Utils.isVideo(widget.mediaUrls[0])) {
+      _prepareVideo(0).then((_) {
+        if (mounted && _videoControllers[0] != null) {
+          _playVideo(0);
+        }
+      });
+    }
   }
 
   void _initializeCarousel() {
@@ -128,12 +133,7 @@ class _MediaCarouselState extends State<MediaCarousel> {
         autoPlayCurve: Curves.easeInOut,
         scrollPhysics: const BouncingScrollPhysics(),
         onPageChanged: (index, reason) {
-          setState(() {
-            final previousIndex = _currentIndex;
-            _currentIndex = index;
-            _handleVideoTransition(previousIndex, index);
-          });
-          widget.onPageChanged?.call(index);
+          _onPageChanged(index, reason);
         },
         viewportFraction: 1.0,
         enlargeCenterPage: false,
@@ -395,74 +395,107 @@ class _MediaCarouselState extends State<MediaCarousel> {
   }
 
   bool _isVideo(int index) {
-    if (!_isValidIndex(index)) return false;
+    if (index < 0 || index >= widget.mediaUrls.length) return false;
     return Utils.isVideo(widget.mediaUrls[index]);
   }
 
-  void _prepareVideo(int index) {
-    if (!_isValidIndex(index) || !_isVideo(index)) return;
-    if (_videoControllers.containsKey(index) || 
-        _initializingVideos.containsKey(index) ||
-        _videoErrors.containsKey(index)) {
-      return;
-    }
-
-    final url = widget.mediaUrls[index];
-    final controller = VideoPlayerController.networkUrl(
-      Uri.parse(url),
-      videoPlayerOptions: VideoPlayerOptions(
-        mixWithOthers: true,
-        allowBackgroundPlayback: false,
-      ),
-    );
+  Future<void> _playVideo(int index) async {
+    if (!mounted) return;
     
-    controller.setLooping(true);
-    controller.setVolume(0); // Start with volume off
+    if (_videoControllers.containsKey(index)) {
+      try {
+        await _videoControllers[index]!.play();
+        if (mounted) setState(() {});
+      } catch (e) {
+        debugPrint('Error playing video: $e');
+        if (mounted) {
+          setState(() {
+            _videoErrors[index] = 'Playback error';
+          });
+        }
+      }
+    } else if (index < widget.mediaUrls.length && Utils.isVideo(widget.mediaUrls[index])) {
+      await _prepareVideo(index);
+      if (mounted && _videoControllers.containsKey(index)) {
+        await _playVideo(index);
+      }
+    }
+  }
 
-    final future = controller.initialize()
-        .timeout(const Duration(seconds: 10), onTimeout: () {
-          throw TimeoutException('Video initialization timed out');
-        })
-        .then((_) {
-          if (!mounted) return;
-          _videoControllers[index] = controller;
-          _initializingVideos.remove(index);
-          setState(() {});
-        })
-        .catchError((error) {
-          if (!mounted) return;
-          if (error is TimeoutException) {
-            _videoErrors[index] = 'Video loading timed out';
-          } else {
-            _videoErrors[index] = 'Failed to load video';
-          }
-          _initializingVideos.remove(index);
-          controller.dispose();
-          if (mounted) setState(() {});
-          debugPrint('Error initializing video: $error');
-        });
-
-    _initializingVideos[index] = future;
+  void _onPageChanged(int index, CarouselPageChangedReason reason) {
+    if (_currentIndex == index) return;
+    
+    _handleVideoTransition(_currentIndex, index);
+    
+    setState(() {
+      _currentIndex = index;
+    });
+    
+    // Prepare adjacent videos
+    _prepareVideo(index);
+    _prepareVideo(index + 1);
+    
+    widget.onPageChanged?.call(index);
   }
 
   void _handleVideoTransition(int previousIndex, int nextIndex) {
-    if (_isVideo(previousIndex)) {
-      _videoControllers[previousIndex]?.pause();
+    if (previousIndex == nextIndex) return;
+    
+    // Pause the previous video if it's a video
+    if (previousIndex < widget.mediaUrls.length && Utils.isVideo(widget.mediaUrls[previousIndex])) {
+      _pauseVideo(previousIndex);
     }
-
-    if (_isVideo(nextIndex)) {
-      _prepareVideo(nextIndex);
-      final controller = _videoControllers[nextIndex];
-      if (controller != null) {
-        controller
-          ..setVolume(0)
-          ..play();
-      }
+    
+    // Play the next video if it's a video
+    if (nextIndex < widget.mediaUrls.length && Utils.isVideo(widget.mediaUrls[nextIndex])) {
+      _playVideo(nextIndex);
     }
-
-    _prepareVideo(nextIndex + 1);
   }
 
-  bool _isValidIndex(int index) =>
-      index >= 0 && index < widget.mediaUrls.length;
+  void _pauseVideo(int index) {
+    if (_videoControllers.containsKey(index)) {
+      _videoControllers[index]!.pause();
+    }
+  }
+
+  Future<void> _prepareVideo(int index) async {
+    if (index < 0 || index >= widget.mediaUrls.length) return;
+    final url = widget.mediaUrls[index];
+    
+    if (!Utils.isVideo(url) || _videoControllers.containsKey(index) || _initializingVideos.containsKey(index)) {
+      return;
+    }
+
+    final controller = VideoPlayerController.network(
+      url,
+      videoPlayerOptions: VideoPlayerOptions(
+        mixWithOthers: true,
+      ),
+    );
+
+    final completer = Completer<void>();
+    
+    _initializingVideos[index] = controller.initialize().then((_) {
+      if (!mounted) return;
+      
+      setState(() {
+        _videoControllers[index] = controller;
+        _initializingVideos.remove(index);
+        controller.setLooping(true);
+      });
+      completer.complete();
+    }).catchError((error) {
+      if (!mounted) return;
+      
+      setState(() {
+        _videoErrors[index] = 'Failed to load video';
+        _initializingVideos.remove(index);
+      });
+      completer.completeError(error);
+    });
+    
+    return completer.future;
+  }
+
+  bool _isValidIndex(int index) => index >= 0 && index < widget.mediaUrls.length;
 }

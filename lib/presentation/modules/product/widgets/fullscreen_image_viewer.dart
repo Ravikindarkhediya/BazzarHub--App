@@ -58,8 +58,17 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer>
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     _startAutoHideTimer();
 
+    // Initialize the initial video controller and play it immediately
     if (_isVideoIndex(_currentIndex)) {
-      _initializeVideoController(_currentIndex);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _initializeVideoController(_currentIndex).then((_) {
+            if (mounted) {
+              _playVideo(_currentIndex);
+            }
+          });
+        }
+      });
     }
   }
 
@@ -133,14 +142,20 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer>
   void _handlePageChanged(int index) {
     if (_currentIndex == index) return;
 
+    // Pause the current video if it's a video
     if (_isVideoIndex(_currentIndex)) {
       _pauseVideo(_currentIndex);
     }
 
     setState(() => _currentIndex = index);
 
+    // Initialize and play the new video if it's a video
     if (_isVideoIndex(index)) {
-      _initializeVideoController(index);
+      _initializeVideoController(index).then((controller) {
+        if (controller != null && mounted) {
+          _playVideo(index);
+        }
+      });
     }
   }
 
@@ -193,6 +208,12 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer>
       
       controller.setLooping(true);
       _videoControllers[index] = controller;
+      
+      // Auto-play the video if it's the current index
+      if (index == _currentIndex) {
+        _playVideo(index);
+      }
+      
       return controller;
     } on TimeoutException catch (e) {
       _videoErrors[index] = 'Video loading timed out';
@@ -212,18 +233,20 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer>
   }
 
   Future<void> _playVideo(int index) async {
-    if (!_isVideoIndex(index)) return;
-    
-    try {
-      final controller = await _initializeVideoController(index);
-      if (!mounted || controller == null) return;
-      
-      await controller.play();
-      if (mounted) setState(() {});
-    } catch (e) {
-      _videoErrors[index] = 'Failed to play video';
-      if (mounted) setState(() {});
-      debugPrint('Error playing video: $e');
+    final controller = _videoControllers[index];
+    if (controller != null && !controller.value.isPlaying) {
+      try {
+        await controller.play();
+        // Hide controls after a short delay when video starts playing
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted && controller.value.isPlaying) {
+            setState(() => _showControls = false);
+          }
+        });
+        if (mounted) setState(() {});
+      } catch (e) {
+        debugPrint('Error playing video: $e');
+      }
     }
   }
 
@@ -336,28 +359,31 @@ class _FullscreenImageViewerState extends State<FullscreenImageViewer>
           return _buildVideoError('Failed to initialize video');
         }
 
-        return Hero(
-          tag: 'product_image_$index',
-          child: Center(
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                FittedBox(
-                  fit: BoxFit.contain,
-                  child: SizedBox(
-                    width: controller.value.size.width,
-                    height: controller.value.size.height,
-                    child: VideoPlayer(controller),
+        return GestureDetector(
+          onTap: _toggleControls,
+          child: Hero(
+            tag: 'product_image_$index',
+            child: Center(
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.contain,
+                    child: SizedBox(
+                      width: controller.value.size.width,
+                      height: controller.value.size.height,
+                      child: VideoPlayer(controller),
+                    ),
                   ),
-                ),
-                if (controller.value.isBuffering)
-                  const CircularProgressIndicator(
-                    color: AppColors.primary,
-                    strokeWidth: 2.5,
-                  ),
-                if (!controller.value.isPlaying)
-                  _buildCenterPlayButton(() => _toggleVideoPlayback(controller)),
-              ],
+                  if (controller.value.isBuffering)
+                    const CircularProgressIndicator(
+                      color: AppColors.primary,
+                      strokeWidth: 2.5,
+                    ),
+                  if (!controller.value.isPlaying && _showControls)
+                    _buildCenterPlayButton(() => _toggleVideoPlayback(controller)),
+                ],
+              ),
             ),
           ),
         );
