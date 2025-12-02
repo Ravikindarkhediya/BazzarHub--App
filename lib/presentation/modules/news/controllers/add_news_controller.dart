@@ -1087,7 +1087,6 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
           }
 
           Get.delete<AddNewsController>(force: true);
-          Get.back(result: true);
 
           return true;
         } else {

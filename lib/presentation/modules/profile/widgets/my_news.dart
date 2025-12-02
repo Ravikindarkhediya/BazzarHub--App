@@ -18,182 +18,169 @@ class MyNews extends StatelessWidget {
   final NewsModel newsData;
   final Function(String) onTapdDelete;
   final bool hideActionButton;
-  final VoidCallback? onNewsUpdated;
 
   const MyNews({
     Key? key,
     required this.newsData,
     required this.onTapdDelete,
     this.hideActionButton = false,
-    this.onNewsUpdated,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<NewsController>();
 
-    final currentNews = controller.newsList.firstWhereOrNull(
-          (news) => news.id == newsData.id,
-    ) ?? newsData;
+    return GetBuilder<NewsController>(
+      id: 'news_list', // ✅ Same ID as NewsView
+      builder: (ctrl) {
+        // ✅ Latest data from controller (dynamic refresh)
+        final currentNews = ctrl.newsList.firstWhereOrNull(
+              (news) => news.id == newsData.id,
+        ) ?? newsData;
 
-    final title = currentNews.title ?? 'No Title';
-    final List<NewsMediaModel> mediaList = currentNews.media;
-    final imageUrl = mediaList.isNotEmpty ? mediaList.first.thumbnail : '';
-    final bool isVideo = mediaList.isNotEmpty ? mediaList.first.type == "video" : false;
-    final createdAt = currentNews.createdAt;
-    final String newsCategory = AppLanguage.getText(currentNews.category?.name);
-    final String? villageName = currentNews.location?.district;
+        final title = currentNews.title ?? 'No Title';
+        final List<NewsMediaModel> mediaList = currentNews.media;
+        final imageUrl = mediaList.isNotEmpty ? mediaList.first.thumbnail : '';
+        final bool isVideo = mediaList.isNotEmpty ? mediaList.first.type == "video" : false;
+        final createdAt = currentNews.createdAt;
+        final String newsCategory = AppLanguage.getText(currentNews.category?.name);
+        final String? villageName = currentNews.location?.district;
 
-    return InkWell(
-      onTap: () {
-        Get.toNamed(
-          '/news-detail',
-          parameters: {'newsId': currentNews.id},
-        );
-      },
-      child: Container(
-        color: Colors.transparent,
-        margin: const EdgeInsets.symmetric(vertical: 15),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
+        return InkWell(
+          onTap: () {
+            Get.toNamed('/news-detail', parameters: {'newsId': currentNews.id});
+          },
+          child: Container(
+            color: Colors.transparent,
+            margin: const EdgeInsets.symmetric(vertical: 15),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CustomImageWidget(
-                  imageUrl: imageUrl,
-                  height: 200,
-                  width: double.infinity,
-                  cornerRadius: 12,
-                ),
+                Stack(
+                  children: [
+                    CustomImageWidget(
+                      imageUrl: imageUrl,
+                      height: 200,
+                      width: double.infinity,
+                      cornerRadius: 12,
+                    ),
 
-                // Action Button
-                if (!hideActionButton)
-                  Positioned(
-                    top: 6,
-                    right: 6,
-                    child: GestureDetector(
-                      onTap: () {
-                        _showNewsOptionsBottomSheet(context, currentNews.id, title);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(5),
-                        decoration: BoxDecoration(
-                          color: AppColors.black.withOpacity(0.35),
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.12),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
+                    // Action Button
+                    if (!hideActionButton)
+                      Positioned(
+                        top: 6,
+                        right: 6,
+                        child: GestureDetector(
+                          onTap: () => _showNewsOptionsBottomSheet(context, currentNews.id, title),
+                          child: Container(
+                            padding: const EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                              color: AppColors.black.withOpacity(0.35),
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.12),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                              border: Border.all(
+                                color: AppColors.white.withOpacity(0.4),
+                                width: 1.5,
+                              ),
                             ),
-                          ],
-                          border: Border.all(
-                            color: AppColors.white.withOpacity(0.4),
-                            width: 1.5,
+                            child: Icon(
+                              Icons.more_vert,
+                              color: AppColors.white,
+                              size: AppSpacing.iconMD,
+                            ),
                           ),
                         ),
-                        child: Icon(
-                          Icons.more_vert,
-                          color: AppColors.white,
-                          size: AppSpacing.iconMD,
+                      ),
+
+                    // Play Button Overlay
+                    if (isVideo)
+                      Positioned.fill(
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: const BoxDecoration(
+                              color: Colors.black54,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.play_arrow,
+                              color: Colors.white,
+                              size: 32,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
 
-                // Play Button Overlay
-                if (isVideo)
-                  Positioned.fill(
-                    child: Center(
+                    // Category Label
+                    Positioned(
+                      bottom: 8,
+                      right: 8,
                       child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: const BoxDecoration(
-                          color: Colors.black54,
-                          shape: BoxShape.circle,
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.7),
+                          borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Icon(
-                          Icons.play_arrow,
-                          color: Colors.white,
-                          size: 32,
+                        child: Text(
+                          newsCategory,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                  ],
+                ),
 
-                // Category (bottom-right)
-                Positioned(
-                  bottom: 8,
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      newsCategory,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
+                // Content Section
+                Padding(
+                  padding: const EdgeInsets.only(top: 15),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: AppTextStyles.newsTitle.copyWith(
+                          fontSize: AppResponsiveSize.isMobile(context) ? 15 : 16,
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          if (villageName != null && villageName.isNotEmpty) ...[
+                            _buildButton(icon: Icons.location_on_outlined, text: villageName),
+                          ],
+                          _buildButton(
+                            icon: Icons.access_time,
+                            text: createdAt.isNotEmpty ? Utils.getTimeAgo(createdAt) : '',
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-
-            // Content
-            Padding(
-              padding: const EdgeInsets.only(top: 15),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Title
-                  Text(
-                    title,
-                    style: AppTextStyles.newsTitle.copyWith(
-                      fontSize: AppResponsiveSize.isMobile(context) ? 15 : 16,
-                    ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // Time and Village Name
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      if (villageName != null && villageName.isNotEmpty) ...[
-                        _buildButton(
-                          icon: Icons.location_on_outlined,
-                          text: villageName,
-                        ),
-                      ],
-                      _buildButton(
-                        icon: Icons.access_time,
-                        text: createdAt.isNotEmpty
-                            ? Utils.getTimeAgo(createdAt)
-                            : '',
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildButton({required IconData icon, required String text}) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(icon, size: 14, color: Colors.grey[600]),
         const SizedBox(width: 4),
@@ -202,11 +189,7 @@ class MyNews extends StatelessWidget {
     );
   }
 
-  void _showNewsOptionsBottomSheet(
-      BuildContext context,
-      String newsId,
-      String title,
-      ) {
+  void _showNewsOptionsBottomSheet(BuildContext context, String newsId, String title) {
     showCupertinoModalPopup<void>(
       context: context,
       builder: (BuildContext ctx) {
@@ -226,49 +209,26 @@ class MyNews extends StatelessWidget {
               ),
             ),
             actions: [
-              //  EDIT ACTION
+              // ✅ EDIT ACTION - Dynamic Refresh
               CupertinoActionSheetAction(
                 onPressed: () async {
-                  Navigator.pop(ctx);
+                  Navigator.pop(ctx); // Close bottom sheet
 
-
-                  // Navigate to edit page
+                  // Navigate to edit
                   final result = await Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => AddNewsView(news: newsData),
-                    ),
+                    MaterialPageRoute(builder: (_) => AddNewsView(news: newsData)),
                   );
 
-
                   if (result == true) {
-
-                    // Small delay for backend
-                    await Future.delayed(Duration(milliseconds: 500));
-
-                    if (Get.isRegistered<NewsController>()) {
-                      final controller = Get.find<NewsController>();
-                      await controller.refresh();
-
-                      if (context.mounted) {
-                        // This ensures the widget tree rebuilds
-                        (context as Element).markNeedsBuild();
-                      }
-
-                    }
-
-                    // Callback
-                    onNewsUpdated?.call();
+                    // ✅ NewsController.refresh() will trigger GetBuilder rebuild
+                    // No extra code needed - reactive update!
                   }
                 },
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.edit,
-                      color: AppColors.primary,
-                      size: AppSpacing.iconMD,
-                    ),
+                    Icon(Icons.edit, color: AppColors.primary, size: AppSpacing.iconMD),
                     SizedBox(width: AppSpacing.sm),
                     Text(
                       'Edit',
@@ -281,10 +241,10 @@ class MyNews extends StatelessWidget {
                 ),
               ),
 
-              //  DELETE ACTION
+              // ✅ DELETE ACTION - Dynamic Refresh
               CupertinoActionSheetAction(
                 onPressed: () async {
-                  Navigator.pop(ctx);
+                  Navigator.pop(ctx); // Close bottom sheet
 
                   final bool confirmed = await AppDialog.show(
                     context,
@@ -295,28 +255,20 @@ class MyNews extends StatelessWidget {
                   );
 
                   if (confirmed) {
-
-                    // Delete
+                    // Delete from parent list
                     onTapdDelete(newsId);
 
-                    // Refresh
+                    // NewsController.refresh() will update GetBuilder
                     if (Get.isRegistered<NewsController>()) {
                       await Get.find<NewsController>().refresh();
                     }
-
-                    // Callback
-                    onNewsUpdated?.call();
                   }
                 },
                 isDestructiveAction: true,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.delete_forever,
-                      color: AppColors.error,
-                      size: AppSpacing.iconMD,
-                    ),
+                    Icon(Icons.delete_forever, color: AppColors.error, size: AppSpacing.iconMD),
                     SizedBox(width: AppSpacing.sm),
                     Text(
                       'Delete',
