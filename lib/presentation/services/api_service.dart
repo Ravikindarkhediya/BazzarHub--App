@@ -47,6 +47,20 @@ Future<ApiServices> getApiClient() async {
     'Accept-Encoding': 'gzip, deflate',
   };
   Dio dio = Dio(options);
+  // Ensure Authorization header always carries latest token
+  dio.interceptors.add(
+    QueuedInterceptorsWrapper(
+      onRequest: (options, handler) async {
+        final token = await SessionManager().getToken();
+        if (!Utils.isEmpty(token)) {
+          options.headers['Authorization'] = 'Bearer $token';
+        } else {
+          options.headers.remove('Authorization');
+        }
+        handler.next(options);
+      },
+    ),
+  );
   // Add interceptor to inject version into the URL
   dio.interceptors.add(VersionInterceptor());
   dio.interceptors.add(
