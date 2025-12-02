@@ -48,11 +48,28 @@ class _AddNewsViewState extends State<AddNewsView> {
   Future<void> _initializeController() async {
     await _controller.loadCategories();
 
-    if (isEditMode) {
-      await _controller.initializeForEdit(widget.news!);
+    if (isEditMode && widget.news != null) {
+      try {
+        // Always fetch the latest data for this news item before editing
+        final apiService = await getApiClient();
+        if (widget.news!.id != null && widget.news!.id!.isNotEmpty) {
+          final response = await apiService.getNewsById(widget.news!.id!);
+          if (response.data.status && response.data.data != null) {
+            await _controller.initializeForEdit(response.data.data!);
+          } else {
+            // Fallback to the passed-in model if API doesn't return data
+            await _controller.initializeForEdit(widget.news!);
+          }
+        } else {
+          // No valid ID – fallback to existing model
+          await _controller.initializeForEdit(widget.news!);
+        }
+      } catch (_) {
+        // On any error, still allow editing with the provided data
+        await _controller.initializeForEdit(widget.news!);
+      }
     } else {
-      await _controller
-          .loadLocationData();
+      await _controller.loadLocationData();
     }
 
     if (mounted) {
