@@ -8,11 +8,14 @@ import '../../../../app/data/constants/app_text_style.dart';
 import '../../../commons/dialogs/app_toasts.dart';
 import '../../../services/api_service.dart';
 
+enum ReportType { news, marketplace, user }
+
 class ReportInfoBanner extends StatefulWidget {
   final Map<String, dynamic> info;
   final String title;
   final VoidCallback? onDelete;
   final String? reportId;
+  final ReportType reportType;
 
   const ReportInfoBanner({
     super.key,
@@ -20,6 +23,7 @@ class ReportInfoBanner extends StatefulWidget {
     this.title = 'Reported Item',
     this.onDelete,
     this.reportId,
+    this.reportType = ReportType.news,
   });
 
   @override
@@ -29,24 +33,36 @@ class ReportInfoBanner extends StatefulWidget {
 class _ReportInfoBannerState extends State<ReportInfoBanner> {
   bool _isDeleting = false;
 
+  ///  Dynamic delete method based on report type
   Future<void> _deleteReport(String reportId) async {
-    print('DEBUG: Deleting report with ID: $reportId');
+
     setState(() => _isDeleting = true);
+
     try {
       var services = await getApiClient();
-      print('DEBUG: Making API call to delete report');
-      var response = await services.deleteNewsReport(
-         reportId
-      );
 
-      print('DEBUG: API response status: ${response.data.status}');
-      print('DEBUG: API response message: ${response.data.message}');
+      // Call appropriate API based on report type
+      var response;
+      switch (widget.reportType) {
+        case ReportType.news:
+          response = await services.deleteNewsReport(reportId);
+          break;
+        case ReportType.marketplace:
+          response = await services.deleteMarketplaceReport(reportId);
+          break;
+        case ReportType.user:
+          AppToast.showError('User report deletion not implemented yet');
+          setState(() => _isDeleting = false);
+          return;
+      }
+
 
       if (response.data.status) {
         AppToast.showSuccess('Report deleted successfully');
-        // Parent widget ko notify karo
-        if (widget.onDelete != null) {
-          widget.onDelete!();
+
+        // Only navigate back once with result
+        if (mounted) {
+          Get.back(result: true);
         }
       } else {
         AppToast.showError(
@@ -54,24 +70,19 @@ class _ReportInfoBannerState extends State<ReportInfoBanner> {
         );
       }
     } on DioException catch (e) {
-      print('DEBUG: DioException: ${e.type} - ${e.message}');
-      print('DEBUG: Response status: ${e.response?.statusCode}');
-      print('DEBUG: Response data: ${e.response?.data}');
-      
       String errorMessage = 'Network error: ${e.message}';
       switch (e.type) {
         case DioExceptionType.connectionTimeout:
         case DioExceptionType.receiveTimeout:
         case DioExceptionType.sendTimeout:
-          errorMessage =
-              'Server connection timed out, please check your internet.';
+          errorMessage = 'Server connection timed out, please check your internet.';
           break;
         case DioExceptionType.badResponse:
           final statusCode = e.response?.statusCode ?? 0;
           if (statusCode == 404) {
             errorMessage = 'Report not found or already deleted.';
           } else if (statusCode == 401) {
-            errorMessage = 'Unauthorized request, please login.';
+            errorMessage = 'Unauthorized request, please login again.';
           } else if (statusCode == 500) {
             errorMessage = 'Server error occurred, please try later.';
           } else {
@@ -82,13 +93,14 @@ class _ReportInfoBannerState extends State<ReportInfoBanner> {
           errorMessage = e.message ?? 'Unknown network error occurred.';
       }
       AppToast.showError(errorMessage);
-    } catch (e, s) {
-      print("Error -? $s");
-      print(e);
-      print("Error When Delete Report: $s");
+    } catch (e, stackTrace) {
+      debugPrint("Error: $e");
+      debugPrint("Stack trace: $stackTrace");
       AppToast.showError('An unexpected error occurred');
     } finally {
-      if (mounted) setState(() => _isDeleting = false);
+      if (mounted) {
+        setState(() => _isDeleting = false);
+      }
     }
   }
 
@@ -127,14 +139,23 @@ class _ReportInfoBannerState extends State<ReportInfoBanner> {
                 ],
               ),
               if (widget.onDelete != null)
-                GestureDetector(
+                _isDeleting
+                    ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                  ),
+                )
+                    : GestureDetector(
                   onTap: () async {
                     final shouldDelete = await showDialog<bool>(
                       context: context,
                       builder: (context) => AlertDialog(
                         title: const Text('Delete Report'),
-                        content: const Text(
-                          'Are you sure you want to delete this report?',
+                        content: Text(
+                          'Are you sure you want to delete this ${widget.reportType.name} report?',
                         ),
                         actions: [
                           TextButton(
@@ -142,9 +163,7 @@ class _ReportInfoBannerState extends State<ReportInfoBanner> {
                             child: const Text('Cancel'),
                           ),
                           TextButton(
-                            onPressed: () {
-                              Navigator.of(context).pop(true);
-                            },
+                            onPressed: () => Navigator.of(context).pop(true),
                             style: TextButton.styleFrom(
                               foregroundColor: Colors.red,
                             ),
@@ -160,10 +179,12 @@ class _ReportInfoBannerState extends State<ReportInfoBanner> {
                               widget.info['reportId']?.toString() ??
                               widget.info['id']?.toString() ??
                               '');
+
                       if (dynamicId.isEmpty) {
-                        AppToast.showError('Report id not found');
+                        AppToast.showError('Report ID not found');
                         return;
                       }
+
                       await _deleteReport(dynamicId);
                     }
                   },

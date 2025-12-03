@@ -1357,6 +1357,39 @@ class _ApiServices implements ApiServices {
   }
 
   @override
+  Future<HttpResponse<BaseModel<dynamic>>> deleteMarketplaceReport(
+    String reportId,
+  ) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options = _setStreamType<HttpResponse<BaseModel<dynamic>>>(
+      Options(method: 'DELETE', headers: _headers, extra: _extra)
+          .compose(
+            _dio.options,
+            '/api/marketplace/report/delete/${reportId}',
+            queryParameters: queryParameters,
+            data: _data,
+          )
+          .copyWith(baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl)),
+    );
+    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
+    late BaseModel<dynamic> _value;
+    try {
+      _value = BaseModel<dynamic>.fromJson(
+        _result.data!,
+        (json) => json as dynamic,
+      );
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options);
+      rethrow;
+    }
+    final httpResponse = HttpResponse(_value, _result);
+    return httpResponse;
+  }
+
+  @override
   Future<HttpResponse<BaseModel<WalletModel>>> getPenBalance() async {
     final _extra = <String, dynamic>{};
     final queryParameters = <String, dynamic>{};

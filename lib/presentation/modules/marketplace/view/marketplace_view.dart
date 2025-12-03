@@ -20,7 +20,8 @@ import '../../product/widgets/product_grid_widget.dart';
 import '../../product/views/product_detail_page.dart';
 
 // Global RouteObserver for marketplace
-final RouteObserver<PageRoute> marketplaceRouteObserver = RouteObserver<PageRoute>();
+final RouteObserver<PageRoute> marketplaceRouteObserver =
+    RouteObserver<PageRoute>();
 
 class MarketplaceView extends StatefulWidget {
   const MarketplaceView({super.key});
@@ -136,7 +137,9 @@ class _MarketplaceViewState extends State<MarketplaceView>
 
       if (needsRefresh) {
         _isRefreshing = true;
-        debugPrint('🔄 Refresh flag detected, clearing flag and refreshing marketplace');
+        debugPrint(
+          '🔄 Refresh flag detected, clearing flag and refreshing marketplace',
+        );
 
         // Clear the flag first to prevent multiple refreshes
         await prefs.remove('marketplace_refresh_needed');
@@ -158,7 +161,6 @@ class _MarketplaceViewState extends State<MarketplaceView>
   }
 
   Future<void> _refreshMarketplace() async {
-
     try {
       // 1️⃣ Reload location from controller
       await _locationController.loadUserLocation();
@@ -177,17 +179,14 @@ class _MarketplaceViewState extends State<MarketplaceView>
 
       // 6️⃣ Force complete UI rebuild
       if (mounted) {
-        setState(() {
-        });
+        setState(() {});
       }
-
     } catch (e) {
       debugPrint('❌ Error refreshing marketplace: $e');
     }
   }
 
   void _syncLocationFromController() {
-
     // Clear existing location params
     queryParams.remove("state");
     queryParams.remove("district");
@@ -212,12 +211,10 @@ class _MarketplaceViewState extends State<MarketplaceView>
         locationData['village']!.isNotEmpty) {
       queryParams["village"] = locationData['village']!;
     }
-
   }
 
   //  LOAD LOCATION FROM CONTROLLER AND FETCH
   Future<void> _loadLocationAndFetch() async {
-
     try {
       // Load location via controller
       await _locationController.loadUserLocation();
@@ -230,7 +227,6 @@ class _MarketplaceViewState extends State<MarketplaceView>
 
       // Fetch products with updated location
       await _getMarketplace();
-
     } catch (e) {
       debugPrint(' Error loading location: $e');
     }
@@ -393,16 +389,16 @@ class _MarketplaceViewState extends State<MarketplaceView>
     try {
       // Clear only the current location filter
       _currentLocation = null;
-      
+
       // Clear query parameters
       queryParams.remove("state");
       queryParams.remove("district");
       queryParams.remove("taluko");
       queryParams.remove("village");
-      
+
       // Refresh the marketplace with no location filter
       await _getMarketplace();
-      
+
       // Clear button will be hidden automatically by the UI logic
     } catch (e) {
       debugPrint('❌ Error resetting to default location: $e');
@@ -415,7 +411,6 @@ class _MarketplaceViewState extends State<MarketplaceView>
     LocationSelectionBottomSheet.show(
       context: context,
       onApply: (selectedLocations) async {
-
         setState(() {
           queryParams.remove("state");
           queryParams.remove("district");
@@ -488,7 +483,9 @@ class _MarketplaceViewState extends State<MarketplaceView>
             final updatedProduct = result['product'] as MarketplaceModel?;
             if (updatedProduct != null) {
               setState(() {
-                final index = _displayedProducts.indexWhere((p) => p.id == updatedProduct.id);
+                final index = _displayedProducts.indexWhere(
+                  (p) => p.id == updatedProduct.id,
+                );
                 if (index != -1) {
                   _displayedProducts[index] = updatedProduct;
                 }
@@ -498,7 +495,7 @@ class _MarketplaceViewState extends State<MarketplaceView>
 
           case 'viewed':
           default:
-          // Do nothing — no refresh needed!
+            // Do nothing — no refresh needed!
             break;
         }
       }
@@ -524,13 +521,14 @@ class _MarketplaceViewState extends State<MarketplaceView>
             Obx(() {
               final controllerLocation = _locationController.getFullAddress();
               final displayLocation = _currentLocation ?? controllerLocation;
-              
+
               // Show clear button only when there's a custom location filter applied
               // (not showing when using default location)
-              final showClearButton = _currentLocation != null && 
+              final showClearButton =
+                  _currentLocation != null &&
                   _currentLocation!.isNotEmpty &&
                   _currentLocation != controllerLocation;
-                  
+
               return LocationBarWidget(
                 onLocationTap: _handleFilterLocation,
                 onClearLocation: showClearButton ? _handleClearLocation : null,

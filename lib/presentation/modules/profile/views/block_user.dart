@@ -1,11 +1,13 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../../../../app/core/utils/app_spacing.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
+import '../../../commons/dialogs/appDialog.dart';
 import '../../../commons/widgets/empty_state_widget.dart';
-import '../../widgets/block_user_dialog.dart';
+import '../../../commons/dialogs/app_toasts.dart';
 import '../../../services/api_service.dart';
 import '../../../services/models/user/user_model.dart';
 
@@ -37,38 +39,128 @@ class _BlockUserState extends State<BlockUser> with TickerProviderStateMixin {
 
   Future<void> _fetchBlockedUsers() async {
     try {
-      setState(() {
-        _isLoading = true;
-        _isError = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = true;
+          _isError = false;
+        });
+      }
 
       final api = await getApiClient();
       final response = await api.getBlockedList({"page": 1, "limit": 200});
 
-      setState(() {
-        blockedUsers = response.data.data ?? [];
-        _isLoading = false;
-      });
-    } catch (e) {
-      debugPrint("❌ Error fetching blocked users: $e");
+      if (!mounted) return;
 
-      setState(() {
-        _isError = true;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          blockedUsers = response.data.data ?? [];
+          _isLoading = false;
+          _isError = false;
+        });
+      }
+
+      debugPrint("Fetched ${blockedUsers.length} blocked users");
+    } on DioException catch (e) {
+      debugPrint("DioException: ${e.response?.statusCode} - ${e.response?.data}");
+
+      if (!mounted) return;
+
+      if (e.response?.statusCode == 404) {
+        if (mounted) {
+          setState(() {
+            blockedUsers = [];
+            _isLoading = false;
+            _isError = false;
+          });
+        }
+        debugPrint("404 handled as empty state");
+        return;
+      }
+
+      if (mounted) {
+        setState(() {
+          _isError = true;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("General error: $e");
+
+      if (mounted) {
+        setState(() {
+          _isError = true;
+          _isLoading = false;
+        });
+      }
     }
   }
 
-  void _openUnblockDialog(UserModel user) {
-    showDialog(
-      context: context,
-      builder: (_) => BlockUserDialog(
-        name: user.name,
-        username: user.email,
-        userId: user.id,
-        onConfirm: _fetchBlockedUsers,
-      ),
+  Future<void> _showUnblockDialog(UserModel user) async {
+    final shouldUnblock = await AppDialog.show(
+      context,
+      title: 'Unblock User',
+      message: 'Are you sure you want to unblock ${user.name}?',
+      confirmText: 'Unblock',
+      cancelText: 'Cancel',
     );
+
+    if (shouldUnblock) {
+      await _unblockUser(user.id);
+    }
+  }
+
+  Future<void> _unblockUser(String userId) async {
+    try {
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+      }
+
+      final api = await getApiClient();
+
+      final body = {
+        "blockedUserId": userId,
+        "isBlock": false,
+      };
+
+      debugPrint('Unblocking user with data: $body');
+      final response = await api.requestBlockUser(body);
+
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+
+      if (response.response.statusCode == 200 && response.data.status == true) {
+        AppToast.showSuccess('User unblocked successfully!');
+        await _setMarketplaceRefreshFlag();
+        await _fetchBlockedUsers();
+      } else {
+        final errorMessage = response.data.message ?? 'Failed to unblock user!';
+        debugPrint('Unblock user error: $errorMessage');
+        AppToast.showError(errorMessage);
+      }
+    } catch (e) {
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+
+      debugPrint("Error unblocking user: $e");
+      AppToast.showError('Failed to unblock user. Please try again.');
+    }
+  }
+
+  Future<void> _setMarketplaceRefreshFlag() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('marketplace_refresh_needed', true);
+    } catch (e) {
+      debugPrint('Failed to mark marketplace for refresh: $e');
+    }
   }
 
   @override
@@ -86,7 +178,6 @@ class _BlockUserState extends State<BlockUser> with TickerProviderStateMixin {
       ),
       child: Scaffold(
         backgroundColor: AppColors.background,
-
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Container(
@@ -129,37 +220,82 @@ class _BlockUserState extends State<BlockUser> with TickerProviderStateMixin {
             ),
           ),
         ),
+        body: _buildBody(),
+      ),
+    );
+  }
 
-        body: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : blockedUsers.isEmpty
-            ? SizedBox.expand(
-          child: Center(
-            child: EmptyStateWidget.blockedUsers(),
-          ),
-        )
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-            : RefreshIndicator(
-          onRefresh: _fetchBlockedUsers,
-          child: ListView.separated(
-            padding: const EdgeInsets.only(bottom: 40),
-            itemCount: blockedUsers.length,
-            separatorBuilder: (context, index) => Container(
-              margin: const EdgeInsets.only(left: 80),
-              height: 1,
-              color: const Color(0xFFD1D5DB),
+    if (_isError) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.red,
             ),
-            itemBuilder: (context, index) {
-              final user = blockedUsers[index];
-              return _BlockedUserTile(
-                user: user,
-                isFirst: index == 0,
-                isLast: index == blockedUsers.length - 1,
-                onUnblock: () => _openUnblockDialog(user),
-              );
-            },
-          ),
+            const SizedBox(height: 16),
+            Text(
+              'Failed to load blocked users',
+              style: AppTextStyles.bodyLarge.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Please check your internet connection',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _fetchBlockedUsers,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
         ),
+      );
+    }
+
+    if (blockedUsers.isEmpty) {
+      return  SizedBox.expand(
+        child: Center(
+          child: EmptyStateWidget.blockedUsers(),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _fetchBlockedUsers,
+      child: ListView.separated(
+        padding: const EdgeInsets.only(bottom: 40),
+        itemCount: blockedUsers.length,
+        separatorBuilder: (context, index) => Container(
+          margin: const EdgeInsets.only(left: 80),
+          height: 1,
+          color: const Color(0xFFD1D5DB),
+        ),
+        itemBuilder: (context, index) {
+          final user = blockedUsers[index];
+          return _BlockedUserTile(
+            user: user,
+            isFirst: index == 0,
+            isLast: index == blockedUsers.length - 1,
+            onUnblock: () => _showUnblockDialog(user),
+          );
+        },
       ),
     );
   }
@@ -200,7 +336,6 @@ class _BlockedUserTile extends StatelessWidget {
                 : null,
           ),
           const SizedBox(width: 16),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,6 +347,8 @@ class _BlockedUserTile extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF111827),
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -220,14 +357,15 @@ class _BlockedUserTile extends StatelessWidget {
                     fontSize: 14,
                     color: Color(0xFF9CA3AF),
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-
           Container(
             height: 36,
-            padding: const EdgeInsets.symmetric(horizontal: 13),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
               color: AppColors.primary,
               borderRadius: BorderRadius.circular(18),

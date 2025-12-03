@@ -638,6 +638,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           padding: AppSpacing.horizontalMD.copyWith(top: AppSpacing.sm),
           child: ReportInfoBanner(
             info: info,
+            reportType: ReportType.marketplace,
             title: 'Reported Listing',
             onDelete: () {
               Navigator.of(context).pop();
@@ -657,7 +658,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     bool isLoading = false,
     Color? loadingColor,
   }) {
-    final bg = background ?? AppColors.primary;
 
     return Material(
       color: Colors.transparent,

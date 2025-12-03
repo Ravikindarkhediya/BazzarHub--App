@@ -319,6 +319,7 @@ class _NewsDetailViewState extends State<NewsDetailView>
                     padding: const EdgeInsets.all(12.0),
                     child: ReportInfoBanner(
                       info: _reportInfo!,
+                      reportType: ReportType.news,
                       title: 'Reported News',
                       onDelete: _reportInfo?['_isDeletable'] == true
                           ? () {
