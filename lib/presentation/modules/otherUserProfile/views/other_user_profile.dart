@@ -43,9 +43,6 @@ class _OtherUserProfileState extends State<OtherUserProfile>
   @override
   void dispose() {
     _tabController.dispose();
-
-
-
     Get.delete<OtherUserProfileController>(tag: widget.userId);
     super.dispose();
   }
@@ -57,7 +54,7 @@ class _OtherUserProfileState extends State<OtherUserProfile>
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leadingWidth: 40,
+        leadingWidth: 50,
         leading: Padding(
           padding: const EdgeInsets.only(left: 12),
           child: _roundedIconButton(
@@ -67,7 +64,7 @@ class _OtherUserProfileState extends State<OtherUserProfile>
         ),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 12.0),
+            padding: const EdgeInsets.only(right: 15),
             child: _roundedIconButton(
               Icons.more_vert,
                   () => _showOptionsBottomSheet(context),
@@ -437,21 +434,34 @@ class _OtherUserProfileState extends State<OtherUserProfile>
   }
 
   Widget _roundedIconButton(IconData icon, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: AppColors.grey200,
-          shape: BoxShape.circle,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          height: 40,
+          width: 40,
+          decoration: BoxDecoration(
+            color: AppColors.black.withOpacity(0.5),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(5),
+          child: Icon(
+            icon,
+            size: 18,
+            color: Colors.white,
+          ),
         ),
-        child: Icon(icon, size: 20, color: AppColors.textPrimary),
       ),
     );
   }
-
   Widget _buildPlaceholder(String? name) {
     String firstLetter = 'U';
     if (name != null && name.isNotEmpty) {
