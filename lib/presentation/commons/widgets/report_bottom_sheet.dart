@@ -1,5 +1,3 @@
-// lib/presentation/commons/widgets/report_bottom_sheet.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:share_plus/share_plus.dart';
@@ -8,7 +6,7 @@ import '../../../app/data/constants/app_colors.dart';
 import '../../modules/news/widgets/news_report_reason_page.dart';
 
 class ReportBottomSheet extends StatelessWidget {
-  final String type; // 'news' or 'marketplace'
+  final String type;
   final String id;
 
   const ReportBottomSheet({

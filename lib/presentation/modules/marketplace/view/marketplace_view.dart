@@ -104,42 +104,34 @@ class _MarketplaceViewState extends State<MarketplaceView>
   // RouteAware methods
   @override
   void didPop() {
-    debugPrint('🔄 MarketplaceView didPop - checking for refresh');
     _checkAndReloadData();
   }
 
   @override
   void didPush() {
-    debugPrint('🔄 MarketplaceView didPush');
   }
 
   @override
   void didPushNext() {
-    debugPrint('🔄 MarketplaceView didPushNext');
   }
 
   @override
   void didPopNext() {
-    debugPrint('🔄 MarketplaceView didPopNext - checking for refresh');
     _checkAndReloadData();
   }
 
   Future<void> _checkAndReloadData() async {
     if (_isRefreshing) {
-      debugPrint('🔄 Already refreshing, skipping check');
       return;
     }
 
     try {
       final prefs = await SharedPreferences.getInstance();
       final needsRefresh = prefs.getBool('marketplace_refresh_needed') ?? false;
-      debugPrint('🔄 Checking refresh flag: $needsRefresh');
 
       if (needsRefresh) {
         _isRefreshing = true;
-        debugPrint(
-          '🔄 Refresh flag detected, clearing flag and refreshing marketplace',
-        );
+
 
         // Clear the flag first to prevent multiple refreshes
         await prefs.remove('marketplace_refresh_needed');
@@ -156,7 +148,7 @@ class _MarketplaceViewState extends State<MarketplaceView>
       }
     } catch (e) {
       _isRefreshing = false;
-      debugPrint('❌ Error in _checkAndReloadData: $e');
+      debugPrint(' Error in _checkAndReloadData: $e');
     }
   }
 
@@ -182,7 +174,7 @@ class _MarketplaceViewState extends State<MarketplaceView>
         setState(() {});
       }
     } catch (e) {
-      debugPrint('❌ Error refreshing marketplace: $e');
+      debugPrint('Error refreshing marketplace: $e');
     }
   }
 

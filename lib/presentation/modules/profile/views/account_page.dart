@@ -321,13 +321,16 @@ class _AccountPageState extends State<AccountPage>
                             icon: Icons.notifications_none,
                             title: 'Push Notifications',
                             subtitle: 'Manage notification preferences',
-                            hasToggle: true,
-                            toggleValue: _pushNotifications,
-                            onToggleChanged: (value) {
-                              setState(() {
+                            hasToggle: false, // Remove toggle from SettingsTile itself
+                            trailing: PushNotificationToggle(
+                              initialValue: _pushNotifications,
+                              onChanged: (value) {
+                                // Optionally update _pushNotifications if needed elsewhere
                                 _pushNotifications = value;
-                              });
-                            },
+                                debugPrint('Push Notification toggle: $value');
+                              },
+                            ),
+                            onTap: null, // disable tap on whole tile when toggle exists
                           ),
                           // 🎯 UPDATED: Language tile with trailing
                           SettingsTile(
@@ -928,6 +931,44 @@ class _AccountPageState extends State<AccountPage>
           borderRadius: AppSpacing.borderRadiusSM,
         ),
       ),
+    );
+  }
+}
+class PushNotificationToggle extends StatefulWidget {
+  final bool initialValue;
+  final ValueChanged<bool>? onChanged;
+
+  const PushNotificationToggle({
+    super.key,
+    required this.initialValue,
+    this.onChanged,
+  });
+
+  @override
+  State<PushNotificationToggle> createState() => _PushNotificationToggleState();
+}
+
+class _PushNotificationToggleState extends State<PushNotificationToggle> {
+  late bool _value;
+
+  @override
+  void initState() {
+    super.initState();
+    _value = widget.initialValue;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Switch.adaptive(
+      value: _value,
+      onChanged: (newVal) {
+        setState(() {
+          _value = newVal;
+        });
+        if (widget.onChanged != null) widget.onChanged!(newVal);
+      },
+      activeColor: AppColors.accent,
+      activeTrackColor: AppColors.accentLight.withOpacity(0.5),
     );
   }
 }

@@ -15,10 +15,7 @@ import '../../profile/widgets/my_news.dart';
 class OtherUserProfile extends StatefulWidget {
   final String userId;
 
-  const OtherUserProfile({
-    Key? key,
-    required this.userId,
-  }) : super(key: key);
+  const OtherUserProfile({Key? key, required this.userId}) : super(key: key);
 
   @override
   State<OtherUserProfile> createState() => _OtherUserProfileState();
@@ -47,6 +44,49 @@ class _OtherUserProfileState extends State<OtherUserProfile>
     super.dispose();
   }
 
+  Widget _buildAppbarIcon({
+    required IconData icon,
+    VoidCallback? onTap,
+    Color? background,
+    Color iconColor = Colors.white,
+    bool isLoading = false,
+    Color? loadingColor,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(50),
+        onTap: isLoading ? null : onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.black.withOpacity(0.5),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(10),
+          child: isLoading
+              ? SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      loadingColor ?? AppColors.primary,
+                    ),
+                  ),
+                )
+              : Icon(icon, size: 18, color: iconColor),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,20 +94,27 @@ class _OtherUserProfileState extends State<OtherUserProfile>
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leadingWidth: 50,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 12),
-          child: _roundedIconButton(
-            Icons.arrow_back,
-                () => Get.back(),
+        leadingWidth: 56,
+        leading: Align(
+          alignment: Alignment.centerLeft,
+          child: Container(
+            margin: const EdgeInsets.only(left: 12),
+            child: _buildAppbarIcon(
+              icon: Icons.arrow_back_rounded,
+              background: AppColors.black.withOpacity(0.5),
+              iconColor: AppColors.white,
+              onTap: () => Get.back(),
+            ),
           ),
         ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 15),
-            child: _roundedIconButton(
-              Icons.more_vert,
-                  () => _showOptionsBottomSheet(context),
+            child: _buildAppbarIcon(
+              icon: Icons.more_vert,
+              onTap: () => _showOptionsBottomSheet(context),
+              background: AppColors.black.withOpacity(0.5),
+              iconColor: AppColors.white,
             ),
           ),
         ],
@@ -134,16 +181,16 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                         Center(
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(60),
-                            child: (user.avatar != null &&
-                                user.avatar!.isNotEmpty)
+                            child:
+                                (user.avatar != null && user.avatar!.isNotEmpty)
                                 ? Image.network(
-                              user.avatar!,
-                              width: 120,
-                              height: 120,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
-                                  _buildPlaceholder(user.name),
-                            )
+                                    user.avatar!,
+                                    width: 120,
+                                    height: 120,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) =>
+                                        _buildPlaceholder(user.name),
+                                  )
                                 : _buildPlaceholder(user.name),
                           ),
                         ),
@@ -249,7 +296,7 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                     products: _profileController.productList.value,
                     isLoading: false,
                     onProductTap: (p) => Get.to(
-                          () => ProductDetailPage(
+                      () => ProductDetailPage(
                         productId: p.id,
                         onFavoriteChanged: () {
                           // Refresh the product list when favorite is changed
@@ -298,10 +345,8 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                     bottom: 50.0,
                   ),
                   itemCount: _profileController.newsList.length,
-                  separatorBuilder: (_, __) => const Divider(
-                    color: Colors.grey,
-                    height: 1,
-                  ),
+                  separatorBuilder: (_, __) =>
+                      const Divider(color: Colors.grey, height: 1),
                   itemBuilder: (context, index) {
                     return MyNews(
                       newsData: _profileController.newsList[index],
@@ -376,8 +421,9 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                       Text(
                         isBlocked ? 'Unblock User' : 'Block User',
                         style: AppTextStyles.bodyLarge.copyWith(
-                          color:
-                          isBlocked ? AppColors.success : AppColors.error,
+                          color: isBlocked
+                              ? AppColors.success
+                              : AppColors.error,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -391,8 +437,7 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                   CommonReportReasonsPage.show(
                     context: context,
                     itemId: widget.userId,
-                    type:
-                    'marketplace',
+                    type: 'marketplace',
                   );
                 },
                 isDestructiveAction: true,
@@ -453,15 +498,12 @@ class _OtherUserProfileState extends State<OtherUserProfile>
             ],
           ),
           padding: const EdgeInsets.all(5),
-          child: Icon(
-            icon,
-            size: 18,
-            color: Colors.white,
-          ),
+          child: Icon(icon, size: 18, color: Colors.white),
         ),
       ),
     );
   }
+
   Widget _buildPlaceholder(String? name) {
     String firstLetter = 'U';
     if (name != null && name.isNotEmpty) {
@@ -501,14 +543,11 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(
-      BuildContext context,
-      double shrinkOffset,
-      bool overlapsContent,
-      ) {
-    return Container(
-      color: Colors.white,
-      child: tabBar,
-    );
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(color: Colors.white, child: tabBar);
   }
 
   @override
