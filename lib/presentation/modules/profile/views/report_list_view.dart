@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import 'package:bazzar_hub_app/app/core/utils/app_spacing.dart';
 import 'package:bazzar_hub_app/app/core/utils/utils.dart';
 import 'package:bazzar_hub_app/app/data/constants/app_colors.dart';
@@ -200,6 +202,9 @@ class _ReportListViewState extends State<ReportListView>
   int _newsPage = 1;
   String? _newsError;
 
+  // User Reports (static UI data for now)
+  List<Map<String, String>> _staticReportedUsers = [];
+
   final int _limit = 10;
   final ApiServices _apiServices = Get.find<ApiServices>();
 
@@ -216,6 +221,7 @@ class _ReportListViewState extends State<ReportListView>
     _marketplaceScrollController = ScrollController()..addListener(_marketplaceScrollListener);
 
     _loadNewsReports();
+    _loadUserReports();
   }
 
   @override
@@ -486,13 +492,99 @@ class _ReportListViewState extends State<ReportListView>
   Widget _buildUserTab() {
     return RefreshIndicator(
       onRefresh: () async {
-        return;
+        await _loadUserReports();
       },
-      child: _buildEmptyState(
+      child: _staticReportedUsers.isEmpty
+          ? _buildEmptyState(
         "No user reports found",
         Icons.person_off_outlined,
+      )
+          : ListView.separated(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        itemCount: _staticReportedUsers.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 8),
+        itemBuilder: (context, index) {
+          final user = _staticReportedUsers[index];
+          final name = user['name'] ?? '';
+          final username = user['username'] ?? '';
+
+          return Card(
+            elevation: 1,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: AppColors.primary.withOpacity(0.1),
+                    child: Text(
+                      name.isNotEmpty ? name[0].toUpperCase() : '?',
+                      style: AppTextStyles.h6.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          style: AppTextStyles.bodyLarge.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          username.isNotEmpty ? '@$username' : '',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
+  }
+
+  Future<void> _loadUserReports() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      const key = 'reported_users_static';
+
+      final stored = prefs.getStringList(key) ?? [];
+      final List<Map<String, String>> users = stored
+          .map((e) => jsonDecode(e) as Map<String, dynamic>)
+          .map((m) => <String, String>{
+        'id': (m['id'] ?? '').toString(),
+        'name': (m['name'] ?? '').toString(),
+        'username': (m['username'] ?? '').toString(),
+      })
+          .toList();
+
+      if (mounted) {
+        setState(() {
+          _staticReportedUsers = users;
+        });
+      }
+    } catch (_) {
+      // Ignore local load errors for now
+    }
   }
 
   Widget _buildEmptyState(String message, IconData icon) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
@@ -10,24 +11,38 @@ import '../controllers/news_controller.dart';
 
 class CommonReportReasonsPage extends StatelessWidget {
   final String itemId;
-  final String type; // 'news' or 'marketplace'
+  final String type;
+  final bool isUserReport;
+  final String? reportedUserName;
+  final String? reportedUserEmail;
 
   const CommonReportReasonsPage({
     super.key,
     required this.itemId,
     required this.type,
+    this.isUserReport = false,
+    this.reportedUserName,
+    this.reportedUserEmail,
   });
 
   static Future<void> show({
     required BuildContext context,
     required String itemId,
     required String type,
+    bool isUserReport = false,
+    String? reportedUserName,
+    String? reportedUserEmail,
   }) {
     return Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            CommonReportReasonsPage(itemId: itemId, type: type),
+        builder: (context) => CommonReportReasonsPage(
+          itemId: itemId,
+          type: type,
+          isUserReport: isUserReport,
+          reportedUserName: reportedUserName,
+          reportedUserEmail: reportedUserEmail,
+        ),
       ),
     );
   }
@@ -434,6 +449,10 @@ class CommonReportReasonsPage extends StatelessWidget {
           : await services.reportMarketPlace(itemId, body);
 
       if (response.data.status) {
+        // If this is a user report, save the reported user locally for the User tab
+        if (isUserReport && (reportedUserName?.isNotEmpty ?? false)) {
+          await _saveReportedUserLocally(itemId);
+        }
         return true;
       } else {
         AppToast.showError(response.data.message ?? 'Failed to submit report');
@@ -442,6 +461,36 @@ class CommonReportReasonsPage extends StatelessWidget {
     } catch (e) {
       AppToast.showError('Network error: $e');
       return false;
+    }
+  }
+
+  Future<void> _saveReportedUserLocally(String userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      const key = 'reported_users_static';
+
+      final existing = prefs.getStringList(key) ?? [];
+
+      // Decode existing entries
+      final List<Map<String, dynamic>> users = existing
+          .map((e) => jsonDecode(e) as Map<String, dynamic>)
+          .toList();
+
+      // Remove any existing entry for this userId to avoid duplicates
+      users.removeWhere((u) => u['id'] == userId);
+
+      final entry = <String, dynamic>{
+        'id': userId,
+        'name': reportedUserName ?? '',
+        'username': reportedUserEmail ?? '',
+      };
+
+      users.insert(0, entry);
+
+      final encoded = users.map((u) => jsonEncode(u)).toList();
+      await prefs.setStringList(key, encoded);
+    } catch (_) {
+      // Silent fail; do not block reporting flow on local persistence issues
     }
   }
 }
