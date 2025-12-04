@@ -42,7 +42,6 @@ class _YourProductGridState extends State<YourProductGrid> {
     try {
       final response = await services.deleteMarketplace(productId);
       if (response.data.status) {
-        Get.offNamed(AppRoutes.yourPost);
         AppToast.showSuccess('Product deleted successfully');
         return true;
       } else {
@@ -79,14 +78,15 @@ class _YourProductGridState extends State<YourProductGrid> {
       if (response.data.status && response.data.data != null) {
         final updated = response.data.data as MarketplaceModel;
 
-        /// Update UI List
+        // Update UI List
         setState(() {
           int index = widget.products.indexWhere((p) => p.id == updated.id);
           if (index != -1) widget.products[index] = updated;
         });
-        Get.offNamed(AppRoutes.marketPlace);
+        
+        // Show success message without navigating away
         AppToast.showSuccess(
-          shouldActivate ? 'Listing Live' : 'Listing paused',
+          shouldActivate ? 'Listing is now Live' : 'Listing is now Paused',
         );
       } else {
         AppToast.showError(response.data.message ?? 'Failed to update');
@@ -140,7 +140,31 @@ class _YourProductGridState extends State<YourProductGrid> {
               CupertinoActionSheetAction(
                 onPressed: () {
                   Navigator.pop(ctx);
-                  Get.to(() => SellProductPage(product: product));
+                  // Create a copy of the product with isFromYourPost set to true
+                  final productToEdit = MarketplaceModel(
+                    id: product.id,
+                    title: product.title,
+                    description: product.description,
+                    price: product.price,
+                    category: product.category,
+                    images: List.from(product.images),
+                    condition: product.condition,
+                    type: product.type,
+                    views: product.views,
+                    favoritesCount: product.favoritesCount,
+                    favorites: product.favorites,
+                    isFavorite: product.isFavorite,
+                    isActive: product.isActive,
+                    location: product.location,
+                    contactInfo: product.contactInfo,
+                    createdBy: product.createdBy,
+                    createdAt: product.createdAt,
+                    updatedAt: product.updatedAt,
+                    version: product.version,
+                    list: product.list,
+                    isFromYourPost: true, // Set this flag to true
+                  );
+                  Get.to(() => SellProductPage(product: productToEdit));
                 },
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,

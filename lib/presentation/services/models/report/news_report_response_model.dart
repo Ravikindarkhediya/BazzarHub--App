@@ -46,3 +46,5 @@ class NewsReportResponseModel {
   Map<String, dynamic> toJson() => _$NewsReportResponseModelToJson(this);
 }
 
+
+

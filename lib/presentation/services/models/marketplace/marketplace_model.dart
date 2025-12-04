@@ -68,6 +68,9 @@ class MarketplaceModel {
   @JsonKey(name: 'relatedListings')
   final List<MarketplaceModel>? list;
 
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  bool isFromYourPost;
+
   MarketplaceModel({
     this.id = '',
     this.title = '',
@@ -88,7 +91,8 @@ class MarketplaceModel {
     this.createdAt = '',
     this.updatedAt = '',
     this.version = 0,
-    this.list
+    this.list,
+    this.isFromYourPost = false,
   });
 
   factory MarketplaceModel.fromJson(Map<String, dynamic> json) =>

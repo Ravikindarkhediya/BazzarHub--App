@@ -19,6 +19,7 @@ import '../../../services/models/user/user_model.dart';
 import '../../../modules/news/views/news_detail_view.dart';
 import 'package:bazzar_hub_app/presentation/modules/product/views/product_detail_page.dart';
 import 'package:bazzar_hub_app/presentation/modules/product/views/product_detail_page.dart' show ProductPageArguments;
+import 'package:bazzar_hub_app/presentation/modules/product/widgets/media_carousel.dart';
 
 class FavoritesPage extends StatefulWidget {
   const FavoritesPage({super.key});
@@ -302,27 +303,19 @@ class _FavoritesPageState extends State<FavoritesPage>
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child: news.media.isNotEmpty && news.media.first.url.isNotEmpty
-                          ? Image.network(
-                        news.media.first.url,
-                        height: 180,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          height: 180,
-                          width: double.infinity,
-                          color: Colors.grey[200],
-                          child: const Icon(Icons.image_not_supported, size: 40),
-                        ),
-                      )
+                          ? MediaCarousel(
+                              mediaUrls: news.media.map((m) => m.url).toList(),
+                              height: 180,
+                            )
                           : Container(
-                        height: 180,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(Icons.article_outlined, size: 40),
-                      ),
+                              height: 180,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200],
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(Icons.article_outlined, size: 40),
+                            ),
                     ),
                   ),
 

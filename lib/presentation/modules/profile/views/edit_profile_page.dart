@@ -98,15 +98,43 @@ class _EditProfilePageState extends State<EditProfilePage> {
         // ✅ Load locations data (JSON file)
         await _locationController.loadLocationsData();
 
-        // ✅ CHANGED: ONLY load state, not full location hierarchy
+        // ✅ Load complete location hierarchy if available
         if (user.state != null && user.state!.isNotEmpty) {
-          // Just set state
+          // Set state
           _locationController.selectedState.value = user.state;
-
-          // Load districts for the state (but don't select any)
-          await _locationController.loadDistricts(user.state!, clearSelection: true);
-
-          debugPrint('✅ Only State loaded: ${user.state}');
+          
+          // Load districts for the state
+          await _locationController.loadDistricts(user.state!, clearSelection: false);
+          
+          // If district is available, load and set it
+          if (user.district != null && user.district!.isNotEmpty) {
+            _locationController.selectedDistrict.value = user.district;
+            
+            // Load talukas for the district
+            await _locationController.loadTalukas(user.state!, user.district!, clearSelection: false);
+            
+            // If taluka is available, load and set it
+            if (user.taluka != null && user.taluka!.isNotEmpty) {
+              _locationController.selectedTaluka.value = user.taluka!;
+              
+              // Load villages for the taluka
+              if (user.taluka != null && user.taluka!.isNotEmpty) {
+                await _locationController.loadVillages(
+                  user.state!, 
+                  user.district!, 
+                  user.taluka!,
+                  clearSelection: false,
+                );
+              }
+              
+              // If village is available, set it
+              if (user.village != null && user.village!.isNotEmpty) {
+                _locationController.selectedVillage.value = user.village!;
+              }
+            }
+          }
+          
+          debugPrint('✅ Location data loaded: ${user.state}, ${user.district}, ${user.taluka}, ${user.village}');
         }
       }
     } catch (e) {

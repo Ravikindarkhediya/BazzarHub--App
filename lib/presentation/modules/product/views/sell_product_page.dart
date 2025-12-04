@@ -89,22 +89,29 @@ class _SellProductPageState extends State<SellProductPage> {
   Future<void> submitForm() async {
     final success = await _controller.submitProduct(context);
     if (success && mounted) {
-      // Show success message before navigation
+      // Show success message
       HapticFeedback.heavyImpact();
       AppToast.showSuccess(isEditMode ? 'Product updated successfully!' : 'Product listed successfully!');
       
       setState(() => _isSubmitted = true);
       
-      // Add small delay to ensure toast is shown before navigation
+      // Add small delay to ensure toast is shown before any navigation
       await Future.delayed(const Duration(milliseconds: 500));
       
       if (mounted) {
         if (isEditMode) {
-          Get.offAllNamed(
-            AppRoutes.homeWrapper,
-            arguments: {'initialTab': 2},
-          );
+          // If we came from YourPostView, just pop back
+          if (widget.product?.isFromYourPost == true) {
+            Get.back(result: {'refresh': true});
+          } else {
+            // Otherwise, go to marketplace
+            Get.offAllNamed(
+              AppRoutes.homeWrapper,
+              arguments: {'initialTab': 2},
+            );
+          }
         } else {
+          // For new products, always go to marketplace
           Get.offAllNamed(
             AppRoutes.homeWrapper,
             arguments: {'initialTab': 2},
