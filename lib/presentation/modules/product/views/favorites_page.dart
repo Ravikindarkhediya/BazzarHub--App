@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
+import 'package:flutter_html/flutter_html.dart'; // Add this package to pubspec.yaml
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
@@ -63,7 +64,6 @@ class _FavoritesPageState extends State<FavoritesPage>
       setState(() {});
     });
 
-    // Load initial data for the first tab (News)
     _getFavoriteNews();
 
     _animationController = AnimationController(
@@ -284,7 +284,37 @@ class _FavoritesPageState extends State<FavoritesPage>
     );
   }
 
-  // ✅ Fixed News Item Widget
+  // Helper method to convert plain text with \n to HTML
+  String _convertToHtml(String content) {
+    if (content.isEmpty) return '';
+
+    // Don't escape HTML if it's already HTML content
+    // Just convert newlines to br tags
+    String htmlContent = content;
+
+    // Convert various newline formats to <br> tags
+    htmlContent = htmlContent
+        .replaceAll('\r\n', '<br>')  // Windows style
+        .replaceAll('\r', '<br>')    // Old Mac style
+        .replaceAll('\n', '<br>');   // Unix/Linux style
+
+    // Wrap in a div to ensure proper rendering
+    return '<div>$htmlContent</div>';
+  }
+
+  // Helper method to check if content is HTML or plain text
+  bool _isHtmlContent(String content) {
+    if (content.isEmpty) return false;
+
+    // Check for common HTML tags (excluding <br> as it might be added)
+    final htmlTagPattern = RegExp(
+      r'<(?!br\s*/?>)[^>]+>',
+      caseSensitive: false,
+    );
+    return htmlTagPattern.hasMatch(content);
+  }
+
+  // ✅ Updated News Item Widget with HTML Content Rendering
   Widget _buildNewsItem(FavoriteNewsModel news, {bool showDivider = true}) {
     final newsModel = _convertToNewsModel(news);
 
@@ -304,18 +334,18 @@ class _FavoritesPageState extends State<FavoritesPage>
                       borderRadius: BorderRadius.circular(12),
                       child: news.media.isNotEmpty && news.media.first.url.isNotEmpty
                           ? MediaCarousel(
-                              mediaUrls: news.media.map((m) => m.url).toList(),
-                              height: 180,
-                            )
+                        mediaUrls: news.media.map((m) => m.url).toList(),
+                        height: 180,
+                      )
                           : Container(
-                              height: 180,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[200],
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Icon(Icons.article_outlined, size: 40),
-                            ),
+                        height: 180,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.article_outlined, size: 40),
+                      ),
                     ),
                   ),
 
@@ -370,16 +400,108 @@ class _FavoritesPageState extends State<FavoritesPage>
                         maxLines: 2,
                       ),
                       const SizedBox(height: 8),
+
+                      // ✅ HTML Content Rendering with flutter_html
                       if (news.content?.isNotEmpty == true)
-                        Text(
-                          news.content!,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey[600],
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          maxLines: 2,
+                        Html(
+                          data: _convertToHtml(news.content!),
+                          style: {
+                            "body": Style(
+                              margin: Margins.zero,
+                              padding: HtmlPaddings.zero,
+                              fontSize: FontSize(14),
+                              maxLines: 2,
+                              textOverflow: TextOverflow.ellipsis,
+                            ),
+                            "div": Style(
+                              margin: Margins.zero,
+                              padding: HtmlPaddings.zero,
+                              fontSize: FontSize(14),
+                              lineHeight: const LineHeight(1.5),
+                            ),
+                            "p": Style(
+                              margin: Margins.zero,
+                              padding: HtmlPaddings.zero,
+                              fontSize: FontSize(14),
+                              lineHeight: const LineHeight(1.5),
+                            ),
+                            "br": Style(
+                              margin: Margins.zero,
+                              padding: HtmlPaddings.zero,
+                            ),
+                            "strong": Style(
+                              fontWeight: FontWeight.bold,
+                            ),
+                            "b": Style(
+                              fontWeight: FontWeight.bold,
+                            ),
+                            "em": Style(
+                              fontStyle: FontStyle.italic,
+                            ),
+                            "i": Style(
+                              fontStyle: FontStyle.italic,
+                            ),
+                            "h1": Style(
+                              margin: Margins.zero,
+                              padding: HtmlPaddings.zero,
+                              fontSize: FontSize(20),
+                              fontWeight: FontWeight.bold,
+                              lineHeight: const LineHeight(1.3),
+                            ),
+                            "h2": Style(
+                              margin: Margins.zero,
+                              padding: HtmlPaddings.zero,
+                              fontSize: FontSize(18),
+                              fontWeight: FontWeight.bold,
+                              lineHeight: const LineHeight(1.3),
+                            ),
+                            "h3": Style(
+                              margin: Margins.zero,
+                              padding: HtmlPaddings.zero,
+                              fontSize: FontSize(16),
+                              fontWeight: FontWeight.bold,
+                              lineHeight: const LineHeight(1.3),
+                            ),
+                            "h4": Style(
+                              margin: Margins.zero,
+                              padding: HtmlPaddings.zero,
+                              fontSize: FontSize(15),
+                              fontWeight: FontWeight.bold,
+                              lineHeight: const LineHeight(1.3),
+                            ),
+                            "h5": Style(
+                              margin: Margins.zero,
+                              padding: HtmlPaddings.zero,
+                              fontSize: FontSize(14),
+                              fontWeight: FontWeight.bold,
+                              lineHeight: const LineHeight(1.3),
+                            ),
+                            "h6": Style(
+                              margin: Margins.zero,
+                              padding: HtmlPaddings.zero,
+                              fontSize: FontSize(13),
+                              fontWeight: FontWeight.bold,
+                              lineHeight: const LineHeight(1.3),
+                            ),
+                            "ul": Style(
+                              margin: Margins.zero,
+                              padding: HtmlPaddings.zero,
+                            ),
+                            "ol": Style(
+                              margin: Margins.zero,
+                              padding: HtmlPaddings.zero,
+                            ),
+                            "li": Style(
+                              fontSize: FontSize(14),
+                            ),
+                            "a": Style(
+                              color: AppColors.primary,
+                              textDecoration: TextDecoration.none,
+                            ),
+                          },
+                          shrinkWrap: true,
                         ),
+
                       const SizedBox(height: 8),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -419,7 +541,6 @@ class _FavoritesPageState extends State<FavoritesPage>
           ),
         ),
 
-        // Divider at bottom
         if (showDivider)
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
@@ -698,7 +819,6 @@ class _FavoritesPageState extends State<FavoritesPage>
                     ],
                   ),
 
-                  // Product Details
                   Padding(
                     padding: const EdgeInsets.all(12),
                     child: Column(
