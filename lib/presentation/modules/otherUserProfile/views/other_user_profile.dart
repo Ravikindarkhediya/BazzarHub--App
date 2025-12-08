@@ -121,8 +121,13 @@ class _OtherUserProfileState extends State<OtherUserProfile>
       ),
       body: DefaultTabController(
         length: 2,
-        child: NestedScrollView(
-          headerSliverBuilder: (context, innerBoxIsScrolled) {
+        child: RefreshIndicator(
+          onRefresh: () async {
+            await _profileController.refresh();
+          },
+          color: AppColors.primary,
+          child: NestedScrollView(
+            headerSliverBuilder: (context, innerBoxIsScrolled) {
             return [
               SliverToBoxAdapter(
                 child: Padding(
@@ -285,14 +290,19 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                   );
                 }
 
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.only(
-                    left: 0,
-                    right: 0,
-                    top: 16.0,
-                    bottom: 35.0,
-                  ),
-                  child: ProductGridWidget(
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    await _profileController.refresh();
+                  },
+                  color: AppColors.primary,
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.only(
+                      left: 0,
+                      right: 0,
+                      top: 16.0,
+                      bottom: 35.0,
+                    ),
+                    child: ProductGridWidget(
                     products: _profileController.productList.value,
                     isLoading: false,
                     onProductTap: (p) => Get.to(
@@ -306,6 +316,7 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                     ),
                     onFavoriteToggle: null,
                     showHeartIcon: false,
+                  ),
                   ),
                 );
               }),
@@ -337,27 +348,34 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                   );
                 }
 
-                return ListView.separated(
-                  padding: const EdgeInsets.only(
-                    left: 16.0,
-                    right: 16.0,
-                    top: 16.0,
-                    bottom: 50.0,
-                  ),
-                  itemCount: _profileController.newsList.length,
-                  separatorBuilder: (_, __) =>
-                      const Divider(color: Colors.grey, height: 1),
-                  itemBuilder: (context, index) {
-                    return MyNews(
-                      newsData: _profileController.newsList[index],
-                      hideActionButton: true,
-                      onTapdDelete: (_) {},
-                    );
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    await _profileController.refresh();
                   },
+                  color: AppColors.primary,
+                  child: ListView.separated(
+                    padding: const EdgeInsets.only(
+                      left: 16.0,
+                      right: 16.0,
+                      top: 16.0,
+                      bottom: 50.0,
+                    ),
+                    itemCount: _profileController.newsList.length,
+                    separatorBuilder: (_, __) =>
+                        const Divider(color: Colors.grey, height: 1),
+                    itemBuilder: (context, index) {
+                      return MyNews(
+                        newsData: _profileController.newsList[index],
+                        hideActionButton: true,
+                        onTapdDelete: (_) {},
+                      );
+                    },
+                  ),
                 );
               }),
             ],
           ),
+        ),
         ),
       ),
     );
