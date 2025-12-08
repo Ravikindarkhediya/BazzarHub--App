@@ -1,6 +1,5 @@
 import 'package:bazzar_hub_app/presentation/modules/profile/views/block_user.dart';
 import 'package:bazzar_hub_app/presentation/modules/profile/widgets/profile_info.dart';
-import 'package:bazzar_hub_app/presentation/modules/widgets/app_update_dialoge.dart';
 import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
@@ -14,6 +13,7 @@ import '../../../../app/data/constants/app_colors.dart';
 import '../../../services/api_service.dart';
 import '../../../services/models/user/user_model.dart';
 import '../../product/widgets/similar_product_widget.dart';
+import '../../wallet/views/wallet_screen.dart';
 import '../../widgets/app_review_dialog.dart';
 import '../widgets/language_actionsheet.dart';
 import '../widgets/settings_section.dart';
@@ -211,7 +211,7 @@ class _AccountPageState extends State<AccountPage>
                                       SizedBox(width: 10),
                                       TextButton(
                                         onPressed: () {
-                                          _launchURL(privacyUrl);
+                                          Get.to(WalletScreen());
                                         },
                                         style: TextButton.styleFrom(
                                           padding: EdgeInsets.zero,

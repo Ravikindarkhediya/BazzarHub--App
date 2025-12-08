@@ -1451,6 +1451,43 @@ class _ApiServices implements ApiServices {
     return httpResponse;
   }
 
+  @override
+  Future<HttpResponse<BaseListModel<WalletTransactionsModel>>>
+  getWalletTransactionsList(Map<String, dynamic> queryParams) async {
+    final _extra = <String, dynamic>{};
+    final queryParameters = <String, dynamic>{};
+    queryParameters.addAll(queryParams);
+    final _headers = <String, dynamic>{};
+    const Map<String, dynamic>? _data = null;
+    final _options =
+        _setStreamType<HttpResponse<BaseListModel<WalletTransactionsModel>>>(
+          Options(method: 'GET', headers: _headers, extra: _extra)
+              .compose(
+                _dio.options,
+                'api/wallet/transactions',
+                queryParameters: queryParameters,
+                data: _data,
+              )
+              .copyWith(
+                baseUrl: _combineBaseUrls(_dio.options.baseUrl, baseUrl),
+              ),
+        );
+    final _result = await _dio.fetch<Map<String, dynamic>>(_options);
+    late BaseListModel<WalletTransactionsModel> _value;
+    try {
+      _value = BaseListModel<WalletTransactionsModel>.fromJson(
+        _result.data!,
+        (json) =>
+            WalletTransactionsModel.fromJson(json as Map<String, dynamic>),
+      );
+    } on Object catch (e, s) {
+      errorLogger?.logError(e, s, _options);
+      rethrow;
+    }
+    final httpResponse = HttpResponse(_value, _result);
+    return httpResponse;
+  }
+
   RequestOptions _setStreamType<T>(RequestOptions requestOptions) {
     if (T != dynamic &&
         !(requestOptions.responseType == ResponseType.bytes ||

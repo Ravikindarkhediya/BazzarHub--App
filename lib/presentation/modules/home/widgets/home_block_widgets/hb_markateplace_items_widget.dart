@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../../../app/core/utils/app_spacing.dart';
-import '../../../../../app/core/utils/responsive_size.dart';
 import '../../../../../app/data/constants/app_colors.dart';
 import '../../../../../app/data/constants/app_text_style.dart';
 import '../../../../services/models/marketplace/marketplace_model.dart';

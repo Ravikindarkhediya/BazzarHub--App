@@ -59,5 +59,6 @@ class Endpoints {
   // Wallet
   static const String WALLET_PEN_BALANCE = "api/wallet/pen/balance";
   static const String WALLET_COIN_BALANCE = "api/wallet/coin/balance";
+  static const String WALLET_TRASNACTIONS = "api/wallet/transactions";
 
 }

@@ -122,6 +122,15 @@ class Utils {
     }
   }
 
+  static String formatDateWithDay(String dateString, {String format = 'dd MMM yyyy · hh:mm a'}) {
+    try {
+      DateTime date = DateTime.parse(dateString).toLocal();
+      return DateFormat(format).format(date);
+    } catch (e) {
+      return '';
+    }
+  }
+
   static DateTime stringToDate(String dateString, String format) {
     final formatter = DateFormat(format);
     return formatter.parse(dateString);

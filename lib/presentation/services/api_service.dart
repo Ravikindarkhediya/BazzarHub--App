@@ -4,6 +4,7 @@ import 'package:bazzar_hub_app/presentation/services/models/categorie/category_l
 import 'package:bazzar_hub_app/presentation/services/models/news/news_model.dart';
 import 'package:bazzar_hub_app/presentation/services/models/news/news_tags_model.dart';
 import 'package:bazzar_hub_app/presentation/services/models/wallet/wallet_model.dart';
+import 'package:bazzar_hub_app/presentation/services/models/wallet/wallet_transactions_model.dart';
 import 'package:dio/dio.dart';
 import 'package:retrofit/retrofit.dart';
 import '../../manager/session_manager.dart';
@@ -320,4 +321,9 @@ abstract class ApiServices {
 
   @GET(Endpoints.WALLET_COIN_BALANCE)
   Future<HttpResponse<BaseModel<WalletModel>>> getCoinBalance();
+
+  @GET(Endpoints.WALLET_TRASNACTIONS)
+  Future<HttpResponse<BaseListModel<WalletTransactionsModel>>> getWalletTransactionsList(@Queries() Map<String, dynamic> queryParams);
+
+
 }

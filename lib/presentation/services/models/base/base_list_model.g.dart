@@ -13,6 +13,9 @@ BaseListModel<T> _$BaseListModelFromJson<T>(
   status: json['status'] as bool,
   data: (json['data'] as List<dynamic>?)?.map(fromJsonT).toList(),
   message: json['message'] as String?,
+  pagination: json['pagination'] == null
+      ? const PaginationModel()
+      : PaginationModel.fromJson(json['pagination'] as Map<String, dynamic>),
 );
 
 Map<String, dynamic> _$BaseListModelToJson<T>(
@@ -22,4 +25,5 @@ Map<String, dynamic> _$BaseListModelToJson<T>(
   'status': instance.status,
   'data': instance.data?.map(toJsonT).toList(),
   'message': instance.message,
+  'pagination': instance.pagination,
 };
