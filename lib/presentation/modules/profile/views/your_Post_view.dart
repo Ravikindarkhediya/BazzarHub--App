@@ -4,6 +4,7 @@ import 'package:bazzar_hub_app/presentation/modules/profile/widgets/your_product
 import 'package:bazzar_hub_app/presentation/services/models/news/news_model.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../app/core/utils/app_spacing.dart';
@@ -182,133 +183,151 @@ class _YourPostViewState extends State<YourPostView>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Custom AppBar
-            Container(
-              height: kToolbarHeight,
-              decoration: const BoxDecoration(
-                color: AppColors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Color(0x0D000000),
-                    blurRadius: 4,
-                    offset: Offset(0, 2),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(110),
+          child: SafeArea(
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: 2,
                   ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () {
-                      Get.back();
-                    },
-                    icon: Icon(
-                      Icons.arrow_back_ios_new,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-
-                  Spacer(),
-                  Spacer(),
-                  Spacer(),
-                  Spacer(),
-                  Spacer(),
-                  Expanded(
-                    flex: 9,
-                    child: Center(
-                      child:
-                          Text(
-                                'My Posts',
-                                style: AppTextStyles.h5.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
-                                ),
-                              )
+                  child: Row(
+                    children: [
+                      if (Navigator.canPop(context))
+                        IconButton(
+                          onPressed: () => Navigator.of(context).maybePop(),
+                          icon: const Icon(Icons.arrow_back),
+                          color: AppColors.primary,
+                        ),
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            'My Posts',
+                            style: AppTextStyles.h4.copyWith(
+                              color: AppColors.primary,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          )
                               .animate()
                               .fadeIn(duration: 600.ms)
                               .slideY(begin: -0.3, end: 0),
-                    ),
-                  ),
-
-                  Spacer(flex: 9),
-                ],
-              ),
-            ),
-
-            // TabBar below app bar
-            Container(
-              color: AppColors.white,
-              child: TabBar(
-                controller: _tabController,
-                labelColor: AppColors.primary,
-                indicatorColor: AppColors.primary,
-                unselectedLabelColor: AppColors.textSecondary,
-                labelStyle: AppTextStyles.bodyLarge.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-                unselectedLabelStyle: AppTextStyles.bodyLarge.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
-                indicatorWeight: 3,
-                tabs: const [
-                  Tab(text: 'Products'),
-                  Tab(text: 'News'),
-                ],
-              ),
-            ),
-
-            // Expanded TabBarView holds scrollable content for each tab
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    child: YourProductGrid(
-                      products: _displayedProducts,
-                      isLoading: _isLoadingProducts,
-                      onProductTap: (product) {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ProductDetailPage(
-                              productId: product.id,
-                              showEditDeleteButtons: true,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-
-                  _isLoadingNews
-                      ? Center(child: CircularProgressIndicator())
-                      : ListView.separated(
-                          padding: AppSpacing.horizontalMD,
-                          itemCount: _displayMyNews.length,
-                          separatorBuilder: (_, __) =>
-                          const Divider(
-                            color: Colors.grey,
-                            thickness: 0.5,
-                            height: 1,
-                            indent: 0,
-                            endIndent: 0,
-                          ),
-                          itemBuilder: (context, index) {
-                            return MyNews(
-                              newsData: _displayMyNews[index],
-                              onTapdDelete: (index) {
-                                _deleteMyNews(index);
-                              },
-                            );
-                          },
                         ),
-                ],
+                      ),
+                      const SizedBox(width: 48),
+                    ],
+                  ),
+                ),
+                SizedBox(
+                  height: 50,
+                  child: TabBar(
+                    controller: _tabController,
+                    labelColor: AppColors.primary,
+                    unselectedLabelColor: AppColors.textSecondary,
+                    indicatorColor: AppColors.primary,
+                    indicatorWeight: 3,
+                    labelStyle: AppTextStyles.bodyLarge.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    unselectedLabelStyle: AppTextStyles.bodyLarge.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                    tabs: const [
+                      Tab(text: 'Products'),
+                      Tab(text: 'News'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              child: YourProductGrid(
+                products: _displayedProducts,
+                isLoading: _isLoadingProducts,
+                onProductTap: (product) {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ProductDetailPage(
+                        productId: product.id,
+                        showEditDeleteButtons: true,
+                      ),
+                    ),
+                  );
+                },
               ),
+            ),
+            _isLoadingNews
+                ? const Center(child: CircularProgressIndicator())
+                : _displayMyNews.isEmpty
+                    ? _buildNewsEmptyState()
+                    : ListView.separated(
+                        padding: AppSpacing.horizontalMD,
+                        itemCount: _displayMyNews.length,
+                        separatorBuilder: (_, __) => const Divider(
+                          color: Colors.grey,
+                          thickness: 0.5,
+                          height: 1,
+                          indent: 0,
+                          endIndent: 0,
+                        ),
+                        itemBuilder: (context, index) {
+                          return MyNews(
+                            newsData: _displayMyNews[index],
+                            onTapdDelete: (index) {
+                              _deleteMyNews(index);
+                            },
+                          );
+                        },
+                      ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNewsEmptyState() {
+    return Center(
+      child: Padding(
+        padding: AppSpacing.paddingXL,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.article_outlined,
+              size: 80,
+              color: AppColors.grey400,
+            ),
+            AppSpacing.verticalSpaceMD,
+            Text(
+              'No News Found',
+              style: AppTextStyles.label.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            AppSpacing.verticalSpaceSM,
+            Text(
+              'Try posting news or check back later',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textHint,
+              ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),

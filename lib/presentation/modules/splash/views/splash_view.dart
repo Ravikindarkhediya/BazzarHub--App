@@ -41,27 +41,17 @@ class _SplashViewState extends State<SplashView>
 
         String route;
 
-        // 1. Not logged in + Profile not complete → onboarding
         if (!hasSession && !isProfileComplete) {
           route = AppRoutes.onboarding;
-        }
-
-        // 2. Logged in but profile incomplete → complete profile
-        else if (hasSession && !isProfileComplete) {
+        } else if (hasSession && !isProfileComplete) {
           route = AppRoutes.completeProfile;
-        }
-
-        // 3. Logged in + profile complete → home
-        else {
+        } else {
           route = AppRoutes.homeWrapper;
         }
 
         Navigator.pushReplacementNamed(context, route);
-
       }
     });
-
-
   }
 
   @override
@@ -78,73 +68,85 @@ class _SplashViewState extends State<SplashView>
       backgroundColor: AppColors.primary,
       body: Stack(
         children: [
-          /// 🌈 Background Gradient
           Container(
             decoration: const BoxDecoration(
               gradient: AppColors.primaryGradient,
             ),
           ),
 
-          /// ✨ Animated Circles
           _buildAnimatedBackground(),
 
-          /// 🎯 Main Splash Content
           SafeArea(
-            child: Center(
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: AppResponsiveSize.widthPercent(context, 8),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Spacer(flex: 2),
-
-                    /// 🏢 Logo with pulse
-                    _buildLogoSection(logoSize),
-
-                    SizedBox(height: AppResponsiveSize.heightPercent(context, 3)),
-
-                    /// 📱 App Name
-                    Text(
-                      AppConstants.appName,
-                      style: AppTextStyles.h1.copyWith(
-                        color: AppColors.white,
-                        fontSize: 36,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.2,
-                        shadows: [
-                          Shadow(
-                            color: AppColors.black.withOpacity(0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 4),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppResponsiveSize.widthPercent(
+                            context,
+                            8,
                           ),
-                        ],
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const SizedBox(height: 40),
+
+                            _buildLogoSection(logoSize),
+
+                            SizedBox(
+                              height: AppResponsiveSize.heightPercent(
+                                context,
+                                3,
+                              ),
+                            ),
+                            Text(
+                                  AppConstants.appName,
+                                  style: AppTextStyles.h1.copyWith(
+                                    color: AppColors.white,
+                                    fontSize: 36,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 1.2,
+                                  ),
+                                )
+                                .animate()
+                                .fadeIn(duration: 1200.ms, delay: 300.ms)
+                                .slideY(
+                                  begin: 0.3,
+                                  end: 0,
+                                  curve: Curves.easeOutCubic,
+                                ),
+
+                            SizedBox(
+                              height: AppResponsiveSize.heightPercent(
+                                context,
+                                1.5,
+                              ),
+                            ),
+
+                            _buildTagline(),
+
+                            const SizedBox(height: 40),
+
+                            _buildLoadingSection(),
+
+                            const SizedBox(height: 40),
+
+                            _buildPoweredBySection(),
+
+                            const SizedBox(height: 25),
+                          ],
+                        ),
                       ),
-                    )
-                        .animate()
-                        .fadeIn(duration: 1200.ms, delay: 300.ms)
-                        .slideY(begin: 0.3, end: 0, curve: Curves.easeOutCubic),
-
-                    SizedBox(height: AppResponsiveSize.heightPercent(context, 1.5)),
-
-                    /// 💬 Tagline
-                    _buildTagline(),
-
-                    const Spacer(flex: 2),
-
-                    /// ⏳ Loading Indicator
-                    _buildLoadingSection(),
-
-                    SizedBox(height: AppResponsiveSize.heightPercent(context, 4)),
-
-                    /// 🔐 Powered By Section
-                    _buildPoweredBySection(),
-
-                    SizedBox(height: AppResponsiveSize.heightPercent(context, 2)),
-                  ],
-                ),
-              ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -152,37 +154,46 @@ class _SplashViewState extends State<SplashView>
     );
   }
 
-  /// 🎨 Animated Background Circles
   Widget _buildAnimatedBackground() {
     return Stack(
       children: [
         Positioned(
           top: -100,
           right: -100,
-          child: _circle(
-            diameter: 300,
-            colors: [
-              AppColors.accent.withOpacity(0.15),
-              AppColors.accent.withOpacity(0),
-            ],
-          )
-              .animate(onPlay: (c) => c.repeat())
-              .scale(duration: 3000.ms, begin: const Offset(0.8, 0.8), end: const Offset(1.2, 1.2))
-              .fade(begin: 0.3, end: 0.6),
+          child:
+              _circle(
+                    diameter: 300,
+                    colors: [
+                      AppColors.accent.withOpacity(0.15),
+                      AppColors.accent.withOpacity(0),
+                    ],
+                  )
+                  .animate(onPlay: (c) => c.repeat())
+                  .scale(
+                    duration: 3000.ms,
+                    begin: const Offset(0.8, 0.8),
+                    end: const Offset(1.2, 1.2),
+                  )
+                  .fade(begin: 0.3, end: 0.6),
         ),
         Positioned(
           bottom: -150,
           left: -150,
-          child: _circle(
-            diameter: 400,
-            colors: [
-              AppColors.secondary.withOpacity(0.12),
-              AppColors.secondary.withOpacity(0),
-            ],
-          )
-              .animate(onPlay: (c) => c.repeat())
-              .scale(duration: 4000.ms, begin: const Offset(1, 1), end: const Offset(1.3, 1.3))
-              .fade(begin: 0.2, end: 0.5),
+          child:
+              _circle(
+                    diameter: 400,
+                    colors: [
+                      AppColors.secondary.withOpacity(0.12),
+                      AppColors.secondary.withOpacity(0),
+                    ],
+                  )
+                  .animate(onPlay: (c) => c.repeat())
+                  .scale(
+                    duration: 4000.ms,
+                    begin: const Offset(1, 1),
+                    end: const Offset(1.3, 1.3),
+                  )
+                  .fade(begin: 0.2, end: 0.5),
         ),
       ],
     );
@@ -199,80 +210,80 @@ class _SplashViewState extends State<SplashView>
     );
   }
 
-  /// 🌀 Logo Section
   Widget _buildLogoSection(double logoSize) {
     return AnimatedBuilder(
-      animation: _pulseController,
-      builder: (context, child) {
-        return Container(
-          width: logoSize,
-          height: logoSize,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.accent.withOpacity(0.4 + (_pulseController.value * 0.3)),
-                blurRadius: 40 + (_pulseController.value * 20),
-                spreadRadius: 5 + (_pulseController.value * 5),
+          animation: _pulseController,
+          builder: (context, child) {
+            return Container(
+              width: logoSize,
+              height: logoSize,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.accent.withOpacity(
+                      0.4 + (_pulseController.value * 0.3),
+                    ),
+                    blurRadius: 40 + (_pulseController.value * 20),
+                    spreadRadius: 5 + (_pulseController.value * 5),
+                  ),
+                  BoxShadow(
+                    color: AppColors.white.withOpacity(0.1),
+                    blurRadius: 60,
+                    spreadRadius: 10,
+                  ),
+                ],
               ),
-              BoxShadow(
-                color: AppColors.white.withOpacity(0.1),
-                blurRadius: 60,
-                spreadRadius: 10,
+              child: Container(
+                padding: EdgeInsets.all(
+                  AppResponsiveSize.widthPercent(context, 3),
+                ),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.white,
+                  border: Border.all(color: AppColors.accent, width: 3),
+                ),
+                child: ClipOval(
+                  child: Image.asset(
+                    'assets/images/app_logo.png',
+                    fit: BoxFit.cover,
+                  ),
+                ),
               ),
-            ],
-          ),
-          child: Container(
-            padding: EdgeInsets.all(AppResponsiveSize.widthPercent(context, 3)),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.white,
-              border: Border.all(
-                color: AppColors.accent,
-                width: 3,
-              ),
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                'assets/images/app_logo.png',
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-        );
-      },
-    )
+            );
+          },
+        )
         .animate()
         .fadeIn(duration: 1000.ms)
-        .scale(delay: 200.ms, duration: 800.ms, begin: const Offset(0.5, 0.5), curve: Curves.easeOutBack);
+        .scale(
+          delay: 200.ms,
+          duration: 800.ms,
+          begin: const Offset(0.5, 0.5),
+          curve: Curves.easeOutBack,
+        );
   }
 
-  /// 💬 Tagline
   Widget _buildTagline() {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _buildDivider(),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: AppResponsiveSize.widthPercent(context, 3)),
-          child: Text(
-            AppConstants.appTagline,
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.white.withOpacity(0.95),
-              fontWeight: FontWeight.w500,
-              letterSpacing: 1.5,
-              shadows: [
-                Shadow(
-                  color: AppColors.black.withOpacity(0.3),
-                  blurRadius: 8,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildDivider(),
+            Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: AppResponsiveSize.widthPercent(context, 3),
+              ),
+              child: Text(
+                AppConstants.appTagline,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.white.withOpacity(0.95),
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 1.5,
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
-        _buildDivider(),
-      ],
-    )
+            _buildDivider(),
+          ],
+        )
         .animate()
         .fadeIn(duration: 1500.ms, delay: 600.ms)
         .slideX(begin: -0.2, end: 0);
@@ -294,51 +305,47 @@ class _SplashViewState extends State<SplashView>
     );
   }
 
-  /// ⏳ Loading Section
   Widget _buildLoadingSection() {
     return Column(
       children: [
         SizedBox(
-          width: AppResponsiveSize.widthPercent(context, 12),
-          height: AppResponsiveSize.widthPercent(context, 12),
-          child: Stack(
-            children: [
-              CircularProgressIndicator(
-                value: 1.0,
-                strokeWidth: 3,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  AppColors.white.withOpacity(0.2),
-                ),
+              width: AppResponsiveSize.widthPercent(context, 12),
+              height: AppResponsiveSize.widthPercent(context, 12),
+              child: Stack(
+                children: [
+                  CircularProgressIndicator(
+                    value: 1.0,
+                    strokeWidth: 3,
+                    valueColor: AlwaysStoppedAnimation(
+                      AppColors.white.withOpacity(0.2),
+                    ),
+                  ),
+                  const CircularProgressIndicator(
+                    strokeWidth: 3,
+                    valueColor: AlwaysStoppedAnimation(AppColors.accent),
+                  ),
+                ],
               ),
-              CircularProgressIndicator(
-                strokeWidth: 3,
-                valueColor: const AlwaysStoppedAnimation<Color>(
-                  AppColors.accent,
-                ),
-              ),
-            ],
-          ),
-        )
+            )
             .animate(onPlay: (c) => c.repeat())
             .rotate(duration: 2000.ms, curve: Curves.linear),
 
         SizedBox(height: AppResponsiveSize.heightPercent(context, 2)),
 
         Text(
-          'Loading your experience...',
-          style: AppTextStyles.caption.copyWith(
-            color: AppColors.white.withOpacity(0.7),
-            fontSize: 13,
-            letterSpacing: 0.5,
-          ),
-        )
+              'Loading your experience...',
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.white.withOpacity(0.7),
+                fontSize: 13,
+                letterSpacing: 0.5,
+              ),
+            )
             .animate(onPlay: (c) => c.repeat(reverse: true))
             .fade(duration: 1500.ms),
       ],
     ).animate().fadeIn(duration: 1000.ms, delay: 800.ms);
   }
 
-  /// 🧠 Powered By Section
   Widget _buildPoweredBySection() {
     return Column(
       children: [
