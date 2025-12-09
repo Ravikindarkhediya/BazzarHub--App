@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -19,7 +18,7 @@ import '../../product/widgets/image_upload_section.dart';
 import 'news_controller.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:html/dom.dart' as dom;
-
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'news_detail_controller.dart';
 
 class AddNewsController extends ChangeNotifier implements ImageUploadController {
@@ -829,6 +828,12 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
   // Image picking methods
   @override
   Future<void> pickFromCamera(BuildContext context, {required String mediaType}) async {
+    // Camera not supported on web
+    if (kIsWeb) {
+      AppToast.showError('Camera not supported on web. Please use gallery.');
+      return;
+    }
+
     try {
       final picker = ImagePicker();
       XFile? pickedFile;
@@ -847,26 +852,31 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
     }
   }
 
+// Update the pickFromGallery method:
   @override
   Future<void> pickFromGallery(BuildContext context, {required String mediaType}) async {
     try {
       final picker = ImagePicker();
+
       if (mediaType == 'all') {
         final pickedFiles = await picker.pickMultipleMedia();
         if (pickedFiles.isNotEmpty) {
           for (var file in pickedFiles) {
             if (images.length >= maxImages) break;
-            final isVideo = file.path.toLowerCase().endsWith('.mp4') ||
-                file.path.toLowerCase().endsWith('.mov');
+
+            final isVideo = _isVideoFile(file);
+
             await _processPickedFile(file, isVideo: isVideo);
           }
         }
       }
     } catch (e) {
+      debugPrint('Gallery pick error: $e');
       AppToast.showError('Failed to pick media from gallery');
     }
   }
 
+// Update the _processPickedFile method:
   Future<void> _processPickedFile(XFile pickedFile, {required bool isVideo}) async {
     if (images.length >= maxImages) {
       AppToast.showError('Maximum $maxImages images allowed');
@@ -876,57 +886,99 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
     final imageId = DateTime.now().millisecondsSinceEpoch.toString();
 
     if (isVideo) {
-      images.add(
-        ProductImage(
-          id: imageId,
-          file: File(pickedFile.path),
-          isVideo: true,
-          isCompressing: true,
-        ),
-      );
-      notifyListeners();
-
-      final thumbnail = await _generateVideoThumbnail(pickedFile.path);
-
-      final index = images.indexWhere((img) => img.id == imageId);
-      if (index != -1) {
-        images[index] = images[index].copyWith(
-          thumbnailFile: thumbnail,
-          isCompressing: false,
+      if (kIsWeb) {
+        // Web video: file path + bytes (thumbnail abhi simple placeholder)
+        final bytes = await pickedFile.readAsBytes();
+        images.add(
+          ProductImage(
+            id: imageId,
+            bytes: bytes,
+            webVideoUrl: pickedFile.path,
+            isVideo: true,
+            isCompressing: false,
+            isUploaded: false,
+          ),
         );
-        // Add hasListeners check
-        if (hasListeners) {
-          notifyListeners();
+        notifyListeners();
+      } else {
+        // Mobile video + thumbnail
+        images.add(
+          ProductImage(
+            id: imageId,
+            file: File(pickedFile.path),
+            isVideo: true,
+            isCompressing: true,
+          ),
+        );
+        notifyListeners();
+
+        final thumbnail = await _generateVideoThumbnail(pickedFile.path);
+
+        final index = images.indexWhere((img) => img.id == imageId);
+        if (index != -1) {
+          images[index] = images[index].copyWith(
+            thumbnailFile: thumbnail,
+            isCompressing: false,
+          );
+          if (hasListeners) notifyListeners();
         }
       }
     } else {
-      images.add(
-        ProductImage(
-          id: imageId,
-          file: File(pickedFile.path),
-          isVideo: false,
-          isCompressing: true,
-        ),
-      );
-      notifyListeners();
-
-      final compressedFile = await _compressImage(File(pickedFile.path));
-
-      final index = images.indexWhere((img) => img.id == imageId);
-      if (index != -1) {
-        images[index] = images[index].copyWith(
-          file: compressedFile,
-          isCompressing: false,
+      // IMAGE
+      if (kIsWeb) {
+        // Web: bytes store karo, koi compression nahi
+        final bytes = await pickedFile.readAsBytes();
+        images.add(
+          ProductImage(
+            id: imageId,
+            bytes: bytes,
+            isVideo: false,
+            isCompressing: false,
+            isUploaded: false,
+          ),
         );
-        // Add hasListeners check
-        if (hasListeners) {
-          notifyListeners();
+        notifyListeners();
+      } else {
+        // Mobile: file + compression
+        images.add(
+          ProductImage(
+            id: imageId,
+            file: File(pickedFile.path),
+            isVideo: false,
+            isCompressing: true,
+          ),
+        );
+        notifyListeners();
+
+        final compressedFile = await _compressImage(File(pickedFile.path));
+
+        final index = images.indexWhere((img) => img.id == imageId);
+        if (index != -1) {
+          images[index] = images[index].copyWith(
+            file: compressedFile,
+            isCompressing: false,
+          );
+          if (hasListeners) notifyListeners();
         }
       }
     }
   }
 
+  bool _isVideoFile(XFile file) {
+    final mime = file.mimeType;
+    if (mime != null && mime.toLowerCase().startsWith('video')) return true;
+
+    final name = (file.name.isNotEmpty ? file.name : file.path).toLowerCase();
+    return name.endsWith('.mp4') ||
+        name.endsWith('.mov') ||
+        name.endsWith('.avi') ||
+        name.endsWith('.webm') ||
+        name.endsWith('.mkv');
+  }
+
   Future<File?> _generateVideoThumbnail(String videoPath) async {
+    if (kIsWeb) return null;
+
     try {
       final thumbnailPath = await VideoThumbnail.thumbnailFile(
         video: videoPath,
@@ -1139,21 +1191,39 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
       final uploadedUrls = <String>[];
       final apiService = await getApiClient();
 
+      // First, collect already uploaded network images
       for (var img in images) {
         if (img.isNetworkImage) {
           uploadedUrls.add(img.networkUrl!);
         }
       }
 
+      // Upload new images
       for (var i = 0; i < images.length; i++) {
         final img = images[i];
 
-        if (!img.isNetworkImage && img.file != null) {
+        if (!img.isNetworkImage) {
           try {
-            final multipartFile = await MultipartFile.fromFile(
-              img.file!.path,
-              filename: img.file!.path.split('/').last,
-            );
+            MultipartFile multipartFile;
+
+            if (kIsWeb && img.bytes != null) {
+              // Web: bytes se upload
+              final bytes = img.bytes!;
+              final fileName = '${img.id}.jpg'; // ya jo bhi naam pattern chaho
+
+              multipartFile = MultipartFile.fromBytes(
+                bytes,
+                filename: fileName,
+              );
+            } else if (!kIsWeb && img.file != null) {
+              // Mobile: file se upload
+              multipartFile = await MultipartFile.fromFile(
+                img.file!.path,
+                filename: img.file!.path.split('/').last,
+              );
+            } else {
+              continue;
+            }
 
             final response = await apiService.uploadFile(multipartFile);
 
@@ -1164,10 +1234,10 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
                 uploadProgress: 1.0,
                 isUploaded: true,
               );
-              //  Check before notify
               if (hasListeners) notifyListeners();
             }
           } catch (e) {
+            debugPrint('Upload error for image $i: $e');
             continue;
           }
         }
@@ -1178,11 +1248,13 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
 
       return uploadedUrls;
     } catch (e) {
+      debugPrint('Upload images error: $e');
       isUploading = false;
       if (hasListeners) notifyListeners();
       return [];
     }
   }
+
   @override
   void dispose() {
     titleEnglishController.dispose();

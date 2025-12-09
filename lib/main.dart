@@ -1,4 +1,3 @@
-import 'package:bazzar_hub_app/presentation/controller/initialBinding_binding.dart';
 import 'package:bazzar_hub_app/presentation/controller/location_repository.dart';
 import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -6,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'app/core/manager/log_manager.dart';
+import 'presentation/services/api_service.dart';
 import 'firebase_options.dart';
 
 
@@ -16,6 +16,9 @@ Future<void> main() async {
   );
   await LocationRepository.instance.initialize();
   LogManager.initialize();
+  // Ensure ApiServices is registered before any Get.find() calls
+  await Get.putAsync<ApiServices>(() async => await getApiClient(),
+      permanent: true);
   runApp(const MyApp());
 }
 
@@ -31,7 +34,6 @@ class MyApp extends StatelessWidget {
         FlutterQuillLocalizations.delegate,
       ],
       initialRoute: AppRoutes.splash,
-      initialBinding: InitialBinding(),
       getPages: AppPages.routes,
       themeMode: ThemeMode.system,
     );

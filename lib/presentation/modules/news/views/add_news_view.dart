@@ -5,13 +5,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import '../../../../app/core/utils/app_language.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
-import '../../../routes/app_routes.dart';
 import '../../../services/models/news/news_model.dart';
 import '../../home/widgets/auto_fit_image_widget.dart';
 import '../../product/widgets/image_upload_section.dart';
@@ -51,8 +51,7 @@ class _AddNewsViewState extends State<AddNewsView> {
     if (isEditMode) {
       await _controller.initializeForEdit(widget.news!);
     } else {
-      await _controller
-          .loadLocationData();
+      await _controller.loadLocationData();
     }
 
     if (mounted) {
@@ -85,7 +84,6 @@ class _AddNewsViewState extends State<AddNewsView> {
     }
   }
 
-
   Future<void> submitForm() async {
     final success = await _controller.submitNews(context);
     if (success && mounted) {
@@ -114,11 +112,9 @@ class _AddNewsViewState extends State<AddNewsView> {
         if (_controller.titleEnglishController.text.trim().isEmpty) {
           return 'English title is required';
         }
-
         if (_controller.contentEnglishController.text.trim().isEmpty) {
           return 'English content is required';
         }
-
         break;
       case 3:
         if (_controller.selectedState == null) {
@@ -257,110 +253,216 @@ class _AddNewsViewState extends State<AddNewsView> {
   Widget _buildCategoryStep() {
     return Consumer<AddNewsController>(
       builder: (context, controller, _) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Choose Category',
-              style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Select the category that best describes your news',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
+        return Align(
+          alignment: AlignmentDirectional.topStart,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Choose Category',
+                style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
               ),
-            ),
-            const SizedBox(height: 24),
-            if (controller.categories.isEmpty)
-              const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
-              )
-            else
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  mainAxisSpacing: AppSpacing.sm,
-                  crossAxisSpacing: AppSpacing.sm,
-                  childAspectRatio: 0.82,
+              const SizedBox(height: 8),
+              Text(
+                'Select the category that best describes your news',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
                 ),
-                itemCount: controller.categories.length,
-                itemBuilder: (context, index) {
-                  final category = controller.categories[index];
-                  final isSelected =
-                      controller.selectedCategoryId == category.id;
-                  return InkWell(
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          controller.selectCategory(category.id!);
-                        },
-                        borderRadius: AppSpacing.borderRadiusMD,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
-                          curve: Curves.easeInOut,
-                          padding: const EdgeInsets.all(AppSpacing.xs),
-                          decoration: BoxDecoration(
-                            color: AppColors.white,
+              ),
+              const SizedBox(height: 24),
+              if (controller.categories.isEmpty)
+                const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                )
+              else
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isWeb = kIsWeb;
+                    final screenWidth = constraints.maxWidth;
+
+                    // ANDROID: Exact original GridView (3 columns)
+                    if (!isWeb) {
+                      return GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          mainAxisSpacing: AppSpacing.sm,
+                          crossAxisSpacing: AppSpacing.sm,
+                          childAspectRatio: 0.82, // Android original
+                        ),
+                        itemCount: controller.categories.length,
+                        itemBuilder: (context, index) {
+                          final category = controller.categories[index];
+                          final isSelected = controller.selectedCategoryId == category.id;
+
+                          return InkWell(
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              controller.selectCategory(category.id!);
+                            },
                             borderRadius: AppSpacing.borderRadiusMD,
-                            border: Border.all(
-                              color: isSelected
-                                  ? AppColors.primary
-                                  : AppColors.borderLight,
-                              width: isSelected ? 2.5 : 1,
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                child: Container(
-                                  margin: const EdgeInsets.only(
-                                    top: 8,
-                                    bottom: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary.withOpacity(0.1),
-                                    borderRadius: AppSpacing.borderRadiusSM,
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: AppSpacing.borderRadiusSM,
-                                    child: AspectRatioImage(
-                                      imageUrl: category.icon ?? "",
-                                      aspectRatio: 1 / 1,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 250),
+                              curve: Curves.easeInOut,
+                              padding: const EdgeInsets.all(AppSpacing.xs),
+                              decoration: BoxDecoration(
+                                color: AppColors.white,
+                                borderRadius: AppSpacing.borderRadiusMD,
+                                border: Border.all(
+                                  color: isSelected ? AppColors.primary : AppColors.borderLight,
+                                  width: isSelected ? 2.5 : 1,
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                      margin: const EdgeInsets.only(top: 8, bottom: 8),
+                                      constraints: const BoxConstraints(
+                                        maxHeight: 80, // Android original icon size
+                                        maxWidth: 80,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withOpacity(0.1),
+                                        borderRadius: AppSpacing.borderRadiusSM,
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius: AppSpacing.borderRadiusSM,
+                                        child: AspectRatioImage(
+                                          imageUrl: category.icon ?? "",
+                                          aspectRatio: 1 / 1,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                                    child: Text(
+                                      AppLanguage.getText(category.name),
+                                      style: AppTextStyles.caption.copyWith(
+                                        color: AppColors.textPrimary,
+                                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                        height: 1.3,
+                                        fontSize: 11, // Android original
+                                      ),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              Text(
-                                AppLanguage.getText(category.name),
-                                style: AppTextStyles.caption.copyWith(
-                                  color: AppColors.textPrimary,
-                                  fontWeight: isSelected
-                                      ? FontWeight.w600
-                                      : FontWeight.w500,
-                                  height: 1.3,
-                                  fontSize: 11,
-                                ),
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                      .animate()
-                      .fadeIn(duration: 400.ms, delay: (50 * index).ms)
-                      .scale(
-                        begin: const Offset(0.8, 0.8),
-                        end: const Offset(1, 1),
+                            ),
+                          ).animate().fadeIn(duration: 400.ms, delay: (50 * index).ms).scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1));
+                        },
                       );
-                },
-              ),
-          ],
-        ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
+                    }
+
+                    // WEB: Responsive Wrap (tumhare changes)
+                    final crossAxisCount = screenWidth > 800 ? 4 : 3;
+                    final itemWidth = (screenWidth - (crossAxisCount - 1) * AppSpacing.sm) / crossAxisCount;
+                    final baseHeight = itemWidth * 0.62;
+                    final iconSize = itemWidth * 0.45;
+
+                    final captionStyle = AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w500,
+                      height: 1.3,
+                      fontSize: 13, // Web bigger text
+                    );
+
+                    return Wrap(
+                      spacing: AppSpacing.sm,
+                      runSpacing: AppSpacing.sm,
+                      alignment: WrapAlignment.start,
+                      children: controller.categories.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final category = entry.value;
+                        final isSelected = controller.selectedCategoryId == category.id;
+
+                        final containerWidth = baseHeight;
+                        final containerHeight = isSelected ? baseHeight * 0.90 : baseHeight;
+
+                        return SizedBox(
+                          width: containerWidth,
+                          height: containerHeight,
+                          child: InkWell(
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              controller.selectCategory(category.id!);
+                            },
+                            borderRadius: AppSpacing.borderRadiusMD,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 250),
+                              curve: Curves.easeInOut,
+                              width: double.infinity,
+                              height: double.infinity,
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: AppColors.white,
+                                borderRadius: AppSpacing.borderRadiusMD,
+                                border: Border.all(
+                                  color: isSelected ? AppColors.primary : AppColors.borderLight,
+                                  width: isSelected ? 2.5 : 1,
+                                ),
+                                boxShadow: isSelected
+                                    ? [BoxShadow(
+                                  color: AppColors.primary.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                )]
+                                    : null,
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    width: iconSize,
+                                    height: iconSize,
+                                    margin: const EdgeInsets.symmetric(vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withOpacity(0.1),
+                                      borderRadius: AppSpacing.borderRadiusSM,
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: AppSpacing.borderRadiusSM,
+                                      child: AspectRatioImage(
+                                        imageUrl: category.icon ?? "",
+                                        aspectRatio: 1 / 1,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(top: 6),
+                                      child: Text(
+                                        AppLanguage.getText(category.name),
+                                        style: captionStyle.copyWith(
+                                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        )
+                            .animate()
+                            .fadeIn(duration: 400.ms, delay: (50 * index).ms)
+                            .scale(begin: const Offset(0.9, 0.9), end: const Offset(1, 1));
+                      }).toList(),
+                    );
+                  },
+                ),
+            ],
+          ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0),
+        );
       },
     );
   }
@@ -401,7 +503,6 @@ class _AddNewsViewState extends State<AddNewsView> {
             ),
             const SizedBox(height: 24),
 
-            // Country (Read-only, no validation needed)
             _buildReadOnlyField(
               label: 'Country',
               value: 'India',
@@ -438,23 +539,23 @@ class _AddNewsViewState extends State<AddNewsView> {
               duration: const Duration(milliseconds: 250),
               child: controller.showSubDistrict
                   ? Column(
-                key: const ValueKey('sub-district'),
-                children: [
-                  const SizedBox(height: 16),
-                  SearchableDropdown(
-                    label: 'Sub-District (Taluko)',
-                    hint: controller.selectedDistrict == null
-                        ? 'Select district first'
-                        : 'Select sub-district',
-                    items: controller.subDistrictsList,
-                    selectedValue: controller.selectedSubDistrict,
-                    onChanged: (v) => controller.selectSubDistrict(v),
-                    enabled: controller.canSelectSubDistrict,
-                    icon: Icons.map,
-                    isRequired: true,
-                  ),
-                ],
-              )
+                      key: const ValueKey('sub-district'),
+                      children: [
+                        const SizedBox(height: 16),
+                        SearchableDropdown(
+                          label: 'Sub-District (Taluko)',
+                          hint: controller.selectedDistrict == null
+                              ? 'Select district first'
+                              : 'Select sub-district',
+                          items: controller.subDistrictsList,
+                          selectedValue: controller.selectedSubDistrict,
+                          onChanged: (v) => controller.selectSubDistrict(v),
+                          enabled: controller.canSelectSubDistrict,
+                          icon: Icons.map,
+                          isRequired: true,
+                        ),
+                      ],
+                    )
                   : const SizedBox(key: ValueKey('empty')),
             ),
             const SizedBox(height: 16),
@@ -744,9 +845,7 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
     _fetchTags();
   }
 
-
   Future<void> _fetchTags() async {
-    print('API Calling...........');
     if (!mounted) return;
 
     setState(() {
@@ -755,7 +854,7 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
     try {
       final apiService = await getApiClient();
       final response = await apiService.getNewsTags();
-      print('^^^^^^^^^ : ${response.data.data?.first.name}');
+
       if (!mounted) return;
 
       if (response.response.statusCode == 200) {
@@ -764,13 +863,11 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
           _availableTags = tagsList!.map((tag) => tag.name ?? '').toList();
         });
       } else {
-        print('API Else Part Calling...........');
         setState(() {
           _availableTags = [];
         });
       }
     } catch (e) {
-      print('API Calling...........$e');
       if (!mounted) return;
 
       setState(() {
@@ -801,7 +898,6 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
   Widget build(BuildContext context) {
     return Consumer<AddNewsController>(
       builder: (context, controller, _) {
-        // Initialize selected tags from controller
         if (_selectedTags.isEmpty &&
             controller.tagsController.text.isNotEmpty) {
           _selectedTags = controller.tagsController.text
@@ -820,7 +916,6 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
             ),
             const SizedBox(height: 24),
 
-            // Title Section
             _buildTextField(
               controller: controller.titleEnglishController,
               label: 'Title',
@@ -830,7 +925,6 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
             ),
             const SizedBox(height: 24),
 
-            // Content Section
             RichTextFieldWidget(
               controller: controller.contentEnglishController,
               quillController: controller.contentEnglishQuillController,
@@ -842,7 +936,6 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
 
             const SizedBox(height: 24),
 
-            // Tags Section
             _buildTagsSection(controller),
           ],
         );
@@ -945,7 +1038,6 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Tags Container
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: _isTagsLoading
@@ -1008,7 +1100,6 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
   }
 }
 
-
 class RichTextFieldWidget extends StatefulWidget {
   final TextEditingController controller;
   final quill.QuillController? quillController;
@@ -1045,7 +1136,6 @@ class _RichTextFieldWidgetState extends State<RichTextFieldWidget> {
   }
 
   void _initializeEditor() {
-    // Use passed QuillController or create new one
     if (widget.quillController != null) {
       _quillController = widget.quillController!;
     } else {
@@ -1064,7 +1154,6 @@ class _RichTextFieldWidgetState extends State<RichTextFieldWidget> {
   }
 
   void _syncToController() {
-    // Sync plain text to TextEditingController (for validation)
     final plainText = _quillController.document.toPlainText();
     if (widget.controller.text != plainText) {
       widget.controller.text = plainText;
@@ -1074,7 +1163,6 @@ class _RichTextFieldWidgetState extends State<RichTextFieldWidget> {
   @override
   void dispose() {
     _quillController.removeListener(_syncToController);
-    //  Only dispose if we created it
     if (widget.quillController == null) {
       _quillController.dispose();
     }
@@ -1088,7 +1176,6 @@ class _RichTextFieldWidgetState extends State<RichTextFieldWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Label
         RichText(
           text: TextSpan(
             text: widget.label,
@@ -1098,19 +1185,17 @@ class _RichTextFieldWidgetState extends State<RichTextFieldWidget> {
             ),
             children: widget.required
                 ? [
-              const TextSpan(
-                text: ' *',
-                style: TextStyle(color: Colors.red),
-              ),
-            ]
+                    const TextSpan(
+                      text: ' *',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ]
                 : [],
           ),
         ),
         const SizedBox(height: 8),
 
-        // Editor Container
         Container(
-
           decoration: BoxDecoration(
             color: AppColors.accent,
             borderRadius: AppSpacing.borderRadiusMD,
@@ -1118,14 +1203,10 @@ class _RichTextFieldWidgetState extends State<RichTextFieldWidget> {
           ),
           child: Column(
             children: [
-              // Toolbar
               Container(
-
                 decoration: const BoxDecoration(
                   color: AppColors.white,
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(12),
-                  ),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
                 ),
                 child: quill.QuillSimpleToolbar(
                   controller: _quillController,
@@ -1166,7 +1247,6 @@ class _RichTextFieldWidgetState extends State<RichTextFieldWidget> {
                 ),
               ),
 
-              // Editor
               Container(
                 constraints: BoxConstraints(
                   minHeight: 200,
