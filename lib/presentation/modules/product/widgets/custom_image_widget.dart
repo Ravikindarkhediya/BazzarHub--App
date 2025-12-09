@@ -81,15 +81,16 @@ class _CustomImageWidgetState extends State<CustomImageWidget> {
 
   Future<void> _checkMediaTypeAndGenerateThumbnail() async {
     final isVideo = Utils.isVideo(widget.imageUrl);
-    if (!mounted) return;
 
     setState(() {
       _isVideo = isVideo;
-      if (!isVideo) {
-        _thumbnailPath = null;
-        _isGeneratingThumbnail = false;
-      }
+      _thumbnailPath = null;
     });
+
+    // 🚫 Skip thumbnail generation on Web (not supported)
+    if (kIsWeb && isVideo) {
+      return;
+    }
 
     if (!isVideo) return;
 
@@ -102,7 +103,8 @@ class _CustomImageWidgetState extends State<CustomImageWidget> {
       final targetWidth = widget.width.isFinite && widget.width > 0
           ? widget.width.ceil()
           : 720;
-      final thumbnailPath = await Utils.generateVideoThumbnail(
+
+      final thumbnail = await Utils.generateVideoThumbnail(
         videoUrl: widget.imageUrl,
         maxHeight: targetHeight,
         maxWidth: targetWidth,
@@ -110,12 +112,9 @@ class _CustomImageWidgetState extends State<CustomImageWidget> {
       );
 
       if (!mounted) return;
-      setState(() {
-        _thumbnailPath = thumbnailPath;
-      });
+      setState(() => _thumbnailPath = thumbnail);
     } catch (error) {
-      debugPrint('CustomImageWidget thumbnail error: $error');
-      if (!mounted) return;
+      debugPrint('Thumbnail error: $error');
       setState(() => _thumbnailPath = null);
     } finally {
       if (mounted) {
@@ -128,22 +127,19 @@ class _CustomImageWidgetState extends State<CustomImageWidget> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.only(
-          topRight: Radius.circular(widget.cornerRadius),
-          topLeft: Radius.circular(widget.cornerRadius),
-        ),
+        borderRadius: BorderRadius.circular(widget.cornerRadius),
         border: Border.all(
           color: widget.borderColor,
           width: widget.borderWidth,
         ),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.only(
-          topRight: Radius.circular(widget.cornerRadius),
-          topLeft: Radius.circular(widget.cornerRadius),
-        ),
+        borderRadius: BorderRadius.circular(widget.cornerRadius),
         child: Stack(
-          children: [_buildContent(), if (_isVideo) _buildVideoOverlay()],
+          children: [
+            _buildContent(),
+            if (_isVideo) _buildVideoOverlay(),
+          ],
         ),
       ),
     );
@@ -151,78 +147,62 @@ class _CustomImageWidgetState extends State<CustomImageWidget> {
 
   Widget _buildContent() {
     if (widget.imageUrl.isEmpty) {
-      return Container(
-        height: widget.height,
-        width: widget.width,
-        color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
-        child: Center(
-          child: Icon(
-            Icons.image_rounded,
-            size: widget.height * 0.4,
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-          ),
-        ),
-      );
+      return _noImageView();
     }
 
-    if (_isVideo) {
-      return _buildVideoContent();
-    }
+    if (_isVideo) return _buildVideoContent();
 
-    if (widget.imageUrl.contains("http")) {
+    // -------------------------------
+    // ▶ NETWORK IMAGE (Works on Web)
+    // -------------------------------
+    if (widget.imageUrl.startsWith("http")) {
       return CachedNetworkImage(
         imageUrl: widget.imageUrl,
-        fadeInDuration: const Duration(milliseconds: 100),
-        fadeOutDuration: const Duration(milliseconds: 100),
-        placeholder: (context, url) => SkeletonLoader(
+        placeholder: (_, __) => SkeletonLoader(
           width: widget.width,
           height: widget.height,
           radius: widget.cornerRadius,
         ),
-        errorWidget: (context, url, error) => Container(
-          height: widget.height,
-          width: widget.width,
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
-          child: Center(
-            child: Icon(
-              Icons.image_not_supported_rounded,
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-              size: widget.height * 0.4,
-            ),
-          ),
-        ),
-        imageBuilder: (context, imageProvider) => Image(
-          image: imageProvider,
+        errorWidget: (_, __, ___) => _networkError(),
+        imageBuilder: (_, img) => Image(
+          image: img,
           height: widget.height,
           width: widget.width,
           fit: widget.fit,
           color: widget.tintColor,
-          colorBlendMode: widget.tintColor != null ? BlendMode.srcIn : null,
+          colorBlendMode:
+          widget.tintColor != null ? BlendMode.srcIn : null,
         ),
       );
     }
 
-    if (File(widget.imageUrl).existsSync()) {
+    // -------------------------------
+    // ▶ LOCAL FILE (NOT allowed on Web)
+    // -------------------------------
+    if (!kIsWeb && File(widget.imageUrl).existsSync()) {
       return Image.file(
         File(widget.imageUrl),
         height: widget.height,
         width: widget.width,
         fit: widget.fit,
-        color: widget.tintColor,
-        colorBlendMode: widget.tintColor != null ? BlendMode.srcIn : null,
       );
     }
 
-    return Container();
+    return _networkError();
   }
 
   Widget _buildVideoContent() {
+    // Web - No thumbnail support → show fallback
+    if (kIsWeb) {
+      return _videoPlaceholder();
+    }
+
     if (_thumbnailPath != null) {
       return Image.file(
         File(_thumbnailPath!),
-        fit: widget.fit,
         height: widget.height,
         width: widget.width,
+        fit: widget.fit,
       );
     }
 
@@ -234,14 +214,36 @@ class _CustomImageWidgetState extends State<CustomImageWidget> {
       );
     }
 
+    return _videoPlaceholder();
+  }
+
+  Widget _videoPlaceholder() {
     return Container(
       height: widget.height,
       width: widget.width,
-      color: Colors.black.withOpacity(0.1),
-      child: Icon(
-        Icons.play_circle_fill_rounded,
-        size: widget.height * 0.3,
-        color: Colors.white.withOpacity(0.9),
+      color: Colors.black12,
+      child: const Center(
+        child: Icon(Icons.play_circle_fill_rounded, size: 50, color: Colors.white),
+      ),
+    );
+  }
+
+  Widget _networkError() {
+    return Container(
+      height: widget.height,
+      width: widget.width,
+      color: Colors.grey.shade300,
+      child: const Icon(Icons.broken_image, size: 40),
+    );
+  }
+
+  Widget _noImageView() {
+    return Container(
+      height: widget.height,
+      width: widget.width,
+      color: Colors.grey.shade200,
+      child: const Center(
+        child: Icon(Icons.image, size: 40),
       ),
     );
   }
@@ -250,26 +252,10 @@ class _CustomImageWidgetState extends State<CustomImageWidget> {
     return Positioned.fill(
       child: IgnorePointer(
         child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.only(
-              topRight: Radius.circular(widget.cornerRadius),
-              topLeft: Radius.circular(widget.cornerRadius),
-            ),
-            color: Colors.black.withOpacity(0.15),
-          ),
-          child: Center(
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.5),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.play_arrow_rounded,
-                color: Colors.white,
-                size: 36,
-              ),
-            ),
+          color: Colors.black26,
+          child: const Center(
+            child: Icon(Icons.play_arrow_rounded,
+                color: Colors.white, size: 40),
           ),
         ),
       ),
