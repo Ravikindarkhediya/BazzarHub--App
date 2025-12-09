@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
-import 'package:flutter_html/flutter_html.dart'; // Add this package to pubspec.yaml
+import 'package:flutter_html/flutter_html.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
@@ -302,23 +302,14 @@ class _FavoritesPageState extends State<FavoritesPage>
     return '<div>$htmlContent</div>';
   }
 
-  // Helper method to check if content is HTML or plain text
-  bool _isHtmlContent(String content) {
-    if (content.isEmpty) return false;
-
-    // Check for common HTML tags (excluding <br> as it might be added)
-    final htmlTagPattern = RegExp(
-      r'<(?!br\s*/?>)[^>]+>',
-      caseSensitive: false,
-    );
-    return htmlTagPattern.hasMatch(content);
-  }
-
-  // ✅ Updated News Item Widget with HTML Content Rendering
-  Widget _buildNewsItem(FavoriteNewsModel news, {bool showDivider = true}) {
+  Widget _buildNewsItem(FavoriteNewsModel news, {bool showDivider = true, int? index}) {
     final newsModel = _convertToNewsModel(news);
 
+    // ✅ Use index with fallback
+    final itemIndex = index ?? _favoriteNews.indexOf(news);
+
     return Column(
+      key: ValueKey('news_${news.id}_$itemIndex'),
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -333,9 +324,13 @@ class _FavoritesPageState extends State<FavoritesPage>
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child: news.media.isNotEmpty && news.media.first.url.isNotEmpty
-                          ? MediaCarousel(
-                        mediaUrls: news.media.map((m) => m.url).toList(),
-                        height: 180,
+                          ? HeroMode(
+                        enabled: false, // ✅ Hero animation disabled
+                        child: MediaCarousel(
+                          key: ValueKey('carousel_${news.id}_$itemIndex'),
+                          mediaUrls: news.media.map((m) => m.url).toList(),
+                          height: 180,
+                        ),
                       )
                           : Container(
                         height: 180,
@@ -401,7 +396,6 @@ class _FavoritesPageState extends State<FavoritesPage>
                       ),
                       const SizedBox(height: 8),
 
-                      // ✅ HTML Content Rendering with flutter_html
                       if (news.content?.isNotEmpty == true)
                         Html(
                           data: _convertToHtml(news.content!),
@@ -418,85 +412,6 @@ class _FavoritesPageState extends State<FavoritesPage>
                               padding: HtmlPaddings.zero,
                               fontSize: FontSize(14),
                               lineHeight: const LineHeight(1.5),
-                            ),
-                            "p": Style(
-                              margin: Margins.zero,
-                              padding: HtmlPaddings.zero,
-                              fontSize: FontSize(14),
-                              lineHeight: const LineHeight(1.5),
-                            ),
-                            "br": Style(
-                              margin: Margins.zero,
-                              padding: HtmlPaddings.zero,
-                            ),
-                            "strong": Style(
-                              fontWeight: FontWeight.bold,
-                            ),
-                            "b": Style(
-                              fontWeight: FontWeight.bold,
-                            ),
-                            "em": Style(
-                              fontStyle: FontStyle.italic,
-                            ),
-                            "i": Style(
-                              fontStyle: FontStyle.italic,
-                            ),
-                            "h1": Style(
-                              margin: Margins.zero,
-                              padding: HtmlPaddings.zero,
-                              fontSize: FontSize(20),
-                              fontWeight: FontWeight.bold,
-                              lineHeight: const LineHeight(1.3),
-                            ),
-                            "h2": Style(
-                              margin: Margins.zero,
-                              padding: HtmlPaddings.zero,
-                              fontSize: FontSize(18),
-                              fontWeight: FontWeight.bold,
-                              lineHeight: const LineHeight(1.3),
-                            ),
-                            "h3": Style(
-                              margin: Margins.zero,
-                              padding: HtmlPaddings.zero,
-                              fontSize: FontSize(16),
-                              fontWeight: FontWeight.bold,
-                              lineHeight: const LineHeight(1.3),
-                            ),
-                            "h4": Style(
-                              margin: Margins.zero,
-                              padding: HtmlPaddings.zero,
-                              fontSize: FontSize(15),
-                              fontWeight: FontWeight.bold,
-                              lineHeight: const LineHeight(1.3),
-                            ),
-                            "h5": Style(
-                              margin: Margins.zero,
-                              padding: HtmlPaddings.zero,
-                              fontSize: FontSize(14),
-                              fontWeight: FontWeight.bold,
-                              lineHeight: const LineHeight(1.3),
-                            ),
-                            "h6": Style(
-                              margin: Margins.zero,
-                              padding: HtmlPaddings.zero,
-                              fontSize: FontSize(13),
-                              fontWeight: FontWeight.bold,
-                              lineHeight: const LineHeight(1.3),
-                            ),
-                            "ul": Style(
-                              margin: Margins.zero,
-                              padding: HtmlPaddings.zero,
-                            ),
-                            "ol": Style(
-                              margin: Margins.zero,
-                              padding: HtmlPaddings.zero,
-                            ),
-                            "li": Style(
-                              fontSize: FontSize(14),
-                            ),
-                            "a": Style(
-                              color: AppColors.primary,
-                              textDecoration: TextDecoration.none,
                             ),
                           },
                           shrinkWrap: true,
@@ -594,7 +509,8 @@ class _FavoritesPageState extends State<FavoritesPage>
         itemCount: _favoriteNews.length + (_hasMoreNews ? 1 : 0),
         itemBuilder: (context, index) {
           if (index < _favoriteNews.length) {
-            return _buildNewsItem(_favoriteNews[index]);
+            // ✅ FIXED: Pass index parameter
+            return _buildNewsItem(_favoriteNews[index], index: index);
           } else {
             return const Padding(
               padding: EdgeInsets.all(16.0),
@@ -602,89 +518,6 @@ class _FavoritesPageState extends State<FavoritesPage>
             );
           }
         },
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-      ),
-      child: Scaffold(
-        appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(110),
-          child: SafeArea(
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                    vertical: 2,
-                  ),
-                  child: Row(
-                    children: [
-                      if (Navigator.canPop(context))
-                        IconButton(
-                          onPressed: () => Navigator.of(context).maybePop(),
-                          icon: const Icon(Icons.arrow_back),
-                          color: AppColors.primary,
-                        ),
-                      Expanded(
-                        child: Center(
-                          child: Text(
-                            'Favorites',
-                            style: AppTextStyles.h4.copyWith(
-                              color: AppColors.primary,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                            ),
-                          )
-                              .animate()
-                              .fadeIn(duration: 600.ms)
-                              .slideY(begin: -0.3, end: 0),
-                        ),
-                      ),
-                      const SizedBox(width: 48),
-                    ],
-                  ),
-                ),
-
-                SizedBox(
-                  height: 50,
-                  child: TabBar(
-                    controller: _tabController,
-                    labelColor: AppColors.primary,
-                    unselectedLabelColor: AppColors.textSecondary,
-                    indicatorColor: AppColors.primary,
-                    indicatorWeight: 3,
-                    labelStyle: AppTextStyles.bodyLarge.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                    unselectedLabelStyle: AppTextStyles.bodyLarge.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                    tabs: const [
-                      Tab(text: "News"),
-                      Tab(text: "Marketplace"),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        backgroundColor: AppColors.background,
-        body: TabBarView(
-          controller: _tabController,
-          children: [
-            _buildNewsContent(),
-            _buildMarketplaceContent(),
-          ],
-        ),
       ),
     );
   }
@@ -879,6 +712,90 @@ class _FavoritesPageState extends State<FavoritesPage>
       ),
     );
   }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(110),
+          child: SafeArea(
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: 2,
+                  ),
+                  child: Row(
+                    children: [
+                      if (Navigator.canPop(context))
+                        IconButton(
+                          onPressed: () => Navigator.of(context).maybePop(),
+                          icon: const Icon(Icons.arrow_back),
+                          color: AppColors.primary,
+                        ),
+                      Expanded(
+                        child: Center(
+                          child: Text(
+                            'Favorites',
+                            style: AppTextStyles.h4.copyWith(
+                              color: AppColors.primary,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          )
+                              .animate()
+                              .fadeIn(duration: 600.ms)
+                              .slideY(begin: -0.3, end: 0),
+                        ),
+                      ),
+                      const SizedBox(width: 48),
+                    ],
+                  ),
+                ),
+
+                SizedBox(
+                  height: 50,
+                  child: TabBar(
+                    controller: _tabController,
+                    labelColor: AppColors.primary,
+                    unselectedLabelColor: AppColors.textSecondary,
+                    indicatorColor: AppColors.primary,
+                    indicatorWeight: 3,
+                    labelStyle: AppTextStyles.bodyLarge.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    unselectedLabelStyle: AppTextStyles.bodyLarge.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                    tabs: const [
+                      Tab(text: "News"),
+                      Tab(text: "Marketplace"),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        backgroundColor: AppColors.background,
+        body: TabBarView(
+          controller: _tabController,
+          children: [
+            _buildNewsContent(),
+            _buildMarketplaceContent(),
+          ],
+        ),
+      ),
+    );
+  }
+
 
   String _getLocationText(LocationModel location) {
     if (location.village.isNotEmpty && location.district.isNotEmpty) {

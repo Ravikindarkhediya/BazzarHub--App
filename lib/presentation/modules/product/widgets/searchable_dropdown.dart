@@ -16,7 +16,7 @@ class SearchableDropdown extends StatefulWidget {
   final bool enabled;
   final IconData icon;
   final bool allowManualEntry;
-  final bool isRequired; // ✅ NEW: Required indicator
+  final bool isRequired;
 
   const SearchableDropdown({
     super.key,
@@ -40,25 +40,36 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
   bool _isDropdownOpen = false;
 
   bool get _canOpenDropdown =>
-      widget.enabled &&
-          (widget.items.isNotEmpty || widget.allowManualEntry);
+      widget.enabled && (widget.items.isNotEmpty || widget.allowManualEntry);
 
   @override
   void initState() {
     super.initState();
-    _searchController.text = widget.selectedValue ?? '';
+    // ✅ Set initial value
+    _updateControllerText(widget.selectedValue ?? '');
   }
 
   @override
   void didUpdateWidget(covariant SearchableDropdown oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.selectedValue != oldWidget.selectedValue &&
-        !_isDropdownOpen &&
-        widget.selectedValue != _searchController.text) {
-      _searchController.text = widget.selectedValue ?? '';
-    }
-    if (!listEquals(widget.items, oldWidget.items) && !_isDropdownOpen) {
-      _searchController.text = widget.selectedValue ?? '';
+
+    // ✅ Only update if dropdown is closed and value actually changed
+    if (!_isDropdownOpen) {
+      if (widget.selectedValue != oldWidget.selectedValue) {
+        // ✅ Use post frame callback to avoid setState during build
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && !_isDropdownOpen) {
+            _updateControllerText(widget.selectedValue ?? '');
+          }
+        });
+      } else if (!listEquals(widget.items, oldWidget.items)) {
+        // ✅ Items changed, reset to selected value
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && !_isDropdownOpen) {
+            _updateControllerText(widget.selectedValue ?? '');
+          }
+        });
+      }
     }
   }
 
@@ -66,6 +77,13 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  // ✅ Helper method to update controller text safely
+  void _updateControllerText(String text) {
+    if (_searchController.text != text) {
+      _searchController.text = text;
+    }
   }
 
   void _showDropdown() {
@@ -82,11 +100,13 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
       _isDropdownOpen = true;
     });
 
+    // ✅ Set text and selection safely
+    final currentValue = widget.selectedValue ?? '';
     _searchController
-      ..text = widget.selectedValue ?? ''
+      ..text = currentValue
       ..selection = TextSelection(
         baseOffset: 0,
-        extentOffset: widget.selectedValue?.length ?? 0,
+        extentOffset: currentValue.length,
       );
 
     showModalBottomSheet(
@@ -98,175 +118,177 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
     ).whenComplete(() {
       if (mounted) {
         setState(() => _isDropdownOpen = false);
-      } else {
-        _isDropdownOpen = false;
       }
     });
   }
 
   Widget _buildBottomSheet() {
-    final viewInsets = MediaQuery.of(context).viewInsets.bottom;
+    return AnimatedBuilder(
+      animation: _searchController,
+      builder: (context, child) {
+        final viewInsets = MediaQuery.of(context).viewInsets.bottom;
 
-    return AnimatedPadding(
-      duration: const Duration(milliseconds: 200),
-      padding: EdgeInsets.only(bottom: viewInsets),
-      child: SafeArea(
-        child: Container(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.85,
-          ),
-          decoration: const BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(AppSpacing.radiusXL),
-            ),
-          ),
-          child: Column(
-            children: [
-              // Drag handle
-              Container(
-                margin: const EdgeInsets.only(top: AppSpacing.sm),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.grey300,
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusCircle),
+        return AnimatedPadding(
+          duration: const Duration(milliseconds: 200),
+          padding: EdgeInsets.only(bottom: viewInsets),
+          child: SafeArea(
+            child: Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.85,
+              ),
+              decoration: const BoxDecoration(
+                color: AppColors.white,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(AppSpacing.radiusXL),
                 ),
               ),
-
-              // Header
-              Padding(
-                padding: AppSpacing.paddingMD,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Select ${widget.label}',
-                        style: AppTextStyles.h5.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Search box
-              Padding(
-                padding: AppSpacing.horizontalMD,
-                child: TextField(
-                  controller: _searchController,
-                  autofocus: true,
-                  decoration: InputDecoration(
-                    hintText: 'Search ${widget.label.toLowerCase()}...',
-                    prefixIcon: const Icon(Icons.search, color: AppColors.primary),
-                    filled: true,
-                    fillColor: AppColors.grey100,
-                    border: OutlineInputBorder(
-                      borderRadius: AppSpacing.borderRadiusMD,
-                      borderSide: BorderSide.none,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Drag handle
+                  Container(
+                    margin: const EdgeInsets.only(top: AppSpacing.sm),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.grey300,
+                      borderRadius:
+                      BorderRadius.circular(AppSpacing.radiusCircle),
                     ),
                   ),
-                ),
-              ),
 
-              const SizedBox(height: 12),
-
-              // LIST - Scrollable & smooth
-              Expanded(
-                child: ValueListenableBuilder<TextEditingValue>(
-                  valueListenable: _searchController,
-                  builder: (context, value, _) {
-                    final query = value.text.trim().toLowerCase();
-                    final filteredItems = query.isEmpty
-                        ? widget.items
-                        : widget.items
-                        .where((item) => item.toLowerCase().contains(query))
-                        .toList();
-
-                    if (filteredItems.isEmpty) {
-                      return Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.search_off,
-                              size: 48,
-                              color: AppColors.grey400,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              widget.allowManualEntry
-                                  ? 'No matches. Add your village manually.'
-                                  : 'No results found',
-                              style: AppTextStyles.bodyMedium.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            if (widget.allowManualEntry) ...[
-                              const SizedBox(height: 16),
-                              TextButton.icon(
-                                onPressed: () {
-                                  final customValue =
-                                  _searchController.text.trim();
-                                  if (customValue.isNotEmpty) {
-                                    widget.onChanged(customValue);
-                                    Navigator.pop(context);
-                                  }
-                                },
-                                icon: const Icon(Icons.add),
-                                label: Text('Use "${_searchController.text}"'),
-                              ),
-                            ],
-                          ],
-                        ),
-                      );
-                    }
-
-                    return ListView.separated(
-                      padding: EdgeInsets.only(
-                        bottom: viewInsets + 24,
-                        left: AppSpacing.md,
-                        right: AppSpacing.md,
-                      ),
-                      itemCount: filteredItems.length,
-                      separatorBuilder: (_, __) => const Divider(height: 0),
-                      itemBuilder: (context, index) {
-                        final item = filteredItems[index];
-                        final isSelected = item == widget.selectedValue;
-
-                        return ListTile(
-                          title: Text(
-                            item,
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
+                  // Header
+                  Padding(
+                    padding: AppSpacing.paddingMD,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Select ${widget.label}',
+                            style: AppTextStyles.h5.copyWith(
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                          trailing: isSelected
-                              ? const Icon(Icons.check_circle,
-                              color: AppColors.primary)
-                              : null,
-                          onTap: () {
-                            widget.onChanged(item);
-                            Navigator.pop(context);
-                          },
-                        );
-                      },
-                    );
-                  },
-                ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Search box
+                  Padding(
+                    padding: AppSpacing.horizontalMD,
+                    child: TextField(
+                      controller: _searchController,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText: 'Search ${widget.label.toLowerCase()}...',
+                        prefixIcon: const Icon(Icons.search,
+                            color: AppColors.primary),
+                        filled: true,
+                        fillColor: AppColors.grey100,
+                        border: OutlineInputBorder(
+                          borderRadius: AppSpacing.borderRadiusMD,
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // List
+                  Expanded(
+                    child: _buildItemsList(viewInsets),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ✅ Separate method for items list
+  Widget _buildItemsList(double viewInsets) {
+    final query = _searchController.text.trim().toLowerCase();
+    final filteredItems = query.isEmpty
+        ? widget.items
+        : widget.items
+        .where((item) => item.toLowerCase().contains(query))
+        .toList();
+
+    if (filteredItems.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.search_off,
+              size: 48,
+              color: AppColors.grey400,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              widget.allowManualEntry
+                  ? 'No matches. Add your village manually.'
+                  : 'No results found',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            if (widget.allowManualEntry) ...[
+              const SizedBox(height: 16),
+              TextButton.icon(
+                onPressed: () {
+                  final customValue = _searchController.text.trim();
+                  if (customValue.isNotEmpty) {
+                    widget.onChanged(customValue);
+                    Navigator.pop(context);
+                  }
+                },
+                icon: const Icon(Icons.add),
+                label: Text('Use "${_searchController.text}"'),
               ),
             ],
-          ),
+          ],
         ),
+      );
+    }
+
+    return ListView.separated(
+      padding: EdgeInsets.only(
+        bottom: viewInsets + 24,
+        left: AppSpacing.md,
+        right: AppSpacing.md,
       ),
+      itemCount: filteredItems.length,
+      separatorBuilder: (_, __) => const Divider(height: 0),
+      itemBuilder: (context, index) {
+        final item = filteredItems[index];
+        final isSelected = item == widget.selectedValue;
+
+        return ListTile(
+          title: Text(
+            item,
+            style: AppTextStyles.bodyMedium.copyWith(
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+          trailing: isSelected
+              ? const Icon(Icons.check_circle, color: AppColors.primary)
+              : null,
+          onTap: () {
+            widget.onChanged(item);
+            Navigator.pop(context);
+          },
+        );
+      },
     );
   }
 
@@ -286,7 +308,7 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
             ),
             children: [
               if (widget.isRequired)
-                TextSpan(
+                const TextSpan(
                   text: ' *',
                   style: TextStyle(
                     color: Colors.red,

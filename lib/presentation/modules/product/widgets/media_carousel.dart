@@ -15,12 +15,14 @@ class MediaCarousel extends StatefulWidget {
   final List<String> mediaUrls;
   final double height;
   final ValueChanged<int>? onPageChanged;
+  final String? heroTagPrefix; // ✅ ADD THIS
 
   const MediaCarousel({
     super.key,
     required this.mediaUrls,
     this.height = 400,
     this.onPageChanged,
+    this.heroTagPrefix, // ✅ ADD THIS
   });
 
   @override
@@ -62,6 +64,14 @@ class _MediaCarouselState extends State<MediaCarousel> {
     super.dispose();
   }
 
+  // ✅ Helper method to generate unique hero tag
+  String _getHeroTag(int index) {
+    if (widget.heroTagPrefix != null) {
+      return '${widget.heroTagPrefix}_image_$index';
+    }
+    return 'media_image_${hashCode}_$index'; // ✅ Use widget hashCode for uniqueness
+  }
+
   @override
   Widget build(BuildContext context) {
     final images = widget.mediaUrls;
@@ -80,8 +90,8 @@ class _MediaCarouselState extends State<MediaCarousel> {
       child: Stack(
         children: [
           /// Carousel Slider or Single Image
-          _isInitialized 
-              ? (isSingleItem ? _buildSingleImage(images.first) : _buildCarousel(images))
+          _isInitialized
+              ? (isSingleItem ? _buildSingleImage(images.first, 0) : _buildCarousel(images))
               : const SizedBox.shrink(),
 
           /// Image Counter Badge (Bottom Right) - Only show if multiple items
@@ -94,18 +104,19 @@ class _MediaCarouselState extends State<MediaCarousel> {
     ).animate().fadeIn(duration: 600.ms);
   }
 
-  Widget _buildSingleImage(String imageUrl) {
+  // ✅ Updated: Add index parameter
+  Widget _buildSingleImage(String imageUrl, int index) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isVideo = Utils.isVideo(imageUrl);
 
     if (isVideo) {
-      return _buildVideoItem(imageUrl, 0, screenWidth);
+      return _buildVideoItem(imageUrl, index, screenWidth);
     }
 
     return GestureDetector(
-      onTap: () => _openFullscreenViewer(0),
+      onTap: () => _openFullscreenViewer(index),
       child: Hero(
-        tag: 'media_image_0',
+        tag: _getHeroTag(index), // ✅ Use unique tag
         child: Container(
           color: AppColors.white,
           width: double.infinity,
@@ -156,7 +167,7 @@ class _MediaCarouselState extends State<MediaCarousel> {
     return GestureDetector(
       onTap: () => _openFullscreenViewer(index),
       child: Hero(
-        tag: 'media_image_$index',
+        tag: _getHeroTag(index), // ✅ Use unique tag
         child: Container(
           color: AppColors.white,
           width: double.infinity,
@@ -203,7 +214,7 @@ class _MediaCarouselState extends State<MediaCarousel> {
     return GestureDetector(
       onTap: () => _openFullscreenViewer(index),
       child: Hero(
-        tag: 'media_image_$index',
+        tag: _getHeroTag(index), // ✅ Use unique tag
         child: Container(
           color: AppColors.black,
           width: width,
@@ -297,37 +308,37 @@ class _MediaCarouselState extends State<MediaCarousel> {
 
   Widget _buildFullscreenHint() {
     return Positioned(
-          bottom: AppSpacing.md,
-          left: AppSpacing.md,
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm,
-              vertical: AppSpacing.xs,
+      bottom: AppSpacing.md,
+      left: AppSpacing.md,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.black.withOpacity(0.5),
+          borderRadius: AppSpacing.borderRadiusSM,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.zoom_out_map_rounded,
+              size: 14,
+              color: AppColors.white,
             ),
-            decoration: BoxDecoration(
-              color: AppColors.black.withOpacity(0.5),
-              borderRadius: AppSpacing.borderRadiusSM,
+            const SizedBox(width: 4),
+            Text(
+              'Tap to view',
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.white,
+                fontSize: 11,
+              ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.zoom_out_map_rounded,
-                  size: 14,
-                  color: AppColors.white,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'Tap to view',
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.white,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        )
+          ],
+        ),
+      ),
+    )
         .animate()
         .fadeIn(duration: 400.ms, delay: 700.ms)
         .then()
@@ -401,7 +412,7 @@ class _MediaCarouselState extends State<MediaCarousel> {
 
   Future<void> _playVideo(int index) async {
     if (!mounted) return;
-    
+
     if (_videoControllers.containsKey(index)) {
       try {
         await _videoControllers[index]!.play();
@@ -424,28 +435,28 @@ class _MediaCarouselState extends State<MediaCarousel> {
 
   void _onPageChanged(int index, CarouselPageChangedReason reason) {
     if (_currentIndex == index) return;
-    
+
     _handleVideoTransition(_currentIndex, index);
-    
+
     setState(() {
       _currentIndex = index;
     });
-    
+
     // Prepare adjacent videos
     _prepareVideo(index);
     _prepareVideo(index + 1);
-    
+
     widget.onPageChanged?.call(index);
   }
 
   void _handleVideoTransition(int previousIndex, int nextIndex) {
     if (previousIndex == nextIndex) return;
-    
+
     // Pause the previous video if it's a video
     if (previousIndex < widget.mediaUrls.length && Utils.isVideo(widget.mediaUrls[previousIndex])) {
       _pauseVideo(previousIndex);
     }
-    
+
     // Play the next video if it's a video
     if (nextIndex < widget.mediaUrls.length && Utils.isVideo(widget.mediaUrls[nextIndex])) {
       _playVideo(nextIndex);
@@ -461,7 +472,7 @@ class _MediaCarouselState extends State<MediaCarousel> {
   Future<void> _prepareVideo(int index) async {
     if (index < 0 || index >= widget.mediaUrls.length) return;
     final url = widget.mediaUrls[index];
-    
+
     if (!Utils.isVideo(url) || _videoControllers.containsKey(index) || _initializingVideos.containsKey(index)) {
       return;
     }
@@ -474,10 +485,10 @@ class _MediaCarouselState extends State<MediaCarousel> {
     );
 
     final completer = Completer<void>();
-    
+
     _initializingVideos[index] = controller.initialize().then((_) {
       if (!mounted) return;
-      
+
       setState(() {
         _videoControllers[index] = controller;
         _initializingVideos.remove(index);
@@ -486,14 +497,14 @@ class _MediaCarouselState extends State<MediaCarousel> {
       completer.complete();
     }).catchError((error) {
       if (!mounted) return;
-      
+
       setState(() {
         _videoErrors[index] = 'Failed to load video';
         _initializingVideos.remove(index);
       });
       completer.completeError(error);
     });
-    
+
     return completer.future;
   }
 
