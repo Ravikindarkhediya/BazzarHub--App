@@ -77,7 +77,7 @@ class LocationManager with ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      print("❌ Error getting location: $e");
+      print("Error getting location: $e");
     }
   }
 }

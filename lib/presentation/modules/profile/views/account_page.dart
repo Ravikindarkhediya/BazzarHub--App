@@ -1,3 +1,4 @@
+import 'package:bazzar_hub_app/presentation/commons/dialogs/app_toasts.dart';
 import 'package:bazzar_hub_app/presentation/modules/profile/views/block_user.dart';
 import 'package:bazzar_hub_app/presentation/modules/profile/widgets/profile_info.dart';
 import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
@@ -12,9 +13,7 @@ import '../../../../manager/session_manager.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../services/api_service.dart';
 import '../../../services/models/user/user_model.dart';
-import '../../product/widgets/similar_product_widget.dart';
 import '../../wallet/views/wallet_screen.dart';
-import '../../widgets/app_review_dialog.dart';
 import '../widgets/language_actionsheet.dart';
 import '../widgets/settings_section.dart';
 import '../widgets/custom_bottom_sheet.dart';
@@ -332,7 +331,7 @@ class _AccountPageState extends State<AccountPage>
                             ),
                             onTap: null, // disable tap on whole tile when toggle exists
                           ),
-                          // 🎯 UPDATED: Language tile with trailing
+                          //  Language tile with trailing
                           SettingsTile(
                             icon: Icons.language,
                             title: 'Language',
@@ -809,18 +808,9 @@ class _AccountPageState extends State<AccountPage>
       // Get API client
       final apiService = await getApiClient();
 
-      debugPrint('🔴 Starting account deletion...');
-      debugPrint('🔑 Token: ${await SessionManager().getToken()}');
-      debugPrint('👤 User ID: ${await SessionManager().getUserId()}');
-      debugPrint('📧 User Email: ${await SessionManager().getUserEmail()}');
 
       // Call delete account API
       final response = await apiService.deleteAccount();
-
-      debugPrint('📊 Response status code: ${response.response.statusCode}');
-      debugPrint('📊 Response data: ${response.response.data}');
-      debugPrint('📊 Response message: ${response.response.statusMessage}');
-      debugPrint('📊 Response headers: ${response.response.headers}');
 
       // Close loading dialog
       if (mounted && Navigator.canPop(context)) {
@@ -854,33 +844,17 @@ class _AccountPageState extends State<AccountPage>
         }
       }
 
-      debugPrint('✅ Deletion successful: $isSuccess');
-      debugPrint('💬 Message: $message');
 
       if (isSuccess) {
-        debugPrint('🎉 Account deletion successful, clearing session...');
 
         // Clear session
         await SessionManager().clearSession();
-
-        debugPrint('🚀 Navigating to login...');
-
         // Navigate to login
         Get.offAllNamed(AppRoutes.login);
 
         // Show success message
-        Get.snackbar(
-          'Success',
-          'Account deleted successfully',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-          duration: const Duration(seconds: 2),
-        );
+        AppToast.showError('Account deleted successfully');
       } else {
-        // Show error from backend
-        debugPrint('❌ Account deletion failed: $message');
-
         // Provide more user-friendly message for known backend errors
         String userMessage = message;
         if (message.contains('ObjectId cannot be invoked without \'new\'')) {
@@ -899,9 +873,8 @@ class _AccountPageState extends State<AccountPage>
           );
         }
       }
-    } catch (e, stackTrace) {
-      debugPrint('❌ Error deleting account: $e');
-      debugPrint('📚 Stack trace: $stackTrace');
+    } catch (e) {
+      debugPrint('Error deleting account: $e');
 
       // Close loading dialog if still open
       if (mounted && Navigator.canPop(context)) {
@@ -911,14 +884,7 @@ class _AccountPageState extends State<AccountPage>
       if (!mounted) return;
 
       // Show error message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error deleting account: ${e.toString()}'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 4),
-        ),
-      );
+      AppToast.showError('Error deleting account: ${e.toString()}');
     }
   }
 

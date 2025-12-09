@@ -31,9 +31,9 @@ class MyNews extends StatelessWidget {
     final controller = Get.find<NewsController>();
 
     return GetBuilder<NewsController>(
-      id: 'news_list', // ✅ Same ID as NewsView
+      id: 'news_list',
       builder: (ctrl) {
-        // ✅ Latest data from controller (dynamic refresh)
+        //  Latest data from controller (dynamic refresh)
         final currentNews = ctrl.newsList.firstWhereOrNull(
               (news) => news.id == newsData.id,
         ) ?? newsData;
@@ -209,7 +209,7 @@ class MyNews extends StatelessWidget {
               ),
             ),
             actions: [
-              // ✅ EDIT ACTION - Dynamic Refresh
+              // EDIT ACTION - Dynamic Refresh
               CupertinoActionSheetAction(
                 onPressed: () async {
                   Navigator.pop(ctx); // Close bottom sheet
@@ -221,8 +221,7 @@ class MyNews extends StatelessWidget {
                   );
 
                   if (result == true) {
-                    // ✅ NewsController.refresh() will trigger GetBuilder rebuild
-                    // No extra code needed - reactive update!
+                    //  NewsController.refresh() will trigger GetBuilder rebuild
                   }
                 },
                 child: Row(
@@ -241,7 +240,7 @@ class MyNews extends StatelessWidget {
                 ),
               ),
 
-              // ✅ DELETE ACTION - Dynamic Refresh
+              // DELETE ACTION - Dynamic Refresh
               CupertinoActionSheetAction(
                 onPressed: () async {
                   Navigator.pop(ctx); // Close bottom sheet

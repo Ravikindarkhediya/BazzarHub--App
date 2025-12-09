@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
@@ -450,7 +449,7 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
         case 'strong':
         case 'b':
           newAttrs['bold'] = true;
-          // ✅ Process children with bold attribute
+          //  Process children with bold attribute
           for (var child in node.nodes) {
             _processHtmlNode(child, delta, newAttrs);
           }
@@ -459,7 +458,7 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
         case 'em':
         case 'i':
           newAttrs['italic'] = true;
-          // ✅ Process children with italic attribute
+          //  Process children with italic attribute
           for (var child in node.nodes) {
             _processHtmlNode(child, delta, newAttrs);
           }
@@ -467,7 +466,7 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
 
         case 'u':
           newAttrs['underline'] = true;
-          // ✅ Process children with underline attribute
+          // Process children with underline attribute
           for (var child in node.nodes) {
             _processHtmlNode(child, delta, newAttrs);
           }
@@ -477,14 +476,14 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
         case 'strike':
         case 'del':
           newAttrs['strike'] = true;
-          // ✅ Process children with strike attribute
+          // Process children with strike attribute
           for (var child in node.nodes) {
             _processHtmlNode(child, delta, newAttrs);
           }
           return;
 
         case 'code':
-        // ✅ Check if it's inline code or code block
+        // Check if it's inline code or code block
           if (node.parent?.localName == 'pre') {
             // Code block - handled by 'pre' case
             break;
@@ -510,7 +509,7 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
 
         case 'span':
           _parseSpanStyle(node, newAttrs);
-          // ✅ Process children with span styles
+          // Process children with span styles
           for (var child in node.nodes) {
             _processHtmlNode(child, delta, newAttrs);
           }
@@ -530,7 +529,7 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
           final headingBlockAttrs = <String, dynamic>{'header': level};
           _parseParagraphStyle(node, headingBlockAttrs);
 
-          // ✅ Process children - they may have inline formatting
+          //  Process children - they may have inline formatting
           for (var child in node.nodes) {
             _processHtmlNode(child, delta, newAttrs);
           }
@@ -604,7 +603,7 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
           return;
       }
 
-      // ✅ For any other elements, process children with inherited attributes
+      // For any other elements, process children with inherited attributes
       for (var child in node.nodes) {
         _processHtmlNode(child, delta, newAttrs);
       }
@@ -1126,7 +1125,7 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
       isLoading = false;
       notifyListeners();
       AppToast.showError('Failed to submit news: ${e.toString()}');
-      debugPrint('❌ Submit Exception: $e');
+      debugPrint('Submit Exception: $e');
       debugPrint('Stack Trace: $s');
       return false;
     }

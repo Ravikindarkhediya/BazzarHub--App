@@ -7,7 +7,7 @@ class SettingsTile extends StatelessWidget {
   final IconData icon;
   final String title;
   final String? subtitle;
-  final Widget? trailing;  // ✅ Added custom trailing parameter
+  final Widget? trailing;
   final bool hasToggle;
   final bool? toggleValue;
   final ValueChanged<bool>? onToggleChanged;
@@ -19,7 +19,7 @@ class SettingsTile extends StatelessWidget {
     required this.icon,
     required this.title,
     this.subtitle,
-    this.trailing,  // ✅ Added to constructor
+    this.trailing,
     this.hasToggle = false,
     this.toggleValue,
     this.onToggleChanged,
@@ -78,7 +78,7 @@ class SettingsTile extends StatelessWidget {
                 ),
               ),
 
-              // ✅ Updated Trailing Widget Logic
+              // Updated Trailing Widget Logic
               if (trailing != null)
                 trailing!  // Custom trailing widget takes priority
               else if (hasToggle && onToggleChanged != null)

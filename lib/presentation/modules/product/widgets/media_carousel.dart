@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -15,14 +14,14 @@ class MediaCarousel extends StatefulWidget {
   final List<String> mediaUrls;
   final double height;
   final ValueChanged<int>? onPageChanged;
-  final String? heroTagPrefix; // ✅ ADD THIS
+  final String? heroTagPrefix;
 
   const MediaCarousel({
     super.key,
     required this.mediaUrls,
     this.height = 400,
     this.onPageChanged,
-    this.heroTagPrefix, // ✅ ADD THIS
+    this.heroTagPrefix,
   });
 
   @override
@@ -64,12 +63,12 @@ class _MediaCarouselState extends State<MediaCarousel> {
     super.dispose();
   }
 
-  // ✅ Helper method to generate unique hero tag
+  // Helper method to generate unique hero tag
   String _getHeroTag(int index) {
     if (widget.heroTagPrefix != null) {
       return '${widget.heroTagPrefix}_image_$index';
     }
-    return 'media_image_${hashCode}_$index'; // ✅ Use widget hashCode for uniqueness
+    return 'media_image_${hashCode}_$index';
   }
 
   @override
@@ -104,7 +103,7 @@ class _MediaCarouselState extends State<MediaCarousel> {
     ).animate().fadeIn(duration: 600.ms);
   }
 
-  // ✅ Updated: Add index parameter
+  // Add index parameter
   Widget _buildSingleImage(String imageUrl, int index) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isVideo = Utils.isVideo(imageUrl);
@@ -116,7 +115,7 @@ class _MediaCarouselState extends State<MediaCarousel> {
     return GestureDetector(
       onTap: () => _openFullscreenViewer(index),
       child: Hero(
-        tag: _getHeroTag(index), // ✅ Use unique tag
+        tag: _getHeroTag(index),
         child: Container(
           color: AppColors.white,
           width: double.infinity,
@@ -167,7 +166,7 @@ class _MediaCarouselState extends State<MediaCarousel> {
     return GestureDetector(
       onTap: () => _openFullscreenViewer(index),
       child: Hero(
-        tag: _getHeroTag(index), // ✅ Use unique tag
+        tag: _getHeroTag(index),
         child: Container(
           color: AppColors.white,
           width: double.infinity,
@@ -214,7 +213,7 @@ class _MediaCarouselState extends State<MediaCarousel> {
     return GestureDetector(
       onTap: () => _openFullscreenViewer(index),
       child: Hero(
-        tag: _getHeroTag(index), // ✅ Use unique tag
+        tag: _getHeroTag(index),
         child: Container(
           color: AppColors.black,
           width: width,

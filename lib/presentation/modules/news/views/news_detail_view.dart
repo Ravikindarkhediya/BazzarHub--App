@@ -786,7 +786,7 @@ class _NewsDetailViewState extends State<NewsDetailView>
             // Remove input tags but KEEP span tags with styles
             content = content.replaceAll(RegExp(r'<input[^>]*>'), '');
 
-            // ✅ Trim but preserve inner HTML tags
+            // Trim but preserve inner HTML tags
             content = content.trim();
 
             // Return as div with checkbox symbol

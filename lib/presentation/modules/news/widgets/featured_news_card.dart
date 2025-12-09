@@ -1,18 +1,17 @@
 import 'package:bazzar_hub_app/app/core/utils/utils.dart';
-import 'package:bazzar_hub_app/presentation/modules/product/widgets/custom_image_widget.dart'; // ✅ Add this import
+import 'package:bazzar_hub_app/presentation/modules/product/widgets/custom_image_widget.dart';
 import 'package:bazzar_hub_app/presentation/services/models/news/news_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../app/core/utils/app_language.dart';
 import '../../../../app/core/utils/responsive_size.dart';
-import '../../../../app/core/utils/app_spacing.dart'; // ✅ Add this
+import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
 import '../../../commons/dialogs/app_toasts.dart';
 import '../../../services/api_service.dart';
 import '../../../services/models/news/news_media_model.dart';
-import 'package:dio/dio.dart';
 
 class FeaturedNewsCard extends StatefulWidget {
   final NewsModel newsData;
@@ -22,13 +21,13 @@ class FeaturedNewsCard extends StatefulWidget {
   final bool showFavoriteIcon;
 
   const FeaturedNewsCard({
-    Key? key,
+    super.key,
     required this.newsData,
     this.onTap,
     this.isFavorite = false,
     this.onFavoriteToggle,
     this.showFavoriteIcon = false,
-  }) : super(key: key);
+  });
 
   @override
   State<FeaturedNewsCard> createState() => _FeaturedNewsCardState();
@@ -122,7 +121,6 @@ class _FeaturedNewsCardState extends State<FeaturedNewsCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ✅ Image with CustomImageWidget (same as ProductGridWidget)
             _buildNewsImage(imageUrl, isVideo, newsCategory),
 
             // Content
@@ -168,7 +166,7 @@ class _FeaturedNewsCardState extends State<FeaturedNewsCard> {
     );
   }
 
-  // ✅ NEW METHOD: Build news image (same pattern as ProductGridWidget)
+  // Build news image
   Widget _buildNewsImage(String imageUrl, bool isVideo, String newsCategory) {
     final imageWidth = MediaQuery.of(context).size.width - (AppSpacing.md * 2);
     final imageHeight = 200.0;

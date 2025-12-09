@@ -65,7 +65,7 @@ class OtherUserProfileController extends GetxController {
       }
     } catch (e) {
       errorMessage('Failed to load profile: ${e.toString()}');
-      debugPrint('❌ Error loading profile: $e');
+      debugPrint(' Error loading profile: $e');
     } finally {
       isLoading(false);
     }
@@ -81,8 +81,6 @@ class OtherUserProfileController extends GetxController {
         "limit": 50,
       };
 
-      debugPrint('📡 Fetching user news: $userId');
-
       final response = await _apiService.getOtherUserCreatedNewsList(
         userId,
         queryParams,
@@ -92,7 +90,7 @@ class OtherUserProfileController extends GetxController {
         newsList.value = response.data.data ?? [];
       }
     } catch (e) {
-      debugPrint('❌ Error loading news: $e');
+      debugPrint('Error loading news: $e');
     } finally {
       isNewsListLoading(false);
     }
@@ -116,10 +114,9 @@ class OtherUserProfileController extends GetxController {
 
       if (response.data.status) {
         productList.value = response.data.data ?? [];
-        debugPrint('✅ Products loaded: ${productList.length} items');
       }
     } catch (e) {
-      debugPrint('❌ Error loading products: $e');
+      debugPrint('Error loading products: $e');
     } finally {
       isMarketPlaceLoading(false);
     }
@@ -127,7 +124,7 @@ class OtherUserProfileController extends GetxController {
 
   Future<void> toggleBlockUser() async {
     if (isBlockingInProgress.value) {
-      debugPrint('⚠️ Block/Unblock already in progress');
+      debugPrint('Block/Unblock already in progress');
       return;
     }
 
@@ -157,13 +154,12 @@ class OtherUserProfileController extends GetxController {
                     : 'User unblocked successfully'),
           );
 
-          // ✅ Navigate to HomeWrapper with Marketplace tab
+          // Navigate to HomeWrapper with Marketplace tab
           Get.offAllNamed(
             AppRoutes.homeWrapper,
-            arguments: {'initialTab': 2}, // ✅ Marketplace tab index
+            arguments: {'initialTab': 2},
           );
 
-          debugPrint('✅ Navigated to Marketplace tab');
         } else {
           // Fallback if no data in response
           isBlocked.value = !currentStatus;
@@ -175,20 +171,18 @@ class OtherUserProfileController extends GetxController {
                     : 'User unblocked successfully'),
           );
 
-          // ✅ Navigate to HomeWrapper with Marketplace tab
+          //  Navigate to HomeWrapper with Marketplace tab
           Get.offAllNamed(
             AppRoutes.homeWrapper,
-            arguments: {'initialTab': 2}, // ✅ Marketplace tab index
+            arguments: {'initialTab': 2},
           );
         }
       } else {
-        debugPrint('❌ API returned error: ${response.data.message}');
         AppToast.showError(
             response.data.message ?? 'Failed to update block status');
       }
     } catch (e, stackTrace) {
-      debugPrint('❌ Error toggling block status: $e');
-      debugPrint('Stack trace: $stackTrace');
+      debugPrint(' Error toggling block status: $e');
       AppToast.showError('Failed to update block status');
     } finally {
       isBlockingInProgress.value = false;
@@ -201,7 +195,7 @@ class OtherUserProfileController extends GetxController {
 
   @override
   void onClose() {
-    debugPrint('🗑️ Disposing OtherUserProfileController for user: $userId');
+    debugPrint('Disposing OtherUserProfileController for user: $userId');
     super.onClose();
   }
 }

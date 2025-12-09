@@ -393,7 +393,7 @@ class _MarketplaceViewState extends State<MarketplaceView>
 
       // Clear button will be hidden automatically by the UI logic
     } catch (e) {
-      debugPrint('❌ Error resetting to default location: $e');
+      debugPrint('Error resetting to default location: $e');
       AppToast.showError('Error resetting location');
     }
   }
@@ -432,7 +432,7 @@ class _MarketplaceViewState extends State<MarketplaceView>
           // Save to SharedPreferences
           await _locationController.saveUserLocation();
         } catch (e) {
-          debugPrint('❌ Error saving location: $e');
+          debugPrint('Error saving location: $e');
         }
 
         await _getMarketplace();
@@ -492,7 +492,7 @@ class _MarketplaceViewState extends State<MarketplaceView>
         }
       }
     } catch (error) {
-      debugPrint('❌ Error in _handleProductTap: $error');
+      debugPrint('Error in _handleProductTap: $error');
       AppToast.showError('Error: ${error.toString()}');
     }
   }

@@ -44,19 +44,17 @@ class _HomeWrapperState extends State<HomeWrapper> {
         ? Get.find<NewsController>()
         : Get.put(NewsController(), permanent: true);
 
-    // ✅ Handle initial tab argument
+    // Handle initial tab argument
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final args = Get.arguments as Map<String, dynamic>?;
       final initialTab = args?['initialTab'];
 
       if (initialTab != null && initialTab is int) {
-        debugPrint('📍 Setting initial tab to: $initialTab');
         _controller.currentIndex.value = initialTab;
 
-        // ✅ Refresh News tab if opening directly
+        // Refresh News tab if opening directly
         if (initialTab == 1) {
           _newsController.refresh();
-          debugPrint('🔄 Refreshing News tab on open');
         }
       }
     });
@@ -74,7 +72,6 @@ class _HomeWrapperState extends State<HomeWrapper> {
 
     if (index == 1) {
       _newsController.refresh();
-      debugPrint('🔄 Refreshing News tab');
     }
 
   }

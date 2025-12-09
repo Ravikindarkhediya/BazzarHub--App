@@ -4,14 +4,11 @@ import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:bazzar_hub_app/app/core/utils/app_spacing.dart';
-import 'package:bazzar_hub_app/app/core/utils/utils.dart';
 import 'package:bazzar_hub_app/app/data/constants/app_colors.dart';
 import 'package:bazzar_hub_app/app/data/constants/app_text_style.dart';
 import 'package:bazzar_hub_app/presentation/services/api_service.dart';
-import 'package:bazzar_hub_app/presentation/services/models/base/base_list_model.dart';
 import 'package:bazzar_hub_app/presentation/services/models/report/report_response_model.dart';
 import 'package:intl/intl.dart';
-import '../../../commons/widgets/empty_state_widget.dart';
 import '../../../services/models/report/report_response_item_model.dart';
 import 'report_marketplace_view.dart';
 import 'report_news_detail_view.dart';
@@ -184,7 +181,7 @@ class _ReportListViewState extends State<ReportListView>
     with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late TabController _tabController;
 
-  // ✅ Separate ScrollControllers for each tab
+  //  Separate ScrollControllers for each tab
   late ScrollController _newsScrollController;
   late ScrollController _marketplaceScrollController;
 

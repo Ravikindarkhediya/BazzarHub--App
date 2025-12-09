@@ -34,7 +34,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final TextEditingController _bioController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
 
-  // ✅ GetX Location Controller
+  // GetX Location Controller
   final LocationController _locationController = Get.put(LocationController());
 
   File? _selectedAvatarImage;
@@ -95,10 +95,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
           }
         }
 
-        // ✅ Load locations data (JSON file)
+        // Load locations data (JSON file)
         await _locationController.loadLocationsData();
 
-        // ✅ Load complete location hierarchy if available
+        //  Load complete location hierarchy if available
         if (user.state != null && user.state!.isNotEmpty) {
           // Set state
           _locationController.selectedState.value = user.state;
@@ -134,12 +134,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
             }
           }
           
-          debugPrint('✅ Location data loaded: ${user.state}, ${user.district}, ${user.taluka}, ${user.village}');
         }
       }
     } catch (e) {
       AppToast.showError('Error loading user data');
-      debugPrint('❌ Error: $e');
+      debugPrint(' Error: $e');
     } finally {
       setState(() => _isInitialLoading = false);
     }
@@ -305,12 +304,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Future<void> _updateProfile() async {
-    // ✅ Validate form
+    // Validate form
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    // ✅ Validate location fields
+    //  Validate location fields
     final locationError = _validateLocationFields();
     if (locationError != null) {
       AppToast.showError(locationError);
@@ -327,7 +326,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     try {
       final locationData = _locationController.getLocationData();
 
-      // ✅ Now all location fields are guaranteed to have values
+      //  Now all location fields are guaranteed to have values
       final params = <String, dynamic>{
         'name': _nameController.text.trim(),
         if (_uploadedAvatarUrl != null && _uploadedAvatarUrl!.isNotEmpty)
@@ -337,14 +336,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
         if (_dobController.text.isNotEmpty) 'dob': _dobController.text,
         'bio': _bioController.text.trim(),
 
-        // ✅ LOCATION: All fields are required and validated
+        // LOCATION: All fields are required and validated
         'state': locationData['state']!,
         'district': locationData['district']!,
         'taluka': locationData['taluka']!,
         'village': locationData['village']!,
       };
-
-      debugPrint('📤 Update params: $params');
 
       final apiClient = await getApiClient();
       final response = await apiClient.updateUserProfile(params);
@@ -352,7 +349,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       if (response.data.status) {
         await SessionManager().saveUserData(response.data.data!);
 
-        // ✅ Save location and set refresh flag
+        // Save location and set refresh flag
         await _locationController.saveUserLocation();
 
         final prefs = await SharedPreferences.getInstance();
@@ -368,10 +365,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
       }
     } on DioException catch (e) {
       AppToast.showError(e.response?.data['message'] ?? 'Network error');
-      debugPrint('❌ Dio error: ${e.message}');
+      debugPrint('Dio error: ${e.message}');
     } catch (e) {
       AppToast.showError('Error: $e');
-      debugPrint('❌ Error: $e');
+      debugPrint('Error: $e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -902,7 +899,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           ),
                           const Divider(height: 1),
 
-                          // ✅ LOCATION FIELDS - FULLY FIXED
+                          //  LOCATION FIELDS
                           Obx(() {
                             final currentState =
                                 _locationController.selectedState.value;

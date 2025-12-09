@@ -252,7 +252,7 @@ class _SignInPageState extends State<SignInPage> {
                           if (_formKey.currentState!.validate()) {
                             requestLogin();
                           } else {
-                            print('❌ Form validation failed');
+                            print(' Form validation failed');
                           }
                         },
                         style: ElevatedButton.styleFrom(

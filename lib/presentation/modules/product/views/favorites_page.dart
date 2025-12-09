@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
@@ -19,7 +18,6 @@ import '../../../services/models/news/news_model.dart';
 import '../../../services/models/user/user_model.dart';
 import '../../../modules/news/views/news_detail_view.dart';
 import 'package:bazzar_hub_app/presentation/modules/product/views/product_detail_page.dart';
-import 'package:bazzar_hub_app/presentation/modules/product/views/product_detail_page.dart' show ProductPageArguments;
 import 'package:bazzar_hub_app/presentation/modules/product/widgets/media_carousel.dart';
 
 class FavoritesPage extends StatefulWidget {
@@ -169,8 +167,6 @@ class _FavoritesPageState extends State<FavoritesPage>
           product: product,
         ),
       );
-    } else {
-      AppToast.showError('Invalid product data');
     }
   }
 
@@ -288,11 +284,8 @@ class _FavoritesPageState extends State<FavoritesPage>
   String _convertToHtml(String content) {
     if (content.isEmpty) return '';
 
-    // Don't escape HTML if it's already HTML content
-    // Just convert newlines to br tags
     String htmlContent = content;
 
-    // Convert various newline formats to <br> tags
     htmlContent = htmlContent
         .replaceAll('\r\n', '<br>')  // Windows style
         .replaceAll('\r', '<br>')    // Old Mac style
@@ -305,7 +298,7 @@ class _FavoritesPageState extends State<FavoritesPage>
   Widget _buildNewsItem(FavoriteNewsModel news, {bool showDivider = true, int? index}) {
     final newsModel = _convertToNewsModel(news);
 
-    // ✅ Use index with fallback
+    // Use index with fallback
     final itemIndex = index ?? _favoriteNews.indexOf(news);
 
     return Column(
@@ -325,7 +318,7 @@ class _FavoritesPageState extends State<FavoritesPage>
                       borderRadius: BorderRadius.circular(12),
                       child: news.media.isNotEmpty && news.media.first.url.isNotEmpty
                           ? HeroMode(
-                        enabled: false, // ✅ Hero animation disabled
+                        enabled: false, // Hero animation disabled
                         child: MediaCarousel(
                           key: ValueKey('carousel_${news.id}_$itemIndex'),
                           mediaUrls: news.media.map((m) => m.url).toList(),
@@ -509,7 +502,7 @@ class _FavoritesPageState extends State<FavoritesPage>
         itemCount: _favoriteNews.length + (_hasMoreNews ? 1 : 0),
         itemBuilder: (context, index) {
           if (index < _favoriteNews.length) {
-            // ✅ FIXED: Pass index parameter
+            // Pass index parameter
             return _buildNewsItem(_favoriteNews[index], index: index);
           } else {
             return const Padding(

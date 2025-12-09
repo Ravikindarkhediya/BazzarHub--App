@@ -1,11 +1,9 @@
 import 'package:bazzar_hub_app/app/core/utils/app_language.dart';
-import 'package:bazzar_hub_app/app/core/utils/app_spacing.dart';
-import 'package:bazzar_hub_app/presentation/modules/product/widgets/custom_image_widget.dart'; // ✅ Add this import
+import 'package:bazzar_hub_app/presentation/modules/product/widgets/custom_image_widget.dart';
 import 'package:flutter/material.dart';
-
 import '../../../../app/core/utils/responsive_size.dart';
 import '../../../../app/core/utils/utils.dart';
-import '../../../../app/data/constants/app_colors.dart'; // ✅ Add this
+import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
 import '../../../services/models/news/news_media_model.dart';
 import '../../../services/models/news/news_model.dart';
@@ -15,10 +13,10 @@ class CompactNewsCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   const CompactNewsCard({
-    Key? key,
+    super.key,
     required this.newsData,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +37,7 @@ class CompactNewsCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ✅ Thumbnail with CustomImageWidget (same as ProductGridWidget)
+                // Thumbnail with CustomImageWidget (same as ProductGridWidget)
                 _buildThumbnail(imageUrl, isVideo),
 
                 const SizedBox(width: 12),
@@ -112,7 +110,7 @@ class CompactNewsCard extends StatelessWidget {
     );
   }
 
-  // ✅ NEW METHOD: Build thumbnail with CustomImageWidget
+  // Build thumbnail with CustomImageWidget
   Widget _buildThumbnail(String imageUrl, bool isVideo) {
     const double thumbnailWidth = 120;
     const double thumbnailHeight = 90;

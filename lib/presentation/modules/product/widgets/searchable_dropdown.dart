@@ -1,8 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
@@ -45,7 +43,6 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
   @override
   void initState() {
     super.initState();
-    // ✅ Set initial value
     _updateControllerText(widget.selectedValue ?? '');
   }
 
@@ -53,17 +50,17 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
   void didUpdateWidget(covariant SearchableDropdown oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // ✅ Only update if dropdown is closed and value actually changed
+    // Only update if dropdown is closed and value actually changed
     if (!_isDropdownOpen) {
       if (widget.selectedValue != oldWidget.selectedValue) {
-        // ✅ Use post frame callback to avoid setState during build
+        //  Use post frame callback to avoid setState during build
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && !_isDropdownOpen) {
             _updateControllerText(widget.selectedValue ?? '');
           }
         });
       } else if (!listEquals(widget.items, oldWidget.items)) {
-        // ✅ Items changed, reset to selected value
+        //  Items changed, reset to selected value
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted && !_isDropdownOpen) {
             _updateControllerText(widget.selectedValue ?? '');
@@ -79,7 +76,7 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
     super.dispose();
   }
 
-  // ✅ Helper method to update controller text safely
+  // Helper method to update controller text safely
   void _updateControllerText(String text) {
     if (_searchController.text != text) {
       _searchController.text = text;
@@ -100,7 +97,7 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
       _isDropdownOpen = true;
     });
 
-    // ✅ Set text and selection safely
+    //  Set text and selection safely
     final currentValue = widget.selectedValue ?? '';
     _searchController
       ..text = currentValue
@@ -213,7 +210,7 @@ class _SearchableDropdownState extends State<SearchableDropdown> {
     );
   }
 
-  // ✅ Separate method for items list
+  // Separate method for items list
   Widget _buildItemsList(double viewInsets) {
     final query = _searchController.text.trim().toLowerCase();
     final filteredItems = query.isEmpty

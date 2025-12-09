@@ -1,9 +1,7 @@
 import 'dart:ui';
-
 import 'package:bazzar_hub_app/app/core/manager/log_manager.dart';
 import 'package:bazzar_hub_app/presentation/commons/dialogs/app_toasts.dart';
 import 'package:bazzar_hub_app/presentation/commons/widgets/report_bottom_sheet.dart';
-import 'package:bazzar_hub_app/presentation/modules/marketplace/view/marketplace_view.dart';
 import 'package:bazzar_hub_app/presentation/modules/product/views/sell_product_page.dart';
 import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
 import 'package:dio/dio.dart';
@@ -19,7 +17,6 @@ import '../../../commons/dialogs/appDialog.dart';
 import '../../../controller/product_controller.dart';
 import '../../../services/api_service.dart';
 import '../../../services/models/marketplace/marketplace_model.dart';
-import '../../profile/widgets/report_info_banner.dart';
 import '../widgets/media_carousel.dart';
 import '../widgets/product_details_widget.dart';
 
@@ -51,7 +48,6 @@ class ProductDetailPage extends StatefulWidget {
   /// Route generator
   static Route<dynamic> route(RouteSettings settings) {
     final args = settings.arguments as ProductPageArguments;
-    debugPrint('🔗 Direct route called with args: ${args.productId} - ${args.product?.title}');
     return MaterialPageRoute(
       builder: (_) => ProductDetailPage(
         productId: args.productId,
@@ -78,9 +74,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   @override
   void initState() {
     super.initState();
-    debugPrint('🔗 ProductDetailPage initState - productId: ${widget.productId}');
     if (widget.product != null) {
-      debugPrint('🔗 ProductDetailPage - has product: ${widget.product!.title}');
       _attachController(widget.product!);
       _isLoading = false;
     }
@@ -101,9 +95,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('marketplace_refresh_needed');
-      debugPrint('🔄 Cleared marketplace refresh flag');
+      debugPrint('Cleared marketplace refresh flag');
     } catch (e) {
-      debugPrint('❌ Error clearing refresh flag: $e');
+      debugPrint('Error clearing refresh flag: $e');
     }
   }
 
@@ -158,7 +152,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         AppToast.showSuccess('Product deleted successfully');
         await _setMarketplaceRefreshFlag();
         if (mounted) {
-          debugPrint('🗑️ Navigating back to marketplace after deletion');
           // Return deletion result to marketplace view
           // In _deleteProduct success block
           Get.offAllNamed(AppRoutes.homeWrapper, arguments: {'initialTab': 2});
@@ -175,7 +168,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       }
     } on TypeError catch (e) {
       // Handle the type casting error specifically
-      debugPrint('🗑️ Type error during delete: $e');
       AppToast.showError('Product deleted successfully');
       await _setMarketplaceRefreshFlag();
       if (mounted) {
@@ -195,10 +187,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       // Only set the flag if we're not already in the process of returning to marketplace
       if (force || !(ModalRoute.of(context)?.isCurrent ?? false)) {
         await prefs.setBool('marketplace_refresh_needed', true);
-        debugPrint('🔄 Marketplace refresh flag set');
       }
     } catch (e) {
-      debugPrint('❌ Error setting refresh flag: $e');
+      debugPrint('Error setting refresh flag: $e');
     }
   }
 

@@ -5,26 +5,22 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 class LocationController extends GetxController {
-  // ✅ Observable Location data
   final RxList<Map<String, dynamic>> _locationsData = <Map<String, dynamic>>[].obs;
   final RxList<String> statesList = <String>[].obs;
   final RxList<String> districtsList = <String>[].obs;
   final RxList<String> talukasList = <String>[].obs;
   final RxList<String> villagesList = <String>[].obs;
 
-  // ✅ Observable selected values
   final Rx<String?> selectedState = Rx<String?>(null);
   final Rx<String?> selectedDistrict = Rx<String?>(null);
   final Rx<String?> selectedTaluka = Rx<String?>(null);
   final Rx<String?> selectedVillage = Rx<String?>(null);
 
-  // ✅ Observable loading states
   final RxBool isLoadingDistricts = false.obs;
   final RxBool isLoadingTalukas = false.obs;
   final RxBool isLoadingVillages = false.obs;
   final RxBool isInitialized = false.obs;
 
-  // ✅ Computed getters
   bool get canSelectDistrict => selectedState.value != null;
   bool get canSelectTaluka => selectedDistrict.value != null;
   bool get canSelectVillage => selectedTaluka.value != null;
@@ -37,18 +33,17 @@ class LocationController extends GetxController {
         selectedVillage.value!.isNotEmpty;
   }
 
-  // ✅ Lifecycle - Called when controller is initialized
+  //  Lifecycle - Called when controller is initialized
   @override
   void onInit() {
     super.onInit();
     loadLocationsData();
-    debugPrint('🎯 LocationController initialized');
   }
 
-  // ✅ Lifecycle - Called when controller is closed
+  //  Lifecycle - Called when controller is closed
   @override
   void onClose() {
-    debugPrint('🔴 LocationController closed');
+    debugPrint(' LocationController closed');
     super.onClose();
   }
 
@@ -74,9 +69,8 @@ class LocationController extends GetxController {
         ..sort();
 
       isInitialized.value = true;
-      debugPrint('✅ Location data loaded: ${statesList.length} states');
     } catch (e) {
-      debugPrint('❌ Location load error: $e');
+      debugPrint(' Location load error: $e');
     }
   }
 
@@ -113,8 +107,6 @@ class LocationController extends GetxController {
         }
       }
     }
-
-    debugPrint('✅ User location initialized');
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -148,10 +140,9 @@ class LocationController extends GetxController {
             .toList()
           ..sort();
 
-        debugPrint('✅ Loaded ${districtsList.length} districts');
       }
     } catch (e) {
-      debugPrint('❌ Error loading districts: $e');
+      debugPrint('Error loading districts: $e');
     } finally {
       isLoadingDistricts.value = false;
     }
@@ -199,8 +190,6 @@ class LocationController extends GetxController {
         if (!talukasList.contains(district)) {
           talukasList.insert(0, district);
         }
-
-        debugPrint('✅ Loaded ${talukasList.length} talukas');
       }
     } finally {
       isLoadingTalukas.value = false;
@@ -258,8 +247,6 @@ class LocationController extends GetxController {
         if (!villagesList.contains(district)) {
           villagesList.insert(villagesList.isEmpty ? 0 : 1, district);
         }
-
-        debugPrint('✅ Loaded ${villagesList.length} villages');
       }
     } finally {
       isLoadingVillages.value = false;
@@ -272,7 +259,6 @@ class LocationController extends GetxController {
   Future<void> selectState(String state) async {
     selectedState.value = state;
     await loadDistricts(state, clearSelection: true);
-    debugPrint('📍 State selected: $state');
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -282,7 +268,6 @@ class LocationController extends GetxController {
     selectedDistrict.value = district;
     if (selectedState.value != null) {
       await loadTalukas(selectedState.value!, district, clearSelection: true);
-      debugPrint('📍 District selected: $district');
     }
   }
 
@@ -298,7 +283,6 @@ class LocationController extends GetxController {
         taluka,
         clearSelection: true,
       );
-      debugPrint('📍 Taluka selected: $taluka');
     }
   }
 
@@ -307,7 +291,6 @@ class LocationController extends GetxController {
   // ─────────────────────────────────────────────────────────────
   void selectVillage(String village) {
     selectedVillage.value = village;
-    debugPrint('📍 Village selected: $village');
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -349,8 +332,6 @@ class LocationController extends GetxController {
 
     // Set refresh flag
     // await prefs.setBool('marketplace_refresh_needed', true);
-
-    debugPrint('✅ User location saved: $fullAddress');
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -372,16 +353,14 @@ class LocationController extends GetxController {
           taluka: taluka,
           village: village,
         );
-        debugPrint('✅ User location loaded from SharedPreferences');
         return true;
       } else {
         // If no saved location, reset to default session location
         reset();
-        debugPrint('ℹ️ No saved location, using default session location');
         return false;
       }
     } catch (e) {
-      debugPrint('❌ Error loading user location: $e');
+      debugPrint('Error loading user location: $e');
       // On error, reset to default session location
       reset();
       return false;
@@ -410,7 +389,7 @@ class LocationController extends GetxController {
     return parts.join(', ');
   }
 
-  // ✅ GET FULL ADDRESS (Public method)
+  // GET FULL ADDRESS (Public method)
   String getFullAddress() => _buildFullAddress();
 
   // ─────────────────────────────────────────────────────────────
@@ -471,7 +450,7 @@ class LocationController extends GetxController {
           currentLocation['taluka'] == savedTaluka &&
           currentLocation['village'] == savedVillage;
     } catch (e) {
-      debugPrint('❌ Error checking default location: $e');
+      debugPrint('Error checking default location: $e');
       return false;
     }
   }
@@ -542,8 +521,6 @@ class LocationController extends GetxController {
     await prefs.remove('user_taluka');
     await prefs.remove('user_village');
     await prefs.remove('user_full_address');
-    
-    debugPrint('✅ User location cleared from storage and memory');
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -557,6 +534,5 @@ class LocationController extends GetxController {
     districtsList.clear();
     talukasList.clear();
     villagesList.clear();
-    debugPrint('🔄 Location controller reset');
   }
 }
