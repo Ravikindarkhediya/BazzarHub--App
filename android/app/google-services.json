@@ -14,7 +14,15 @@
       },
       "oauth_client": [
         {
-          "client_id": "249761351129-7uu115pjde44skubqt766c1ttbpqqk64.apps.googleusercontent.com",
+          "client_id": "249761351129-f8lnrm5hjbvfbqtq617r2an9qtv47jhq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.bazzar_hub_app",
+            "certificate_hash": "c1d8226bde8d0ed02018ed145683eca90118a4a1"
+          }
+        },
+        {
+          "client_id": "249761351129-fgrbloefqh9mfklsubctpn1dj8quqnmt.apps.googleusercontent.com",
           "client_type": 3
         }
       ],

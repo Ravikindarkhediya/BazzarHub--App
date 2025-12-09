@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -63,7 +60,18 @@ class DefaultFirebaseOptions {
     messagingSenderId: '249761351129',
     projectId: 'bazzarhub--app',
     storageBucket: 'bazzarhub--app.firebasestorage.app',
+    androidClientId: '249761351129-f8lnrm5hjbvfbqtq617r2an9qtv47jhq.apps.googleusercontent.com',
     iosClientId: '249761351129-jc04d8q3cd3jefqe2lu3abgbe4f7t8a1.apps.googleusercontent.com',
     iosBundleId: 'com.example.bazzarHubApp',
   );
+
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyBt9kbbnkP9Ao9kTPEeBted8CmCAun8iNk',
+    appId: '1:249761351129:web:7ef1f12247ee4a1479c5c8',
+    messagingSenderId: '249761351129',
+    projectId: 'bazzarhub--app',
+    authDomain: 'bazzarhub--app.firebaseapp.com',
+    storageBucket: 'bazzarhub--app.firebasestorage.app',
+  );
+
 }
