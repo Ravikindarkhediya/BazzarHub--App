@@ -113,6 +113,42 @@ class _FeaturedNewsCardState extends State<FeaturedNewsCard> {
     final String newsCategory = AppLanguage.getText(widget.newsData.category?.name);
     final String? villageName = widget.newsData.location?.district;
 
+    // Check if web and tablet/desktop
+    final isWebTabletOrDesktop = kIsWeb && MediaQuery.of(context).size.width >= 600;
+
+    if (isWebTabletOrDesktop) {
+      return _buildWebFeaturedCard(
+        context,
+        title,
+        imageUrl,
+        isVideo,
+        newsCategory,
+        villageName,
+        createdAt,
+      );
+    } else {
+      return _buildMobileFeaturedCard(
+        context,
+        title,
+        imageUrl,
+        isVideo,
+        newsCategory,
+        villageName,
+        createdAt,
+      );
+    }
+  }
+
+  // Original Mobile/Android Layout
+  Widget _buildMobileFeaturedCard(
+      BuildContext context,
+      String title,
+      String imageUrl,
+      bool isVideo,
+      String newsCategory,
+      String? villageName,
+      String createdAt,
+      ) {
     return InkWell(
       onTap: widget.onTap,
       child: Container(
@@ -121,7 +157,7 @@ class _FeaturedNewsCardState extends State<FeaturedNewsCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildNewsImage(imageUrl, isVideo, newsCategory),
+            _buildNewsImage(context, imageUrl, isVideo, newsCategory, false),
 
             // Content
             Padding(
@@ -166,20 +202,114 @@ class _FeaturedNewsCardState extends State<FeaturedNewsCard> {
     );
   }
 
+  // Web Featured Card Layout
+  Widget _buildWebFeaturedCard(
+      BuildContext context,
+      String title,
+      String imageUrl,
+      bool isVideo,
+      String newsCategory,
+      String? villageName,
+      String createdAt,
+      ) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth >= 1200;
+
+    return InkWell(
+      onTap: widget.onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Featured Image
+            _buildNewsImage(context, imageUrl, isVideo, newsCategory, true),
+
+            // Content
+            Padding(
+              padding: EdgeInsets.all(isDesktop ? 24 : 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title
+                  Text(
+                    title,
+                    style: AppTextStyles.newsTitle.copyWith(
+                      fontSize: isDesktop ? 22 : 18,
+                      fontWeight: FontWeight.w700,
+                      height: 1.4,
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+
+                  SizedBox(height: isDesktop ? 16 : 12),
+
+                  // Location and Time
+                  Row(
+                    children: [
+                      if (villageName != null && villageName.isNotEmpty) ...[
+                        Expanded(
+                          child: _buildButton(
+                            icon: Icons.location_on_outlined,
+                            text: villageName,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                      ],
+                      _buildButton(
+                        icon: Icons.access_time,
+                        text: createdAt.isNotEmpty ? Utils.getTimeAgo(createdAt) : '',
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // Build news image
-  Widget _buildNewsImage(String imageUrl, bool isVideo, String newsCategory) {
-    final imageWidth = MediaQuery.of(context).size.width - (AppSpacing.md * 2);
-    final imageHeight = 200.0;
+  Widget _buildNewsImage(
+      BuildContext context,
+      String imageUrl,
+      bool isVideo,
+      String newsCategory,
+      bool isWeb,
+      ) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth >= 1200;
+
+    final imageWidth = isWeb
+        ? screenWidth - (isDesktop ? 64.0 : 32.0)
+        : MediaQuery.of(context).size.width - (AppSpacing.md * 2);
+
+    final imageHeight = isWeb
+        ? (isDesktop ? 400.0 : 300.0)
+        : 200.0;
 
     return Stack(
       children: [
-        /// Main Image with CustomImageWidget
-        AspectRatio(
-          aspectRatio: imageWidth / imageHeight,
-          child: ClipRRect(
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(12),
-            ),
+        /// Main Image
+        ClipRRect(
+          borderRadius: isWeb
+              ? const BorderRadius.vertical(top: Radius.circular(16))
+              : const BorderRadius.vertical(top: Radius.circular(12)),
+          child: AspectRatio(
+            aspectRatio: imageWidth / imageHeight,
             child: Container(
               color: AppColors.grey100,
               child: imageUrl.isNotEmpty
@@ -188,27 +318,47 @@ class _FeaturedNewsCardState extends State<FeaturedNewsCard> {
                 height: imageHeight,
                 width: imageWidth,
                 fit: BoxFit.cover,
-                cornerRadius: 12,
+                cornerRadius: 0,
               )
-                  : _buildImagePlaceholder(),
+                  : _buildImagePlaceholder(isWeb),
             ),
           ),
         ),
 
-        /// Play Button Overlay for Video
+        /// Gradient Overlay for better text visibility
+        if (isWeb)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.3),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+        /// Play Button Overlay
         if (isVideo)
           Positioned.fill(
             child: Center(
               child: Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(isWeb ? 16 : 12),
                 decoration: const BoxDecoration(
                   color: Colors.black54,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.play_arrow,
                   color: Colors.white,
-                  size: 32,
+                  size: isWeb ? 48 : 32,
                 ),
               ),
             ),
@@ -220,26 +370,26 @@ class _FeaturedNewsCardState extends State<FeaturedNewsCard> {
           right: 0,
           left: 0,
           child: Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: EdgeInsets.all(isWeb ? 16.0 : 8.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 // Category Badge
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 3,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isWeb ? 12 : 6,
+                    vertical: isWeb ? 6 : 3,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.7),
-                    borderRadius: BorderRadius.circular(4),
+                    color: Colors.black.withOpacity(0.75),
+                    borderRadius: BorderRadius.circular(isWeb ? 8 : 4),
                   ),
                   child: Text(
                     newsCategory,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
+                      fontSize: isWeb ? 13 : 11,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -249,16 +399,16 @@ class _FeaturedNewsCardState extends State<FeaturedNewsCard> {
                   GestureDetector(
                     onTap: _isFavoriteLoading ? null : _handleFavoriteTap,
                     child: Container(
-                      padding: const EdgeInsets.all(6),
+                      padding: EdgeInsets.all(isWeb ? 8 : 6),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.7),
+                        color: Colors.black.withOpacity(0.75),
                         shape: BoxShape.circle,
                       ),
                       child: _isFavoriteLoading
-                          ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
+                          ? SizedBox(
+                        width: isWeb ? 20 : 16,
+                        height: isWeb ? 20 : 16,
+                        child: const CircularProgressIndicator(
                           strokeWidth: 2,
                           valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
@@ -266,7 +416,7 @@ class _FeaturedNewsCardState extends State<FeaturedNewsCard> {
                           : Icon(
                         _isFavorite ? Icons.favorite : Icons.favorite_border,
                         color: _isFavorite ? Colors.red : Colors.white,
-                        size: 18,
+                        size: isWeb ? 22 : 18,
                       ),
                     ),
                   ),
@@ -278,14 +428,14 @@ class _FeaturedNewsCardState extends State<FeaturedNewsCard> {
     );
   }
 
-  //  Image placeholder (same as ProductGridWidget)
-  Widget _buildImagePlaceholder() {
+  // Image placeholder
+  Widget _buildImagePlaceholder(bool isWeb) {
     return Container(
       color: AppColors.grey100,
-      child: const Center(
+      child: Center(
         child: Icon(
           Icons.image_outlined,
-          size: 50,
+          size: isWeb ? 80 : 50,
           color: AppColors.grey400,
         ),
       ),
@@ -293,20 +443,27 @@ class _FeaturedNewsCardState extends State<FeaturedNewsCard> {
   }
 
   Widget _buildButton({required IconData icon, required String text}) {
+    final isWeb = kIsWeb && MediaQuery.of(context).size.width >= 600;
+
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
           icon,
-          size: 14,
+          size: isWeb ? 16 : 14,
           color: Colors.grey[600],
         ),
         const SizedBox(width: 4),
-        Text(
-          text,
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 12,
+        Flexible(
+          child: Text(
+            text,
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: isWeb ? 13 : 12,
+              fontWeight: isWeb ? FontWeight.w500 : FontWeight.normal,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],

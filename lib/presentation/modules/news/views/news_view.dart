@@ -3,6 +3,7 @@ import 'package:bazzar_hub_app/app/core/utils/utils.dart';
 import 'package:bazzar_hub_app/presentation/commons/dialogs/app_toasts.dart';
 import 'package:bazzar_hub_app/presentation/commons/widgets/empty_state_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:get/get.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../home/widgets/header_widget.dart';
@@ -55,6 +56,17 @@ class _NewsViewState extends State<NewsView>
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  // Get crossAxisCount based on screen width
+  int _getCrossAxisCount(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width >= 1200) {
+      return 3; // Desktop/Monitor - 3 columns
+    } else if (width >= 600) {
+      return 2; // Tablet - 2 columns
+    }
+    return 1; // Mobile - 1 column (list view)
   }
 
   @override
@@ -148,71 +160,11 @@ class _NewsViewState extends State<NewsView>
                         );
                       }
 
-                      // 4) SHOW LIST WITH REFRESH INDICATOR
+                      // 4) SHOW LIST/GRID WITH REFRESH INDICATOR
                       return RefreshIndicator(
                         onRefresh: () => controller.refresh(),
                         color: AppColors.primary,
-                        child: ListView.builder(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          itemCount: controller.newsList.length +
-                              controller.newsList.length - 1,
-                          itemBuilder: (context, index) {
-                            // Handle separators
-                            if (index.isOdd) {
-                              return const Divider(
-                                color: Colors.grey,
-                                thickness: 0.5,
-                                height: 1,
-                                indent: 0,
-                                endIndent: 0,
-                              );
-                            }
-
-                            final newsIndex = index ~/ 2;
-                            final news = controller.newsList[newsIndex];
-
-                            void handleNewsTap() {
-                              if (news.id == null || news.id!.isEmpty) {
-                                AppToast.showError('Invalid news ID');
-                                return;
-                              }
-
-                              try {
-                                Get.to(
-                                      () => NewsDetailView(
-                                    newsId: news.id!,
-                                    initialData: news.toJson(),
-                                  ),
-                                  transition: Transition.cupertino,
-                                  duration: const Duration(milliseconds: 300),
-                                );
-                              } catch (e, stackTrace) {
-                                AppToast.showError('Failed to open news detail: $e');
-                              }
-                            }
-
-                            // First item - Featured
-                            if (newsIndex == 0) {
-                              return FeaturedNewsCard(
-                                newsData: news,
-                                onTap: () {
-                                  handleNewsTap();
-                                },
-                              );
-                            } else {
-                              return CompactNewsCard(
-                                newsData: news,
-                                onTap: () {
-                                  handleNewsTap();
-                                },
-                              );
-                            }
-                          },
-                        ),
+                        child: _buildNewsContent(context, controller),
                       );
                     },
                   ),
@@ -223,5 +175,174 @@ class _NewsViewState extends State<NewsView>
         ],
       ),
     );
+  }
+
+  Widget _buildNewsContent(BuildContext context, NewsController controller) {
+    // Check if web and tablet/desktop size
+    final isWebTabletOrDesktop = kIsWeb && MediaQuery.of(context).size.width >= 600;
+
+    if (isWebTabletOrDesktop) {
+      return _buildGridView(context, controller);
+    } else {
+      return _buildListView(context, controller);
+    }
+  }
+
+  // Original ListView for Mobile and Android
+  Widget _buildListView(BuildContext context, NewsController controller) {
+    return ListView.builder(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 8,
+      ),
+      itemCount: controller.newsList.length + controller.newsList.length - 1,
+      itemBuilder: (context, index) {
+        // Handle separators
+        if (index.isOdd) {
+          return const Divider(
+            color: Colors.grey,
+            thickness: 0.5,
+            height: 1,
+            indent: 0,
+            endIndent: 0,
+          );
+        }
+
+        final newsIndex = index ~/ 2;
+        final news = controller.newsList[newsIndex];
+
+        void handleNewsTap() {
+          if (news.id == null || news.id!.isEmpty) {
+            AppToast.showError('Invalid news ID');
+            return;
+          }
+
+          try {
+            Get.to(
+                  () => NewsDetailView(
+                newsId: news.id!,
+                initialData: news.toJson(),
+              ),
+              transition: Transition.cupertino,
+              duration: const Duration(milliseconds: 300),
+            );
+          } catch (e, stackTrace) {
+            AppToast.showError('Failed to open news detail: $e');
+          }
+        }
+
+        // First item - Featured
+        if (newsIndex == 0) {
+          return FeaturedNewsCard(
+            newsData: news,
+            onTap: () {
+              handleNewsTap();
+            },
+          );
+        } else {
+          return CompactNewsCard(
+            newsData: news,
+            onTap: () {
+              handleNewsTap();
+            },
+          );
+        }
+      },
+    );
+  }
+
+  // GridView for Web Tablet and Desktop
+  Widget _buildGridView(BuildContext context, NewsController controller) {
+    final crossAxisCount = _getCrossAxisCount(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Calculate padding based on screen size
+    final horizontalPadding = screenWidth >= 1200 ? 32.0 : 16.0;
+
+    return CustomScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      slivers: [
+        // Featured News Card (Full Width)
+        if (controller.newsList.isNotEmpty)
+          SliverPadding(
+            padding: EdgeInsets.symmetric(
+              horizontal: horizontalPadding,
+              vertical: 16,
+            ),
+            sliver: SliverToBoxAdapter(
+              child: FeaturedNewsCard(
+                newsData: controller.newsList.first,
+                onTap: () {
+                  _handleNewsTap(controller.newsList.first);
+                },
+              ),
+            ),
+          ),
+
+        // Grid of Compact News Cards
+        if (controller.newsList.length > 1)
+          SliverPadding(
+            padding: EdgeInsets.symmetric(
+              horizontal: horizontalPadding,
+              vertical: 8,
+            ),
+            sliver: SliverGrid(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                childAspectRatio: _getChildAspectRatio(screenWidth),
+                crossAxisSpacing: 16,
+                mainAxisExtent: 250,
+                mainAxisSpacing: 16,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                  final newsIndex = index + 1; // Skip first item (featured)
+                  final news = controller.newsList[newsIndex];
+
+                  return CompactNewsCard(
+                    newsData: news,
+                    onTap: () {
+                      _handleNewsTap(news);
+                    },
+                  );
+                },
+                childCount: controller.newsList.length - 1,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  // Get aspect ratio based on screen width
+  double _getChildAspectRatio(double screenWidth) {
+    if (screenWidth >= 1200) {
+      return 1.0; // ✅ 0.85 se 1.0 kiya (height kam hogi - Desktop)
+    } else if (screenWidth >= 600) {
+      return 0.95; // ✅ 0.8 se 0.95 kiya (height kam hogi - Tablet)
+    }
+    return 1.0;
+  }
+
+
+  void _handleNewsTap(news) {
+    if (news.id == null || news.id!.isEmpty) {
+      AppToast.showError('Invalid news ID');
+      return;
+    }
+
+    try {
+      Get.to(
+            () => NewsDetailView(
+          newsId: news.id!,
+          initialData: news.toJson(),
+        ),
+        transition: Transition.cupertino,
+        duration: const Duration(milliseconds: 300),
+      );
+    } catch (e, stackTrace) {
+      AppToast.showError('Failed to open news detail: $e');
+    }
   }
 }
