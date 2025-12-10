@@ -496,31 +496,6 @@ class _OtherUserProfileState extends State<OtherUserProfile>
     );
   }
 
-  Widget _roundedIconButton(IconData icon, VoidCallback onTap) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          height: 40,
-          width: 40,
-          decoration: BoxDecoration(
-            color: AppColors.black.withOpacity(0.5),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.15),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.all(5),
-          child: Icon(icon, size: 18, color: Colors.white),
-        ),
-      ),
-    );
-  }
 
   Widget _buildPlaceholder(String? name) {
     String firstLetter = 'U';
