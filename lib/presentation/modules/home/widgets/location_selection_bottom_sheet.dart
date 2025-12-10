@@ -276,8 +276,10 @@ class _LocationSelectionBottomSheetState
   Widget _buildLocationUI() {
     return Padding(
       padding: EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        children: [
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
           SearchableDropdown(
             label: 'State',
             hint: controller.isLocationDataReady
@@ -345,8 +347,8 @@ class _LocationSelectionBottomSheetState
           ),
 
           const SizedBox(height: 16),
-
         ],
+      ),
       ),
     );
   }
