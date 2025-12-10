@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart'; // Add this import for kIsWeb
 import 'package:flutter/material.dart';
 import '../../../app/core/utils/app_spacing.dart';
 import '../../../app/data/constants/app_colors.dart';
@@ -26,6 +27,10 @@ class AppDialog extends StatelessWidget {
     final mediaQuery = MediaQuery.of(context);
     final width = mediaQuery.size.width;
 
+    final isWeb = kIsWeb;
+    final webMaxWidth = width * 0.4;
+    final webMinWidth = width * 0.2;
+
     return Dialog(
       elevation: 2,
       backgroundColor: AppColors.white,
@@ -34,11 +39,14 @@ class AppDialog extends StatelessWidget {
       ),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: width * 0.9,
-          minWidth: width * 0.6,
+          maxWidth: isWeb ? webMaxWidth : width * 0.9,
+          minWidth: isWeb ? webMinWidth : width * 0.6,
+          maxHeight: isWeb ? mediaQuery.size.height * 0.8 : 600,
         ),
         child: Padding(
-          padding: AppSpacing.paddingMD,
+          padding: isWeb
+              ? EdgeInsets.all(AppSpacing.lg)
+              : AppSpacing.paddingMD,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -51,6 +59,8 @@ class AppDialog extends StatelessWidget {
               Text(
                 message,
                 style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary),
+                maxLines: isWeb ? 5 : null,
+                overflow: isWeb ? TextOverflow.ellipsis : null,
               ),
               SizedBox(height: AppSpacing.lg),
               Row(
@@ -61,7 +71,7 @@ class AppDialog extends StatelessWidget {
                       if (onCancel != null) {
                         onCancel!();
                       } else {
-                        Navigator.of(context).pop(false); // Default cancel action
+                        Navigator.of(context).pop(false);
                       }
                     },
                     style: TextButton.styleFrom(
@@ -79,7 +89,7 @@ class AppDialog extends StatelessWidget {
                       if (onConfirm != null) {
                         onConfirm!();
                       } else {
-                        Navigator.of(context).pop(true); // Default confirm action
+                        Navigator.of(context).pop(true);
                       }
                     },
                     style: ElevatedButton.styleFrom(
