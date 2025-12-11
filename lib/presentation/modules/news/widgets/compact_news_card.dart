@@ -148,6 +148,7 @@ class CompactNewsCard extends StatelessWidget {
   }
 
   // Web Grid Layout (Vertical Card)
+  // Web Grid Layout (Vertical Card) - Fixed Height Version
   Widget _buildWebGridCard(
       BuildContext context,
       String title,
@@ -160,6 +161,7 @@ class CompactNewsCard extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Container(
+        height: 240, // ✅ Fixed height - adjust as needed (220-260 range)
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -174,95 +176,98 @@ class CompactNewsCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image with category badge
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(12),
-                  ),
-                  child: AspectRatio(
-                    aspectRatio: 16 / 7,
-                    child: Container(
+            // Image with category badge - Fixed Height
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
+              child: SizedBox(
+                height: 140,
+                width: double.infinity,
+                child: Stack(
+                  children: [
+                    Container(
                       color: AppColors.grey100,
                       child: imageUrl.isNotEmpty
                           ? CustomImageWidget(
                         imageUrl: imageUrl,
                         width: double.infinity,
-                        height: double.infinity,
+                        height: 140,
                         fit: BoxFit.cover,
                         cornerRadius: 0,
                       )
                           : _buildImagePlaceholder(),
                     ),
-                  ),
+
+                    // Play Button Overlay
+                    if (isVideo)
+                      Positioned.fill(
+                        child: Center(
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.6),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.play_arrow,
+                              color: Colors.white,
+                              size: 28,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                    // Category Badge
+                    if (!Utils.isEmpty(newsCategory))
+                      Positioned(
+                        top: 8,
+                        left: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.75),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            newsCategory,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-
-                // Play Button Overlay
-                if (isVideo)
-                  Positioned.fill(
-                    child: Center(
-                      child: Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.6),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.play_arrow,
-                          color: Colors.white,
-                          size: 32,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                // Category Badge
-                if (!Utils.isEmpty(newsCategory))
-                  Positioned(
-                    top: 12,
-                    left: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.7),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        newsCategory,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
+              ),
             ),
 
-            // Content
-            Expanded(
+            // Content - Fixed Height
+            SizedBox(
+              height: 100,
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     // Title
                     Text(
                       title,
                       style: AppTextStyles.newsTitle.copyWith(
-                        fontSize: 15,
+                        fontSize: 14,
                         height: 1.3,
+                        fontWeight: FontWeight.w600,
                       ),
-                      maxLines: 3,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-
 
                     // Location and Time
                     Row(
@@ -274,7 +279,7 @@ class CompactNewsCard extends StatelessWidget {
                               text: villageName,
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
                         ],
                         _buildButton(
                           icon: Icons.access_time,
@@ -291,6 +296,7 @@ class CompactNewsCard extends StatelessWidget {
       ),
     );
   }
+
 
   // Build thumbnail (for mobile)
   Widget _buildThumbnail(String imageUrl, bool isVideo, double width, double height) {

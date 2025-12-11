@@ -292,7 +292,7 @@ class _NewsViewState extends State<NewsView>
                 crossAxisCount: crossAxisCount,
                 childAspectRatio: _getChildAspectRatio(screenWidth),
                 crossAxisSpacing: 16,
-                mainAxisExtent: 250,
+                mainAxisExtent: 240,
                 mainAxisSpacing: 16,
               ),
               delegate: SliverChildBuilderDelegate(

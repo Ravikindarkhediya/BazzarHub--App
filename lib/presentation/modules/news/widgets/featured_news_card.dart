@@ -217,6 +217,7 @@ class _FeaturedNewsCardState extends State<FeaturedNewsCard> {
 
     return InkWell(
       onTap: widget.onTap,
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
