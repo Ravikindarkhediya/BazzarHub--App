@@ -2,6 +2,7 @@ import 'package:bazzar_hub_app/presentation/modules/otherUserProfile/controllers
 import 'package:bazzar_hub_app/presentation/modules/news/widgets/news_report_reason_page.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb; // ✅ Add this
 import 'package:get/get.dart';
 
 import '../../../../app/core/utils/app_spacing.dart';
@@ -44,6 +45,81 @@ class _OtherUserProfileState extends State<OtherUserProfile>
     super.dispose();
   }
 
+  // ✅ Helper: Get cross axis count for grid
+  int _getCrossAxisCount(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width >= 1200) return 3; // Desktop - 3 columns
+    if (width >= 600) return 2;  // Tablet - 2 columns
+    return 1; // Mobile - 1 column
+  }
+
+  double _getCardHeight(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width >= 1200) return 240; // ✅ 280 se 240
+    if (width >= 600) return 220;  // ✅ 260 se 220
+    return 210; // ✅ 240 se 210
+  }
+
+  // ✅ New Method: Build News List/Grid based on platform
+  Widget _buildNewsContent(BuildContext context) {
+    final isWebTabletOrDesktop = kIsWeb && MediaQuery.of(context).size.width >= 600;
+
+    if (isWebTabletOrDesktop) {
+      // Web Grid View
+      return RefreshIndicator(
+        onRefresh: () async {
+          await _profileController.refresh();
+        },
+        color: AppColors.primary,
+        child: GridView.builder(
+          padding: const EdgeInsets.all(16),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: _getCrossAxisCount(context),
+            mainAxisExtent: _getCardHeight(context),
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+          ),
+          itemCount: _profileController.newsList.length,
+          itemBuilder: (context, index) {
+            return MyNews(
+              newsData: _profileController.newsList[index],
+              hideActionButton: true,
+              onTapdDelete: (_) {},
+            );
+          },
+        ),
+      );
+    } else {
+      // Mobile List View
+      return RefreshIndicator(
+        onRefresh: () async {
+          await _profileController.refresh();
+        },
+        color: AppColors.primary,
+        child: ListView.separated(
+          padding: const EdgeInsets.only(
+            left: 16.0,
+            right: 16.0,
+            top: 16.0,
+            bottom: 50.0,
+          ),
+          itemCount: _profileController.newsList.length,
+          separatorBuilder: (_, __) => const Divider(
+            color: Colors.grey,
+            height: 1,
+          ),
+          itemBuilder: (context, index) {
+            return MyNews(
+              newsData: _profileController.newsList[index],
+              hideActionButton: true,
+              onTapdDelete: (_) {},
+            );
+          },
+        ),
+      );
+    }
+  }
+
   Widget _buildAppbarIcon({
     required IconData icon,
     VoidCallback? onTap,
@@ -72,15 +148,15 @@ class _OtherUserProfileState extends State<OtherUserProfile>
           padding: const EdgeInsets.all(10),
           child: isLoading
               ? SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      loadingColor ?? AppColors.primary,
-                    ),
-                  ),
-                )
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                loadingColor ?? AppColors.primary,
+              ),
+            ),
+          )
               : Icon(icon, size: 18, color: iconColor),
         ),
       ),
@@ -128,254 +204,224 @@ class _OtherUserProfileState extends State<OtherUserProfile>
           color: AppColors.primary,
           child: NestedScrollView(
             headerSliverBuilder: (context, innerBoxIsScrolled) {
-            return [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Obx(() {
-                    if (_profileController.isLoading.value) {
-                      return const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(32.0),
-                          child: CircularProgressIndicator(),
-                        ),
-                      );
-                    }
+              return [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: Obx(() {
+                      if (_profileController.isLoading.value) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(32.0),
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      }
 
-                    if (_profileController.errorMessage.value.isNotEmpty) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(32.0),
-                          child: Column(
-                            children: [
-                              Text(
-                                _profileController.errorMessage.value,
-                                style: AppTextStyles.bodyMedium.copyWith(
-                                  color: AppColors.error,
+                      if (_profileController.errorMessage.value.isNotEmpty) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(32.0),
+                            child: Column(
+                              children: [
+                                Text(
+                                  _profileController.errorMessage.value,
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    color: AppColors.error,
+                                  ),
+                                  textAlign: TextAlign.center,
                                 ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed: () => _profileController.refresh(),
-                                child: const Text('Retry'),
-                              ),
-                            ],
+                                const SizedBox(height: 16),
+                                ElevatedButton(
+                                  onPressed: () => _profileController.refresh(),
+                                  child: const Text('Retry'),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    }
+                        );
+                      }
 
-                    final user = _profileController.userModel.value;
-                    if (user == null) {
-                      return const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(32.0),
-                          child: Text('User not found'),
-                        ),
-                      );
-                    }
-
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        // Avatar
-                        Center(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(60),
-                            child:
-                                (user.avatar != null && user.avatar!.isNotEmpty)
-                                ? Image.network(
-                                    user.avatar!,
-                                    width: 120,
-                                    height: 120,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) =>
-                                        _buildPlaceholder(user.name),
-                                  )
-                                : _buildPlaceholder(user.name),
+                      final user = _profileController.userModel.value;
+                      if (user == null) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(32.0),
+                            child: Text('User not found'),
                           ),
-                        ),
-                        const SizedBox(height: 12),
+                        );
+                      }
 
-                        Text(
-                          user.name ?? 'Unknown User',
-                          style: AppTextStyles.h4.copyWith(
-                            fontWeight: FontWeight.bold,
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Center(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(60),
+                              child: (user.avatar != null &&
+                                  user.avatar!.isNotEmpty)
+                                  ? Image.network(
+                                user.avatar!,
+                                width: 120,
+                                height: 120,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) =>
+                                    _buildPlaceholder(user.name),
+                              )
+                                  : _buildPlaceholder(user.name),
+                            ),
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-
-                        const SizedBox(height: 4),
-
-                        if (user.email != null && user.email!.isNotEmpty)
+                          const SizedBox(height: 12),
                           Text(
-                            user.email!,
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.textSecondary,
+                            user.name ?? 'Unknown User',
+                            style: AppTextStyles.h4.copyWith(
+                              fontWeight: FontWeight.bold,
                             ),
                             textAlign: TextAlign.center,
                           ),
-
-                        const SizedBox(height: 12),
-
-                        if (user.bio != null && user.bio!.isNotEmpty)
-                          Text(
-                            user.bio!,
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.textSecondary,
+                          const SizedBox(height: 4),
+                          if (user.email != null && user.email!.isNotEmpty)
+                            Text(
+                              user.email!,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                            textAlign: TextAlign.center,
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-
-                        const SizedBox(height: 20),
-                      ],
-                    );
-                  }),
-                ),
-              ),
-
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: _SliverTabBarDelegate(
-                  TabBar(
-                    controller: _tabController,
-                    labelColor: AppColors.primary,
-                    indicatorColor: AppColors.primary,
-                    unselectedLabelColor: AppColors.textSecondary,
-                    labelStyle: AppTextStyles.bodyLarge.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                    tabs: const [
-                      Tab(text: "Products"),
-                      Tab(text: "News"),
-                    ],
+                          const SizedBox(height: 12),
+                          if (user.bio != null && user.bio!.isNotEmpty)
+                            Text(
+                              user.bio!,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          const SizedBox(height: 20),
+                        ],
+                      );
+                    }),
                   ),
                 ),
-              ),
-            ];
-          },
-          body: TabBarView(
-            controller: _tabController,
-            children: [
-              Obx(() {
-                if (_profileController.isMarketPlaceLoading.value) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (_profileController.productList.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.inventory_2_outlined,
-                          size: 64,
-                          color: AppColors.textSecondary.withOpacity(0.5),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No products yet',
-                          style: AppTextStyles.bodyLarge.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _SliverTabBarDelegate(
+                    TabBar(
+                      controller: _tabController,
+                      labelColor: AppColors.primary,
+                      indicatorColor: AppColors.primary,
+                      unselectedLabelColor: AppColors.textSecondary,
+                      labelStyle: AppTextStyles.bodyLarge.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      tabs: const [
+                        Tab(text: "Products"),
+                        Tab(text: "News"),
                       ],
                     ),
-                  );
-                }
+                  ),
+                ),
+              ];
+            },
+            body: TabBarView(
+              controller: _tabController,
+              children: [
+                // Products Tab
+                Obx(() {
+                  if (_profileController.isMarketPlaceLoading.value) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-                return RefreshIndicator(
-                  onRefresh: () async {
-                    await _profileController.refresh();
-                  },
-                  color: AppColors.primary,
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.only(
-                      left: 0,
-                      right: 0,
-                      top: 16.0,
-                      bottom: 35.0,
-                    ),
-                    child: ProductGridWidget(
-                    products: _profileController.productList.value,
-                    isLoading: false,
-                    onProductTap: (p) => Get.to(
-                      () => ProductDetailPage(
-                        productId: p.id,
-                        onFavoriteChanged: () {
-                          // Refresh the product list when favorite is changed
-                          _profileController.refresh();
-                        },
+                  if (_profileController.productList.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.inventory_2_outlined,
+                            size: 64,
+                            color: AppColors.textSecondary.withOpacity(0.5),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No products yet',
+                            style: AppTextStyles.bodyLarge.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      await _profileController.refresh();
+                    },
+                    color: AppColors.primary,
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.only(
+                        left: 0,
+                        right: 0,
+                        top: 16.0,
+                        bottom: 35.0,
+                      ),
+                      child: ProductGridWidget(
+                        products: _profileController.productList.value,
+                        isLoading: false,
+                        onProductTap: (p) => Get.to(
+                              () => ProductDetailPage(
+                            productId: p.id,
+                            onFavoriteChanged: () {
+                              _profileController.refresh();
+                            },
+                          ),
+                        ),
+                        onFavoriteToggle: null,
+                        showHeartIcon: false,
                       ),
                     ),
-                    onFavoriteToggle: null,
-                    showHeartIcon: false,
-                  ),
-                  ),
-                );
-              }),
-
-              Obx(() {
-                if (_profileController.isNewsListLoading.value) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (_profileController.newsList.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.article_outlined,
-                          size: 64,
-                          color: AppColors.textSecondary.withOpacity(0.5),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No news yet',
-                          style: AppTextStyles.bodyLarge.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
                   );
-                }
+                }),
 
-                return RefreshIndicator(
-                  onRefresh: () async {
-                    await _profileController.refresh();
-                  },
-                  color: AppColors.primary,
-                  child: ListView.separated(
-                    padding: const EdgeInsets.only(
-                      left: 16.0,
-                      right: 16.0,
-                      top: 16.0,
-                      bottom: 50.0,
-                    ),
-                    itemCount: _profileController.newsList.length,
-                    separatorBuilder: (_, __) =>
-                        const Divider(color: Colors.grey, height: 1),
-                    itemBuilder: (context, index) {
-                      return MyNews(
-                        newsData: _profileController.newsList[index],
-                        hideActionButton: true,
-                        onTapdDelete: (_) {},
-                      );
-                    },
-                  ),
-                );
-              }),
-            ],
+                // News Tab - ✅ Updated with responsive layout
+                Obx(() {
+                  if (_profileController.isNewsListLoading.value) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (_profileController.newsList.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.article_outlined,
+                            size: 64,
+                            color: AppColors.textSecondary.withOpacity(0.5),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No news yet',
+                            style: AppTextStyles.bodyLarge.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return _buildNewsContent(context); // ✅ Use new method
+                }),
+              ],
+            ),
           ),
-        ),
         ),
       ),
     );
@@ -432,7 +478,8 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                     children: [
                       Icon(
                         isBlocked ? Icons.check_circle : Icons.block,
-                        color: isBlocked ? AppColors.success : AppColors.error,
+                        color:
+                        isBlocked ? AppColors.success : AppColors.error,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
@@ -496,7 +543,6 @@ class _OtherUserProfileState extends State<OtherUserProfile>
     );
   }
 
-
   Widget _buildPlaceholder(String? name) {
     String firstLetter = 'U';
     if (name != null && name.isNotEmpty) {
@@ -536,10 +582,10 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
+      BuildContext context,
+      double shrinkOffset,
+      bool overlapsContent,
+      ) {
     return Container(color: Colors.white, child: tabBar);
   }
 

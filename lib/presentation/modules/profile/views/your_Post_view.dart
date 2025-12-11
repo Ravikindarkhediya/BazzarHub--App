@@ -5,6 +5,7 @@ import 'package:bazzar_hub_app/presentation/services/models/news/news_model.dart
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kIsWeb; // ✅ Add this import
 import 'package:dio/dio.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../app/core/utils/app_spacing.dart';
@@ -14,7 +15,6 @@ import '../../../commons/dialogs/app_toasts.dart';
 import '../../../services/api_service.dart';
 import '../../../services/models/marketplace/marketplace_model.dart';
 import 'package:get/get.dart';
-
 import '../../news/controllers/news_controller.dart';
 
 class YourPostView extends StatefulWidget {
@@ -49,6 +49,22 @@ class _YourPostViewState extends State<YourPostView>
     super.dispose();
   }
 
+  // ✅ Helper: Get cross axis count for grid
+  int _getCrossAxisCount(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width >= 1200) return 3; // Desktop - 3 columns
+    if (width >= 600) return 2;  // Tablet - 2 columns
+    return 1; // Mobile - 1 column
+  }
+
+  // ✅ Helper: Get card height for grid
+  double _getCardHeight(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width >= 1200) return 240; // ✅ 280 se 240
+    if (width >= 600) return 220;  // ✅ 260 se 220
+    return 210; // ✅ 240 se 210
+  }
+
   Future<void> _fetchMarketplace() async {
     setState(() => _isLoadingProducts = true);
     try {
@@ -69,7 +85,7 @@ class _YourPostViewState extends State<YourPostView>
         case DioExceptionType.receiveTimeout:
         case DioExceptionType.sendTimeout:
           errorMessage =
-              'Server connection timed out, please check your internet.';
+          'Server connection timed out, please check your internet.';
           break;
         case DioExceptionType.badResponse:
           final statusCode = e.response?.statusCode ?? 0;
@@ -128,7 +144,7 @@ class _YourPostViewState extends State<YourPostView>
           errorMessage = e.message ?? 'Unknown network error occurred.';
       }
       AppToast.showError(errorMessage);
-    } catch (error,s) {
+    } catch (error, s) {
       AppToast.showError('$error');
       print(s);
     } finally {
@@ -172,7 +188,7 @@ class _YourPostViewState extends State<YourPostView>
           errorMessage = e.message ?? 'Unknown network error occurred.';
       }
       AppToast.showError(errorMessage);
-    } catch (error,s) {
+    } catch (error, s) {
       AppToast.showError('$error');
       print("Error When Delete $s");
     } finally {
@@ -180,6 +196,54 @@ class _YourPostViewState extends State<YourPostView>
     }
   }
 
+  // ✅ New Method: Build News List/Grid based on platform
+  Widget _buildNewsContent(BuildContext context) {
+    // Check if web and tablet/desktop
+    final isWebTabletOrDesktop = kIsWeb && MediaQuery.of(context).size.width >= 600;
+
+    if (isWebTabletOrDesktop) {
+      // Web Grid View
+      return GridView.builder(
+        padding: const EdgeInsets.all(16),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: _getCrossAxisCount(context),
+          mainAxisExtent: _getCardHeight(context),
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+        ),
+        itemCount: _displayMyNews.length,
+        itemBuilder: (context, index) {
+          return MyNews(
+            newsData: _displayMyNews[index],
+            onTapdDelete: (id) {
+              _deleteMyNews(id);
+            },
+          );
+        },
+      );
+    } else {
+      // Mobile List View
+      return ListView.separated(
+        padding: AppSpacing.horizontalMD,
+        itemCount: _displayMyNews.length,
+        separatorBuilder: (_, __) => const Divider(
+          color: Colors.grey,
+          thickness: 0.5,
+          height: 1,
+          indent: 0,
+          endIndent: 0,
+        ),
+        itemBuilder: (context, index) {
+          return MyNews(
+            newsData: _displayMyNews[index],
+            onTapdDelete: (id) {
+              _deleteMyNews(id);
+            },
+          );
+        },
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -255,6 +319,7 @@ class _YourPostViewState extends State<YourPostView>
         body: TabBarView(
           controller: _tabController,
           children: [
+            // Products Tab
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 14),
               child: YourProductGrid(
@@ -273,29 +338,13 @@ class _YourPostViewState extends State<YourPostView>
                 },
               ),
             ),
+
+            // News Tab
             _isLoadingNews
                 ? const Center(child: CircularProgressIndicator())
                 : _displayMyNews.isEmpty
-                    ? _buildNewsEmptyState()
-                    : ListView.separated(
-                        padding: AppSpacing.horizontalMD,
-                        itemCount: _displayMyNews.length,
-                        separatorBuilder: (_, __) => const Divider(
-                          color: Colors.grey,
-                          thickness: 0.5,
-                          height: 1,
-                          indent: 0,
-                          endIndent: 0,
-                        ),
-                        itemBuilder: (context, index) {
-                          return MyNews(
-                            newsData: _displayMyNews[index],
-                            onTapdDelete: (index) {
-                              _deleteMyNews(index);
-                            },
-                          );
-                        },
-                      ),
+                ? _buildNewsEmptyState()
+                : _buildNewsContent(context),
           ],
         ),
       ),
