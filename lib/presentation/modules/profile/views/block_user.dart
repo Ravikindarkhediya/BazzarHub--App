@@ -39,59 +39,35 @@ class _BlockUserState extends State<BlockUser> with TickerProviderStateMixin {
 
   Future<void> _fetchBlockedUsers() async {
     try {
-      if (mounted) {
-        setState(() {
-          _isLoading = true;
-          _isError = false;
-        });
-      }
+      setState(() {
+        _isLoading = true;
+        _isError = false;
+      });
 
       final api = await getApiClient();
       final response = await api.getBlockedList({"page": 1, "limit": 200});
 
-      if (!mounted) return;
-
-      if (mounted) {
-        setState(() {
-          blockedUsers = response.data.data ?? [];
-          _isLoading = false;
-          _isError = false;
-        });
-      }
-
-      debugPrint("Fetched ${blockedUsers.length} blocked users");
+      setState(() {
+        blockedUsers = response.data.data ?? [];
+        _isLoading = false;
+      });
     } on DioException catch (e) {
-      debugPrint("DioException: ${e.response?.statusCode} - ${e.response?.data}");
-
-      if (!mounted) return;
-
       if (e.response?.statusCode == 404) {
-        if (mounted) {
-          setState(() {
-            blockedUsers = [];
-            _isLoading = false;
-            _isError = false;
-          });
-        }
-        debugPrint("404 handled as empty state");
+        setState(() {
+          blockedUsers = [];
+          _isLoading = false;
+        });
         return;
       }
-
-      if (mounted) {
-        setState(() {
-          _isError = true;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      debugPrint("General error: $e");
-
-      if (mounted) {
-        setState(() {
-          _isError = true;
-          _isLoading = false;
-        });
-      }
+      setState(() {
+        _isError = true;
+        _isLoading = false;
+      });
+    } catch (_) {
+      setState(() {
+        _isError = true;
+        _isLoading = false;
+      });
     }
   }
 
@@ -111,56 +87,38 @@ class _BlockUserState extends State<BlockUser> with TickerProviderStateMixin {
 
   Future<void> _unblockUser(String userId) async {
     try {
-      if (mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => const Center(
-            child: CircularProgressIndicator(),
-          ),
-        );
-      }
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator()),
+      );
 
       final api = await getApiClient();
-
       final body = {
         "blockedUserId": userId,
         "isBlock": false,
       };
 
-      debugPrint('Unblocking user with data: $body');
       final response = await api.requestBlockUser(body);
 
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
+      if (mounted) Navigator.of(context).pop();
 
       if (response.response.statusCode == 200 && response.data.status == true) {
         AppToast.showSuccess('User unblocked successfully!');
         await _setMarketplaceRefreshFlag();
         await _fetchBlockedUsers();
       } else {
-        final errorMessage = response.data.message ?? 'Failed to unblock user!';
-        debugPrint('Unblock user error: $errorMessage');
-        AppToast.showError(errorMessage);
+        AppToast.showError(response.data.message ?? 'Failed to unblock user!');
       }
-    } catch (e) {
-      if (mounted && Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
-
-      debugPrint("Error unblocking user: $e");
+    } catch (_) {
+      if (Navigator.of(context).canPop()) Navigator.of(context).pop();
       AppToast.showError('Failed to unblock user. Please try again.');
     }
   }
 
   Future<void> _setMarketplaceRefreshFlag() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('marketplace_refresh_needed', true);
-    } catch (e) {
-      debugPrint('Failed to mark marketplace for refresh: $e');
-    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('marketplace_refresh_needed', true);
   }
 
   @override
@@ -168,6 +126,16 @@ class _BlockUserState extends State<BlockUser> with TickerProviderStateMixin {
     _animationController.dispose();
     super.dispose();
   }
+
+  bool isMobile(BuildContext context) =>
+      MediaQuery.of(context).size.width < 600;
+
+  bool isTablet(BuildContext context) =>
+      MediaQuery.of(context).size.width >= 600 &&
+          MediaQuery.of(context).size.width < 1100;
+
+  bool isDesktop(BuildContext context) =>
+      MediaQuery.of(context).size.width >= 1100;
 
   @override
   Widget build(BuildContext context) {
@@ -178,151 +146,228 @@ class _BlockUserState extends State<BlockUser> with TickerProviderStateMixin {
       ),
       child: Scaffold(
         backgroundColor: AppColors.background,
-        appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(60),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 3,
-                  offset: const Offset(0, 1),
-                )
-              ],
-            ),
-            child: SafeArea(
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back),
-                    color: AppColors.primary,
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        "Blocked Users",
-                        style: AppTextStyles.h4.copyWith(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
-                        ),
-                      )
-                          .animate()
-                          .fadeIn(duration: 600.ms)
-                          .slideY(begin: -0.3, end: 0),
-                    ),
-                  ),
-                  const SizedBox(width: 48),
-                ],
-              ),
-            ),
-          ),
-        ),
+        appBar: _buildAppBar(),
         body: _buildBody(),
       ),
     );
   }
 
-  Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_isError) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.red,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Failed to load blocked users',
-              style: AppTextStyles.bodyLarge.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Please check your internet connection',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _fetchBlockedUsers,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-              ),
-            ),
+  PreferredSizeWidget _buildAppBar() {
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(60),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 3,
+              offset: const Offset(0, 1),
+            )
           ],
         ),
-      );
-    }
+        child: SafeArea(
+          child: Row(
+            children: [
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back),
+                color: AppColors.primary,
+              ),
+              Expanded(
+                child: Center(
+                  child: Text(
+                    "Blocked Users",
+                    style: AppTextStyles.h4.copyWith(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  )
+                      .animate()
+                      .fadeIn(duration: 600.ms)
+                      .slideY(begin: -0.3, end: 0),
+                ),
+              ),
+              const SizedBox(width: 48),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
+  Widget _buildBody() {
+    if (_isLoading) return const Center(child: CircularProgressIndicator());
+    if (_isError) return _buildErrorView();
     if (blockedUsers.isEmpty) {
-      return  SizedBox.expand(
-        child: Center(
-          child: EmptyStateWidget.blockedUsers(),
+      return Center(child: EmptyStateWidget.blockedUsers());
+    }
+    if (isMobile(context)) {
+      return RefreshIndicator(
+        onRefresh: _fetchBlockedUsers,
+        child: ListView.separated(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          itemCount: blockedUsers.length,
+          separatorBuilder: (_, __) => Divider(
+            thickness: 0.5,
+            color: Colors.grey.shade300,
+            height: 0,
+          ),
+          itemBuilder: (context, index) {
+            return _MobileBlockedUserTile(
+              user: blockedUsers[index],
+              onUnblock: () => _showUnblockDialog(blockedUsers[index]),
+            );
+          },
         ),
       );
     }
 
     return RefreshIndicator(
       onRefresh: _fetchBlockedUsers,
-      child: ListView.separated(
-        padding: const EdgeInsets.only(bottom: 40),
-        itemCount: blockedUsers.length,
-        separatorBuilder: (context, index) => Container(
-          margin: const EdgeInsets.only(left: 80),
-          height: 1,
-          color: const Color(0xFFD1D5DB),
-        ),
-        itemBuilder: (context, index) {
-          final user = blockedUsers[index];
-          return _BlockedUserTile(
-            user: user,
-            isFirst: index == 0,
-            isLast: index == blockedUsers.length - 1,
-            onUnblock: () => _showUnblockDialog(user),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+
+          int crossAxisCount = width >= 1100 ? 3 : 2;
+
+          return GridView.builder(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              childAspectRatio: 5.2,
+              crossAxisSpacing: 14,
+              mainAxisSpacing: 10,
+            ),
+            itemCount: blockedUsers.length,
+            itemBuilder: (context, index) {
+              return _WebBlockedUserTile(
+                user: blockedUsers[index],
+                onUnblock: () => _showUnblockDialog(blockedUsers[index]),
+              );
+            },
           );
         },
       ),
     );
   }
+
+  Widget _buildErrorView() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 64, color: Colors.red),
+          const SizedBox(height: 16),
+          Text(
+            'Failed to load blocked users',
+            style: AppTextStyles.bodyLarge.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Please check your internet connection',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: _fetchBlockedUsers,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Retry'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class _BlockedUserTile extends StatelessWidget {
+class _MobileBlockedUserTile extends StatelessWidget {
   final UserModel user;
-  final bool isFirst;
-  final bool isLast;
   final VoidCallback onUnblock;
 
-  const _BlockedUserTile({
+  const _MobileBlockedUserTile({
     required this.user,
     required this.onUnblock,
-    this.isFirst = false,
-    this.isLast = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      dense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: CircleAvatar(
+        radius: 23,
+        backgroundImage:
+        user.avatar.isNotEmpty ? NetworkImage(user.avatar) : null,
+        backgroundColor: Colors.grey[200],
+        child: user.avatar.isEmpty
+            ? const Icon(Icons.person, color: Colors.grey)
+            : null,
+      ),
+      title: Text(
+        user.name,
+        style: const TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      subtitle: Text(
+        user.email,
+        style: const TextStyle(fontSize: 12, color: Colors.grey),
+      ),
+      trailing: SizedBox(
+        height: 32,
+        child: ElevatedButton(
+          onPressed: onUnblock,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+          child: const Text(
+            'Unblock',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WebBlockedUserTile extends StatelessWidget {
+  final UserModel user;
+  final VoidCallback onUnblock;
+
+  const _WebBlockedUserTile({
+    required this.user,
+    required this.onUnblock,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.background,
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: isFirst ? 12 : 10,
-        bottom: isLast ? 12 : 10,
+      height: 62,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12.withOpacity(0.05),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          )
+        ],
       ),
       child: Row(
         children: [
@@ -332,58 +377,52 @@ class _BlockedUserTile extends StatelessWidget {
             user.avatar.isNotEmpty ? NetworkImage(user.avatar) : null,
             backgroundColor: Colors.grey[200],
             child: user.avatar.isEmpty
-                ? const Icon(Icons.person, size: 30, color: Colors.grey)
+                ? const Icon(Icons.person, color: Colors.grey)
                 : null,
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   user.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF111827),
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   user.email,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF9CA3AF),
-                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF6B7280),
+                  ),
                 ),
               ],
             ),
           ),
-          Container(
-            height: 36,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: TextButton(
+          SizedBox(
+            height: 30,
+            child: ElevatedButton(
               onPressed: onUnblock,
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.zero,
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
               child: const Text(
                 'Unblock',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
               ),
             ),
           ),

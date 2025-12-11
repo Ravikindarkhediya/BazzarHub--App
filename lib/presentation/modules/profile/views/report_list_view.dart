@@ -38,12 +38,7 @@ class ReportItemCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Expanded(
-              child: Text(
-                item?.title ?? 'No title',
-                style: AppTextStyles.h6.copyWith(fontWeight: FontWeight.bold),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
+              child: _buildTitleWidget(item),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -63,14 +58,12 @@ class ReportItemCard extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-
         Text(
           'Reason:  ${_formatReason(report.reason)}',
           style: AppTextStyles.bodySmall.copyWith(
             color: AppColors.textSecondary,
           ),
         ),
-
         if (report.message.isNotEmpty ?? false) ...[
           const SizedBox(height: 4),
           Text(
@@ -80,7 +73,6 @@ class ReportItemCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ],
-
         const SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -136,6 +128,28 @@ class ReportItemCard extends StatelessWidget {
     );
   }
 
+  Widget _buildTitleWidget(dynamic item) {
+    final String? title = item?.title;
+    String? displayTitle;
+
+    if (!isNewsReport) {
+      displayTitle = (title?.isNotEmpty ?? false) ? title : 'No title';
+    } else {
+      displayTitle = (title?.isNotEmpty ?? false) ? title : null;
+    }
+
+    if (displayTitle != null) {
+      return Text(
+        displayTitle,
+        style: AppTextStyles.h6.copyWith(fontWeight: FontWeight.bold),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      );
+    } else {
+      return const SizedBox.shrink();
+    }
+  }
+
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'resolved':
@@ -181,25 +195,23 @@ class _ReportListViewState extends State<ReportListView>
     with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late TabController _tabController;
 
-  //  Separate ScrollControllers for each tab
   late ScrollController _newsScrollController;
   late ScrollController _marketplaceScrollController;
+  late ScrollController _newsWebScrollController;
+  late ScrollController _marketplaceWebScrollController;
 
-  // Marketplace Reports State
   final List<ReportResponseModel> _marketplaceReports = [];
   bool _isLoadingMarketplace = false;
   bool _hasMoreMarketplace = true;
   int _marketplacePage = 1;
   String? _marketplaceError;
 
-  // News Reports State
   final List<ReportResponseModel> _newsReports = [];
   bool _isLoadingNews = false;
   bool _hasMoreNews = true;
   int _newsPage = 1;
   String? _newsError;
 
-  // User Reports (static UI data for now)
   List<Map<String, String>> _staticReportedUsers = [];
 
   final int _limit = 10;
@@ -216,6 +228,8 @@ class _ReportListViewState extends State<ReportListView>
 
     _newsScrollController = ScrollController()..addListener(_newsScrollListener);
     _marketplaceScrollController = ScrollController()..addListener(_marketplaceScrollListener);
+    _newsWebScrollController = ScrollController()..addListener(_newsWebScrollListener);
+    _marketplaceWebScrollController = ScrollController()..addListener(_marketplaceWebScrollListener);
 
     _loadNewsReports();
     _loadUserReports();
@@ -226,6 +240,8 @@ class _ReportListViewState extends State<ReportListView>
     _tabController.dispose();
     _newsScrollController.dispose();
     _marketplaceScrollController.dispose();
+    _newsWebScrollController.dispose();
+    _marketplaceWebScrollController.dispose();
     super.dispose();
   }
 
@@ -253,6 +269,24 @@ class _ReportListViewState extends State<ReportListView>
   void _marketplaceScrollListener() {
     if (_marketplaceScrollController.position.pixels >=
         _marketplaceScrollController.position.maxScrollExtent * 0.8) {
+      if (!_isLoadingMarketplace && _hasMoreMarketplace) {
+        _loadMarketplaceReports();
+      }
+    }
+  }
+
+  void _newsWebScrollListener() {
+    if (_newsWebScrollController.position.pixels >=
+        _newsWebScrollController.position.maxScrollExtent * 0.8) {
+      if (!_isLoadingNews && _hasMoreNews) {
+        _loadNewsReports();
+      }
+    }
+  }
+
+  void _marketplaceWebScrollListener() {
+    if (_marketplaceWebScrollController.position.pixels >=
+        _marketplaceWebScrollController.position.maxScrollExtent * 0.8) {
       if (!_isLoadingMarketplace && _hasMoreMarketplace) {
         _loadMarketplaceReports();
       }
@@ -324,7 +358,7 @@ class _ReportListViewState extends State<ReportListView>
               id: item.id,
               news: ReportItemModel(
                 id: item.news?.id ?? '',
-                title: item.news?.title ?? 'No Title',
+                title: item.news?.title ?? '',
                 category: item.news?.category,
                 createdBy: item.news?.createdBy ?? '',
               ),
@@ -427,6 +461,8 @@ class _ReportListViewState extends State<ReportListView>
   }
 
   Widget _buildMarketplaceTab() {
+    final isWeb = Get.width > 700;
+
     return RefreshIndicator(
       onRefresh: () => _loadMarketplaceReports(isRefresh: true),
       child: _marketplaceReports.isEmpty && _isLoadingMarketplace
@@ -435,28 +471,164 @@ class _ReportListViewState extends State<ReportListView>
           ? _buildEmptyState("No marketplace reports found", Icons.shopping_bag_outlined)
           : _marketplaceError != null
           ? _buildErrorState(_marketplaceError!, () => _loadMarketplaceReports(isRefresh: true))
-          : ListView.builder(
-        controller: _marketplaceScrollController,
-        padding: const EdgeInsets.only(top: 8, bottom: 16),
-        itemCount: _marketplaceReports.length + (_hasMoreMarketplace ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index >= _marketplaceReports.length) {
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16.0),
-              child: Center(child: CircularProgressIndicator()),
-            );
-          }
-          return ReportItemCard(
-            report: _marketplaceReports[index],
-            isNewsReport: false,
-            onRefreshMarketplace: () => _loadMarketplaceReports(isRefresh: true),
+          : isWeb
+          ? _buildMarketplaceWebGridView()
+          : _buildMarketplaceMobileListView(),
+    );
+  }
+
+  Widget _buildMarketplaceMobileListView() {
+    return ListView.builder(
+      controller: _marketplaceScrollController,
+      padding: const EdgeInsets.only(top: 8, bottom: 16),
+      itemCount: _marketplaceReports.length + (_hasMoreMarketplace ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index >= _marketplaceReports.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16.0),
+            child: Center(child: CircularProgressIndicator()),
           );
-        },
+        }
+        return ReportItemCard(
+          report: _marketplaceReports[index],
+          isNewsReport: false,
+          onRefreshMarketplace: () => _loadMarketplaceReports(isRefresh: true),
+        );
+      },
+    );
+  }
+
+  Widget _buildMarketplaceWebGridView() {
+    return GridView.builder(
+      controller: _marketplaceWebScrollController,
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: 4.2,
       ),
+      itemCount: _marketplaceReports.length + (_hasMoreMarketplace ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index >= _marketplaceReports.length) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final report = _marketplaceReports[index];
+        final item = report.listing;
+
+        return InkWell(
+          onTap: () {
+            final reportPayload = {
+              'reason': report.reason,
+              'status': report.status,
+              'message': report.message,
+              'reportId': report.id,
+            };
+
+            Get.to(() => ReportMarketplaceView(
+              listingId: item?.id ?? '',
+              reportInfo: reportPayload,
+            ))?.then((_) {
+              _loadMarketplaceReports(isRefresh: true);
+            });
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.shopping_bag_outlined, color: Colors.grey),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (item?.title != null && item!.title!.isNotEmpty)
+                        Text(
+                          item.title!,
+                          style: AppTextStyles.bodyLarge.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        )
+                      else
+                        Text(
+                          'No title',
+                          style: AppTextStyles.bodyLarge.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+
+                      if (item?.title != null && item!.title!.isNotEmpty)
+                        const SizedBox(height: 4),
+
+                      Text(
+                        "Reason: ${_formatReason(report.reason)}",
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+
+                      const SizedBox(height: 6),
+
+                      Text(
+                        "Reported on: ${_formatDate(report.createdAt)}",
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Status Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(report.status).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    report.status.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: _getStatusColor(report.status),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildNewsTab() {
+    final isWeb = Get.width > 700;
+
     return RefreshIndicator(
       onRefresh: () => _loadNewsReports(isRefresh: true),
       child: _newsReports.isEmpty && _isLoadingNews
@@ -465,24 +637,150 @@ class _ReportListViewState extends State<ReportListView>
           ? _buildEmptyState("No news reports found", Icons.article_outlined)
           : _newsError != null
           ? _buildErrorState(_newsError!, () => _loadNewsReports(isRefresh: true))
-          : ListView.builder(
-        controller: _newsScrollController,
-        padding: const EdgeInsets.only(top: 8, bottom: 16),
-        itemCount: _newsReports.length + (_hasMoreNews ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index >= _newsReports.length) {
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16.0),
-              child: Center(child: CircularProgressIndicator()),
-            );
-          }
-          return ReportItemCard(
-            report: _newsReports[index],
-            isNewsReport: true,
-            onRefreshNews: () => _loadNewsReports(isRefresh: true),
-          );
-        },
+          : isWeb
+          ? _buildNewsWebGridView()
+          : _buildNewsMobileListView(),
+    );
+  }
+
+  Widget _buildNewsWebGridView() {
+    return GridView.builder(
+      controller: _newsWebScrollController,
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: 5.2,
       ),
+      itemCount: _newsReports.length + (_hasMoreNews ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index >= _newsReports.length) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final report = _newsReports[index];
+        final item = report.news;
+
+        return InkWell(
+          onTap: () {
+            final reportPayload = {
+              'reason': report.reason,
+              'status': report.status,
+              'message': report.message,
+              'reportId': report.id,
+            };
+
+            Get.to(() => ReportNewsDetailView(
+              newsId: item?.id ?? '',
+              reportInfo: reportPayload,
+              reportResponseModel: report,
+            ))?.then((_) {
+              _loadNewsReports(isRefresh: true);
+            });
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // Thumbnail placeholder
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.article, color: Colors.grey),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (item?.title != null && item!.title!.isNotEmpty)
+                        Text(
+                          item.title!,
+                          style: AppTextStyles.bodyLarge.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+
+                      if (item?.title != null && item!.title!.isNotEmpty)
+                        const SizedBox(height: 4),
+
+                      Text(
+                        "Reason: ${_formatReason(report.reason)}",
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+
+                      const SizedBox(height: 6),
+
+                      Text(
+                        "Reported on: ${_formatDate(report.createdAt)}",
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Status Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(report.status).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    report.status.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: _getStatusColor(report.status),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildNewsMobileListView() {
+    return ListView.builder(
+      controller: _newsScrollController,
+      padding: const EdgeInsets.only(top: 8, bottom: 16),
+      itemCount: _newsReports.length + (_hasMoreNews ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index >= _newsReports.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16.0),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        return ReportItemCard(
+          report: _newsReports[index],
+          isNewsReport: true,
+          onRefreshNews: () => _loadNewsReports(isRefresh: true),
+        );
+      },
     );
   }
 
@@ -580,7 +878,6 @@ class _ReportListViewState extends State<ReportListView>
         });
       }
     } catch (_) {
-      // Ignore local load errors for now
     }
   }
 
@@ -629,5 +926,32 @@ class _ReportListViewState extends State<ReportListView>
         ],
       ),
     );
+  }
+  
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'resolved':
+        return Colors.green;
+      case 'pending':
+        return Colors.orange;
+      case 'rejected':
+        return Colors.red;
+      default:
+        return AppColors.primary;
+    }
+  }
+
+  String _formatDate(String dateString) {
+    try {
+      final dateTime = DateTime.parse(dateString);
+      return DateFormat('MMM dd, yyyy').format(dateTime);
+    } catch (e) {
+      return dateString;
+    }
+  }
+
+  String _formatReason(String? reason) {
+    if (reason == null || reason.isEmpty) return 'Not specified';
+    return reason.startsWith('other:') ? reason.substring(6).trim() : reason;
   }
 }

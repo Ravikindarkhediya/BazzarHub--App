@@ -35,6 +35,8 @@ class _FavoritesPageState extends State<FavoritesPage>
 
   late ScrollController _newsScrollController;
   late ScrollController _marketplaceScrollController;
+  late ScrollController _newsWebScrollController;
+  late ScrollController _marketplaceWebScrollController;
 
   List<MarketplaceModel> _favoriteMarketplaces = [];
   bool _isLoadingMarketplaces = false;
@@ -78,6 +80,8 @@ class _FavoritesPageState extends State<FavoritesPage>
 
     _newsScrollController = ScrollController()..addListener(_newsScrollListener);
     _marketplaceScrollController = ScrollController()..addListener(_marketplaceScrollListener);
+    _newsWebScrollController = ScrollController()..addListener(_newsWebScrollListener);
+    _marketplaceWebScrollController = ScrollController()..addListener(_marketplaceWebScrollListener);
   }
 
   void _newsScrollListener() {
@@ -98,12 +102,32 @@ class _FavoritesPageState extends State<FavoritesPage>
     }
   }
 
+  void _newsWebScrollListener() {
+    if (_newsWebScrollController.position.pixels >=
+        _newsWebScrollController.position.maxScrollExtent * 0.8) {
+      if (!_isLoadingNews && _hasMoreNews) {
+        _getFavoriteNews();
+      }
+    }
+  }
+
+  void _marketplaceWebScrollListener() {
+    if (_marketplaceWebScrollController.position.pixels >=
+        _marketplaceWebScrollController.position.maxScrollExtent * 0.8) {
+      if (!_isLoadingMarketplaces && _hasMoreMarketplaces) {
+        _getFavoriteMarketplaces();
+      }
+    }
+  }
+
   @override
   void dispose() {
     _tabController.dispose();
     _animationController.dispose();
     _newsScrollController.dispose();
     _marketplaceScrollController.dispose();
+    _newsWebScrollController.dispose();
+    _marketplaceWebScrollController.dispose();
     super.dispose();
   }
 
@@ -280,25 +304,22 @@ class _FavoritesPageState extends State<FavoritesPage>
     );
   }
 
-  // Helper method to convert plain text with \n to HTML
   String _convertToHtml(String content) {
     if (content.isEmpty) return '';
 
     String htmlContent = content;
 
     htmlContent = htmlContent
-        .replaceAll('\r\n', '<br>')  // Windows style
-        .replaceAll('\r', '<br>')    // Old Mac style
-        .replaceAll('\n', '<br>');   // Unix/Linux style
+        .replaceAll('\r\n', '<br>')
+        .replaceAll('\r', '<br>')
+        .replaceAll('\n', '<br>');
 
-    // Wrap in a div to ensure proper rendering
     return '<div>$htmlContent</div>';
   }
 
   Widget _buildNewsItem(FavoriteNewsModel news, {bool showDivider = true, int? index}) {
     final newsModel = _convertToNewsModel(news);
 
-    // Use index with fallback
     final itemIndex = index ?? _favoriteNews.indexOf(news);
 
     return Column(
@@ -318,7 +339,7 @@ class _FavoritesPageState extends State<FavoritesPage>
                       borderRadius: BorderRadius.circular(12),
                       child: news.media.isNotEmpty && news.media.first.url.isNotEmpty
                           ? HeroMode(
-                        enabled: false, // Hero animation disabled
+                        enabled: false,
                         child: MediaCarousel(
                           key: ValueKey('carousel_${news.id}_$itemIndex'),
                           mediaUrls: news.media.map((m) => m.url).toList(),
@@ -462,7 +483,203 @@ class _FavoritesPageState extends State<FavoritesPage>
     );
   }
 
+  Widget _buildNewsWebGridView() {
+    return GridView.builder(
+      controller: _newsWebScrollController,
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: 0.7,
+        mainAxisExtent: 245,
+      ),
+      itemCount: _favoriteNews.length + (_hasMoreNews ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index >= _favoriteNews.length) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final news = _favoriteNews[index];
+        final newsModel = _convertToNewsModel(news);
+        final firstImageUrl = news.media.isNotEmpty && news.media.first.url.isNotEmpty
+            ? news.media.first.url
+            : null;
+
+        return GestureDetector(
+          onTap: () => _navigateToNewsDetail(newsModel),
+          child: Card(
+            color: Colors.white,
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(12),
+                        topRight: Radius.circular(12),
+                      ),
+                      child: firstImageUrl != null
+                          ? Image.network(
+                        firstImageUrl,
+                        height: 120,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          height: 120,
+                          width: double.infinity,
+                          color: Colors.grey[200],
+                          child: const Icon(Icons.article_outlined, size: 40),
+                        ),
+                      )
+                          : Container(
+                        height: 120,
+                        width: double.infinity,
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.article_outlined, size: 40),
+                      ),
+                    ),
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => _handleNewsFavoriteToggle(news),
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.15),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.favorite,
+                              color: Colors.red,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          news.title ?? 'No Title',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          maxLines: 2,
+                        ),
+                        const SizedBox(height: 4),
+                        if (news.content?.isNotEmpty == true)
+                          Expanded(
+                            child: Html(
+                              data: _convertToHtml(news.content!),
+                              style: {
+                                "body": Style(
+                                  margin: Margins.zero,
+                                  padding: HtmlPaddings.zero,
+                                  fontSize: FontSize(12),
+                                  maxLines: 2,
+                                  textOverflow: TextOverflow.ellipsis,
+                                ),
+                                "div": Style(
+                                  margin: Margins.zero,
+                                  padding: HtmlPaddings.zero,
+                                  fontSize: FontSize(12),
+                                  lineHeight: const LineHeight(1.4),
+                                ),
+                              },
+                              shrinkWrap: true,
+                            ),
+                          )
+                        else
+                          const Text(
+                            'No content',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                            maxLines: 2,
+                          ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            if (news.location?.village?.isNotEmpty == true)
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.location_on_outlined,
+                                      size: 14,
+                                      color: Colors.grey[600],
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Text(
+                                        news.location!.village!,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[600],
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        maxLines: 1,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            else
+                              const SizedBox.shrink(),
+                            Text(
+                              _formatDate(news.createdAt ?? ''),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[500],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildNewsContent() {
+    final isWeb = Get.width > 700;
+
     if (_isLoadingNews && _favoriteNews.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -497,12 +714,13 @@ class _FavoritesPageState extends State<FavoritesPage>
 
     return RefreshIndicator(
       onRefresh: () => _getFavoriteNews(isRefresh: true),
-      child: ListView.builder(
+      child: isWeb
+          ? _buildNewsWebGridView()
+          : ListView.builder(
         controller: _newsScrollController,
         itemCount: _favoriteNews.length + (_hasMoreNews ? 1 : 0),
         itemBuilder: (context, index) {
           if (index < _favoriteNews.length) {
-            // Pass index parameter
             return _buildNewsItem(_favoriteNews[index], index: index);
           } else {
             return const Padding(
@@ -516,6 +734,8 @@ class _FavoritesPageState extends State<FavoritesPage>
   }
 
   Widget _buildMarketplaceContent() {
+    final isWeb = Get.width > 700;
+
     if (_isLoadingMarketplaces && _favoriteMarketplaces.isEmpty) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.primary),
@@ -550,19 +770,23 @@ class _FavoritesPageState extends State<FavoritesPage>
       );
     }
 
+    final crossAxisCount = isWeb ? 4 : 2;
+    final mainAxisExtent = isWeb ? 220.0 : 250.0;
+    final controller = isWeb ? _marketplaceWebScrollController : _marketplaceScrollController;
+
     return RefreshIndicator(
       onRefresh: () => _getFavoriteMarketplaces(isRefresh: true),
       child: GridView.builder(
-        controller: _marketplaceScrollController,
+        controller: controller,
         padding: const EdgeInsets.all(16),
         shrinkWrap: true,
         physics: const AlwaysScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: crossAxisCount,
           childAspectRatio: 0.7,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
-          mainAxisExtent: 250,
+          mainAxisExtent: mainAxisExtent,
         ),
         itemCount: _favoriteMarketplaces.length + (_hasMoreMarketplaces ? 1 : 0),
         itemBuilder: (context, index) {
@@ -708,6 +932,7 @@ class _FavoritesPageState extends State<FavoritesPage>
 
   @override
   Widget build(BuildContext context) {
+    final isWeb = Get.width > 700;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,

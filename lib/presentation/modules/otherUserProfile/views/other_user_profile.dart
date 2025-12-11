@@ -2,10 +2,8 @@ import 'package:bazzar_hub_app/presentation/modules/otherUserProfile/controllers
 import 'package:bazzar_hub_app/presentation/modules/news/widgets/news_report_reason_page.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb; // ✅ Add this
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:get/get.dart';
-
-import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
 import '../../../commons/dialogs/appDialog.dart';
@@ -45,27 +43,24 @@ class _OtherUserProfileState extends State<OtherUserProfile>
     super.dispose();
   }
 
-  // ✅ Helper: Get cross axis count for grid
   int _getCrossAxisCount(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
-    if (width >= 1200) return 3; // Desktop - 3 columns
-    if (width >= 600) return 2;  // Tablet - 2 columns
-    return 1; // Mobile - 1 column
+    if (width >= 1200) return 3;
+    if (width >= 600) return 2;
+    return 1;
   }
 
   double _getCardHeight(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
-    if (width >= 1200) return 240; // ✅ 280 se 240
-    if (width >= 600) return 220;  // ✅ 260 se 220
-    return 210; // ✅ 240 se 210
+    if (width >= 1200) return 240;
+    if (width >= 600) return 220;
+    return 210;
   }
 
-  // ✅ New Method: Build News List/Grid based on platform
   Widget _buildNewsContent(BuildContext context) {
     final isWebTabletOrDesktop = kIsWeb && MediaQuery.of(context).size.width >= 600;
 
     if (isWebTabletOrDesktop) {
-      // Web Grid View
       return RefreshIndicator(
         onRefresh: () async {
           await _profileController.refresh();
@@ -90,7 +85,6 @@ class _OtherUserProfileState extends State<OtherUserProfile>
         ),
       );
     } else {
-      // Mobile List View
       return RefreshIndicator(
         onRefresh: () async {
           await _profileController.refresh();
@@ -98,16 +92,13 @@ class _OtherUserProfileState extends State<OtherUserProfile>
         color: AppColors.primary,
         child: ListView.separated(
           padding: const EdgeInsets.only(
-            left: 16.0,
-            right: 16.0,
-            top: 16.0,
-            bottom: 50.0,
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: 50,
           ),
           itemCount: _profileController.newsList.length,
-          separatorBuilder: (_, __) => const Divider(
-            color: Colors.grey,
-            height: 1,
-          ),
+          separatorBuilder: (_, __) => const Divider(color: Colors.grey, height: 1),
           itemBuilder: (context, index) {
             return MyNews(
               newsData: _profileController.newsList[index],
@@ -141,7 +132,7 @@ class _OtherUserProfileState extends State<OtherUserProfile>
               BoxShadow(
                 color: Colors.black.withOpacity(0.15),
                 blurRadius: 8,
-                offset: const Offset(0, 3),
+                offset: Offset(0, 3),
               ),
             ],
           ),
@@ -171,7 +162,9 @@ class _OtherUserProfileState extends State<OtherUserProfile>
         backgroundColor: Colors.white,
         elevation: 0,
         leadingWidth: 56,
-        leading: Align(
+        leading: kIsWeb
+            ? const SizedBox()
+            : Align(
           alignment: Alignment.centerLeft,
           child: Container(
             margin: const EdgeInsets.only(left: 12),
@@ -195,6 +188,7 @@ class _OtherUserProfileState extends State<OtherUserProfile>
           ),
         ],
       ),
+
       body: DefaultTabController(
         length: 2,
         child: RefreshIndicator(
@@ -207,10 +201,7 @@ class _OtherUserProfileState extends State<OtherUserProfile>
               return [
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Obx(() {
                       if (_profileController.isLoading.value) {
                         return const Center(
@@ -261,8 +252,7 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                           Center(
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(60),
-                              child: (user.avatar != null &&
-                                  user.avatar!.isNotEmpty)
+                              child: (user.avatar != null && user.avatar!.isNotEmpty)
                                   ? Image.network(
                                 user.avatar!,
                                 width: 120,
@@ -308,6 +298,7 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                     }),
                   ),
                 ),
+
                 SliverPersistentHeader(
                   pinned: true,
                   delegate: _SliverTabBarDelegate(
@@ -328,10 +319,10 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                 ),
               ];
             },
+
             body: TabBarView(
               controller: _tabController,
               children: [
-                // Products Tab
                 Obx(() {
                   if (_profileController.isMarketPlaceLoading.value) {
                     return const Center(child: CircularProgressIndicator());
@@ -342,18 +333,9 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            Icons.inventory_2_outlined,
-                            size: 64,
-                            color: AppColors.textSecondary.withOpacity(0.5),
-                          ),
+                          Icon(Icons.inventory_2_outlined, size: 64, color: AppColors.textSecondary.withOpacity(0.5)),
                           const SizedBox(height: 16),
-                          Text(
-                            'No products yet',
-                            style: AppTextStyles.bodyLarge.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
+                          Text('No products yet', style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary)),
                         ],
                       ),
                     );
@@ -365,21 +347,14 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                     },
                     color: AppColors.primary,
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.only(
-                        left: 0,
-                        right: 0,
-                        top: 16.0,
-                        bottom: 35.0,
-                      ),
+                      padding: const EdgeInsets.only(top: 16, bottom: 35),
                       child: ProductGridWidget(
                         products: _profileController.productList.value,
                         isLoading: false,
                         onProductTap: (p) => Get.to(
                               () => ProductDetailPage(
                             productId: p.id,
-                            onFavoriteChanged: () {
-                              _profileController.refresh();
-                            },
+                            onFavoriteChanged: () => _profileController.refresh(),
                           ),
                         ),
                         onFavoriteToggle: null,
@@ -389,7 +364,6 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                   );
                 }),
 
-                // News Tab - ✅ Updated with responsive layout
                 Obx(() {
                   if (_profileController.isNewsListLoading.value) {
                     return const Center(child: CircularProgressIndicator());
@@ -400,24 +374,15 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            Icons.article_outlined,
-                            size: 64,
-                            color: AppColors.textSecondary.withOpacity(0.5),
-                          ),
+                          Icon(Icons.article_outlined, size: 64, color: AppColors.textSecondary.withOpacity(0.5)),
                           const SizedBox(height: 16),
-                          Text(
-                            'No news yet',
-                            style: AppTextStyles.bodyLarge.copyWith(
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
+                          Text('No news yet', style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary)),
                         ],
                       ),
                     );
                   }
 
-                  return _buildNewsContent(context); // ✅ Use new method
+                  return _buildNewsContent(context);
                 }),
               ],
             ),
@@ -438,15 +403,11 @@ class _OtherUserProfileState extends State<OtherUserProfile>
           child: CupertinoActionSheet(
             title: Text(
               user.name ?? 'User Options',
-              style: AppTextStyles.bodyLarge.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.bold),
             ),
             message: Text(
               user.email ?? '',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
+              style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
             ),
             actions: [
               Obx(() {
@@ -455,8 +416,6 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                 return CupertinoActionSheetAction(
                   onPressed: () async {
                     Navigator.pop(ctx);
-
-                    final isBlocked = _profileController.isBlocked.value;
 
                     final confirm = await AppDialog.show(
                       ctx,
@@ -478,17 +437,14 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                     children: [
                       Icon(
                         isBlocked ? Icons.check_circle : Icons.block,
-                        color:
-                        isBlocked ? AppColors.success : AppColors.error,
+                        color: isBlocked ? AppColors.success : AppColors.error,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
                       Text(
                         isBlocked ? 'Unblock User' : 'Block User',
                         style: AppTextStyles.bodyLarge.copyWith(
-                          color: isBlocked
-                              ? AppColors.success
-                              : AppColors.error,
+                          color: isBlocked ? AppColors.success : AppColors.error,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -509,11 +465,7 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.report_problem_outlined,
-                      color: AppColors.error,
-                      size: 20,
-                    ),
+                    const Icon(Icons.report_problem_outlined, color: AppColors.error, size: 20),
                     const SizedBox(width: 8),
                     Text(
                       'Report User',
@@ -581,11 +533,7 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => tabBar.preferredSize.height;
 
   @override
-  Widget build(
-      BuildContext context,
-      double shrinkOffset,
-      bool overlapsContent,
-      ) {
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(color: Colors.white, child: tabBar);
   }
 
