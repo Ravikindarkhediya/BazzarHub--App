@@ -20,6 +20,37 @@ import '../../../modules/news/views/news_detail_view.dart';
 import 'package:bazzar_hub_app/presentation/modules/product/views/product_detail_page.dart';
 import 'package:bazzar_hub_app/presentation/modules/product/widgets/media_carousel.dart';
 
+// Breakpoints utility class
+class AppBreakpoints {
+  static const double mobile = 600;
+  static const double tablet = 900;
+  static const double desktop = 1200;
+
+  static bool isMobile(BuildContext context) =>
+      MediaQuery.of(context).size.width < mobile;
+
+  static bool isTablet(BuildContext context) =>
+      MediaQuery.of(context).size.width >= mobile &&
+          MediaQuery.of(context).size.width < desktop;
+
+  static bool isDesktop(BuildContext context) =>
+      MediaQuery.of(context).size.width >= desktop;
+
+  static int getCrossAxisCount(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width >= desktop) return 4;
+    if (width >= tablet) return 3;
+    return 2;
+  }
+
+  static int getNewsCrossAxisCount(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    if (width >= desktop) return 3;
+    if (width >= tablet) return 2;
+    return 1;
+  }
+}
+
 class FavoritesPage extends StatefulWidget {
   const FavoritesPage({super.key});
 
@@ -35,8 +66,6 @@ class _FavoritesPageState extends State<FavoritesPage>
 
   late ScrollController _newsScrollController;
   late ScrollController _marketplaceScrollController;
-  late ScrollController _newsWebScrollController;
-  late ScrollController _marketplaceWebScrollController;
 
   List<MarketplaceModel> _favoriteMarketplaces = [];
   bool _isLoadingMarketplaces = false;
@@ -78,44 +107,24 @@ class _FavoritesPageState extends State<FavoritesPage>
 
     _animationController.forward();
 
-    _newsScrollController = ScrollController()..addListener(_newsScrollListener);
-    _marketplaceScrollController = ScrollController()..addListener(_marketplaceScrollListener);
-    _newsWebScrollController = ScrollController()..addListener(_newsWebScrollListener);
-    _marketplaceWebScrollController = ScrollController()..addListener(_marketplaceWebScrollListener);
+    _newsScrollController = ScrollController()..addListener(_scrollListener);
+    _marketplaceScrollController = ScrollController()..addListener(_scrollListener);
   }
 
-  void _newsScrollListener() {
-    if (_newsScrollController.position.pixels >=
-        _newsScrollController.position.maxScrollExtent * 0.8) {
-      if (!_isLoadingNews && _hasMoreNews) {
-        _getFavoriteNews();
-      }
-    }
-  }
+  void _scrollListener() {
+    final controller = _tabController.index == 0
+        ? _newsScrollController
+        : _marketplaceScrollController;
 
-  void _marketplaceScrollListener() {
-    if (_marketplaceScrollController.position.pixels >=
-        _marketplaceScrollController.position.maxScrollExtent * 0.8) {
-      if (!_isLoadingMarketplaces && _hasMoreMarketplaces) {
-        _getFavoriteMarketplaces();
-      }
-    }
-  }
-
-  void _newsWebScrollListener() {
-    if (_newsWebScrollController.position.pixels >=
-        _newsWebScrollController.position.maxScrollExtent * 0.8) {
-      if (!_isLoadingNews && _hasMoreNews) {
-        _getFavoriteNews();
-      }
-    }
-  }
-
-  void _marketplaceWebScrollListener() {
-    if (_marketplaceWebScrollController.position.pixels >=
-        _marketplaceWebScrollController.position.maxScrollExtent * 0.8) {
-      if (!_isLoadingMarketplaces && _hasMoreMarketplaces) {
-        _getFavoriteMarketplaces();
+    if (controller.position.pixels >= controller.position.maxScrollExtent * 0.8) {
+      if (_tabController.index == 0) {
+        if (!_isLoadingNews && _hasMoreNews) {
+          _getFavoriteNews();
+        }
+      } else {
+        if (!_isLoadingMarketplaces && _hasMoreMarketplaces) {
+          _getFavoriteMarketplaces();
+        }
       }
     }
   }
@@ -126,8 +135,6 @@ class _FavoritesPageState extends State<FavoritesPage>
     _animationController.dispose();
     _newsScrollController.dispose();
     _marketplaceScrollController.dispose();
-    _newsWebScrollController.dispose();
-    _marketplaceWebScrollController.dispose();
     super.dispose();
   }
 
@@ -317,16 +324,15 @@ class _FavoritesPageState extends State<FavoritesPage>
     return '<div>$htmlContent</div>';
   }
 
-  Widget _buildNewsItem(FavoriteNewsModel news, {bool showDivider = true, int? index}) {
+  // સુધારેલી News Item - Mobile માટે
+  Widget _buildNewsItemMobile(FavoriteNewsModel news, int index) {
     final newsModel = _convertToNewsModel(news);
 
-    final itemIndex = index ?? _favoriteNews.indexOf(news);
-
     return Column(
-      key: ValueKey('news_${news.id}_$itemIndex'),
+      key: ValueKey('news_${news.id}_$index'),
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -341,13 +347,13 @@ class _FavoritesPageState extends State<FavoritesPage>
                           ? HeroMode(
                         enabled: false,
                         child: MediaCarousel(
-                          key: ValueKey('carousel_${news.id}_$itemIndex'),
+                          key: ValueKey('carousel_${news.id}_$index'),
                           mediaUrls: news.media.map((m) => m.url).toList(),
-                          height: 180,
+                          height: 200,
                         ),
                       )
                           : Container(
-                        height: 180,
+                        height: 200,
                         width: double.infinity,
                         decoration: BoxDecoration(
                           color: Colors.grey[200],
@@ -357,7 +363,6 @@ class _FavoritesPageState extends State<FavoritesPage>
                       ),
                     ),
                   ),
-
                   Positioned(
                     top: 8,
                     right: 8,
@@ -367,15 +372,15 @@ class _FavoritesPageState extends State<FavoritesPage>
                         onTap: () => _handleNewsFavoriteToggle(news),
                         borderRadius: BorderRadius.circular(20),
                         child: Container(
-                          width: 36,
-                          height: 36,
+                          width: 40,
+                          height: 40,
                           decoration: BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.15),
-                                blurRadius: 6,
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
                             ],
@@ -383,7 +388,7 @@ class _FavoritesPageState extends State<FavoritesPage>
                           child: const Icon(
                             Icons.favorite,
                             color: Colors.red,
-                            size: 20,
+                            size: 22,
                           ),
                         ),
                       ),
@@ -391,11 +396,10 @@ class _FavoritesPageState extends State<FavoritesPage>
                   ),
                 ],
               ),
-
               InkWell(
                 onTap: () => _navigateToNewsDetail(newsModel),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.only(top: 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -404,12 +408,12 @@ class _FavoritesPageState extends State<FavoritesPage>
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
-                          overflow: TextOverflow.ellipsis,
+                          height: 1.3,
                         ),
                         maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 8),
-
                       if (news.content?.isNotEmpty == true)
                         Html(
                           data: _convertToHtml(news.content!),
@@ -418,8 +422,9 @@ class _FavoritesPageState extends State<FavoritesPage>
                               margin: Margins.zero,
                               padding: HtmlPaddings.zero,
                               fontSize: FontSize(14),
-                              maxLines: 2,
+                              maxLines: 3,
                               textOverflow: TextOverflow.ellipsis,
+                              color: Colors.grey[700],
                             ),
                             "div": Style(
                               margin: Margins.zero,
@@ -430,26 +435,31 @@ class _FavoritesPageState extends State<FavoritesPage>
                           },
                           shrinkWrap: true,
                         ),
-
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           if (news.location?.village?.isNotEmpty == true)
-                            Row(
-                              children: [
-                                Icon(Icons.location_on_outlined,
-                                    size: 14, color: Colors.grey[500]),
-                                const SizedBox(width: 4),
-                                Text(
-                                  news.location!.village!,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
-                                    fontWeight: FontWeight.w500,
+                            Flexible(
+                              child: Row(
+                                children: [
+                                  Icon(Icons.location_on_outlined,
+                                      size: 16, color: Colors.grey[600]),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      news.location!.village!,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.grey[600],
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             )
                           else
                             const SizedBox.shrink(),
@@ -469,217 +479,189 @@ class _FavoritesPageState extends State<FavoritesPage>
             ],
           ),
         ),
-
-        if (showDivider)
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Divider(
-              height: 0,
-              thickness: 1,
-              color: Color(0xFFE0E0E0),
-            ),
-          )
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Divider(
+            height: 1,
+            thickness: 1,
+            color: Colors.grey[200],
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildNewsWebGridView() {
-    return GridView.builder(
-      controller: _newsWebScrollController,
-      padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        mainAxisSpacing: 16,
-        crossAxisSpacing: 16,
-        childAspectRatio: 0.7,
-        mainAxisExtent: 245,
-      ),
-      itemCount: _favoriteNews.length + (_hasMoreNews ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index >= _favoriteNews.length) {
-          return const Center(child: CircularProgressIndicator());
-        }
+  // સુધારેલી News Grid Item - Tablet/Desktop માટે
+  Widget _buildNewsGridItem(FavoriteNewsModel news, int index) {
+    final newsModel = _convertToNewsModel(news);
+    final firstImageUrl = news.media.isNotEmpty && news.media.first.url.isNotEmpty
+        ? news.media.first.url
+        : null;
 
-        final news = _favoriteNews[index];
-        final newsModel = _convertToNewsModel(news);
-        final firstImageUrl = news.media.isNotEmpty && news.media.first.url.isNotEmpty
-            ? news.media.first.url
-            : null;
-
-        return GestureDetector(
-          onTap: () => _navigateToNewsDetail(newsModel),
-          child: Card(
-            color: Colors.white,
-            elevation: 2,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+    return GestureDetector(
+      onTap: () => _navigateToNewsDetail(newsModel),
+      child: Card(
+        color: Colors.white,
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
               children: [
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(12),
-                        topRight: Radius.circular(12),
-                      ),
-                      child: firstImageUrl != null
-                          ? Image.network(
-                        firstImageUrl,
-                        height: 120,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          height: 120,
-                          width: double.infinity,
-                          color: Colors.grey[200],
-                          child: const Icon(Icons.article_outlined, size: 40),
-                        ),
-                      )
-                          : Container(
-                        height: 120,
-                        width: double.infinity,
-                        color: Colors.grey[200],
-                        child: const Icon(Icons.article_outlined, size: 40),
-                      ),
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                  child: firstImageUrl != null
+                      ? Image.network(
+                    firstImageUrl,
+                    height: 160,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 160,
+                      width: double.infinity,
+                      color: Colors.grey[200],
+                      child: const Icon(Icons.article_outlined, size: 50),
                     ),
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
-                          onTap: () => _handleNewsFavoriteToggle(news),
-                          borderRadius: BorderRadius.circular(20),
-                          child: Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.15),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.favorite,
-                              color: Colors.red,
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  )
+                      : Container(
+                    height: 160,
+                    width: double.infinity,
+                    color: Colors.grey[200],
+                    child: const Icon(Icons.article_outlined, size: 50),
+                  ),
                 ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          news.title ?? 'No Title',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          maxLines: 2,
-                        ),
-                        const SizedBox(height: 4),
-                        if (news.content?.isNotEmpty == true)
-                          Expanded(
-                            child: Html(
-                              data: _convertToHtml(news.content!),
-                              style: {
-                                "body": Style(
-                                  margin: Margins.zero,
-                                  padding: HtmlPaddings.zero,
-                                  fontSize: FontSize(12),
-                                  maxLines: 2,
-                                  textOverflow: TextOverflow.ellipsis,
-                                ),
-                                "div": Style(
-                                  margin: Margins.zero,
-                                  padding: HtmlPaddings.zero,
-                                  fontSize: FontSize(12),
-                                  lineHeight: const LineHeight(1.4),
-                                ),
-                              },
-                              shrinkWrap: true,
-                            ),
-                          )
-                        else
-                          const Text(
-                            'No content',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey,
-                            ),
-                            maxLines: 2,
-                          ),
-                        const SizedBox(height: 4),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            if (news.location?.village?.isNotEmpty == true)
-                              Expanded(
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.location_on_outlined,
-                                      size: 14,
-                                      color: Colors.grey[600],
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Flexible(
-                                      child: Text(
-                                        news.location!.village!,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.grey[600],
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                        maxLines: 1,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            else
-                              const SizedBox.shrink(),
-                            Text(
-                              _formatDate(news.createdAt ?? ''),
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[500],
-                              ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => _handleNewsFavoriteToggle(news),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
                             ),
                           ],
                         ),
-                      ],
+                        child: const Icon(
+                          Icons.favorite,
+                          color: Colors.red,
+                          size: 20,
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
-          ),
-        );
-      },
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      news.title ?? 'No Title',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        height: 1.3,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    if (news.content?.isNotEmpty == true)
+                      Expanded(
+                        child: Html(
+                          data: _convertToHtml(news.content!),
+                          style: {
+                            "body": Style(
+                              margin: Margins.zero,
+                              padding: HtmlPaddings.zero,
+                              fontSize: FontSize(12),
+                              maxLines: 2,
+                              textOverflow: TextOverflow.ellipsis,
+                              color: Colors.grey[700],
+                            ),
+                            "div": Style(
+                              margin: Margins.zero,
+                              padding: HtmlPaddings.zero,
+                              fontSize: FontSize(12),
+                              lineHeight: const LineHeight(1.4),
+                            ),
+                          },
+                          shrinkWrap: true,
+                        ),
+                      ),
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        if (news.location?.village?.isNotEmpty == true)
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.location_on_outlined,
+                                  size: 14,
+                                  color: Colors.grey[600],
+                                ),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    news.location!.village!,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else
+                          const Spacer(),
+                        Text(
+                          _formatDate(news.createdAt ?? ''),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
+  // સુધારેલી News Content
   Widget _buildNewsContent() {
-    final isWeb = Get.width > 700;
-
     if (_isLoadingNews && _favoriteNews.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -712,30 +694,193 @@ class _FavoritesPageState extends State<FavoritesPage>
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: () => _getFavoriteNews(isRefresh: true),
-      child: isWeb
-          ? _buildNewsWebGridView()
-          : ListView.builder(
-        controller: _newsScrollController,
-        itemCount: _favoriteNews.length + (_hasMoreNews ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index < _favoriteNews.length) {
-            return _buildNewsItem(_favoriteNews[index], index: index);
-          } else {
-            return const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Center(child: CircularProgressIndicator()),
-            );
-          }
-        },
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = AppBreakpoints.isMobile(context);
+
+        if (isMobile) {
+          // Mobile Layout - ListView
+          return RefreshIndicator(
+            onRefresh: () => _getFavoriteNews(isRefresh: true),
+            child: ListView.builder(
+              controller: _newsScrollController,
+              itemCount: _favoriteNews.length + (_hasMoreNews ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index < _favoriteNews.length) {
+                  return _buildNewsItemMobile(_favoriteNews[index], index);
+                } else {
+                  return const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+              },
+            ),
+          );
+        } else {
+          // Tablet/Desktop Layout - GridView
+          final crossAxisCount = AppBreakpoints.getNewsCrossAxisCount(context);
+
+          return RefreshIndicator(
+            onRefresh: () => _getFavoriteNews(isRefresh: true),
+            child: GridView.builder(
+              controller: _newsScrollController,
+              padding: EdgeInsets.all(AppBreakpoints.isDesktop(context) ? 24 : 16),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                childAspectRatio: 0.75,
+                mainAxisExtent: 270,
+              ),
+              itemCount: _favoriteNews.length + (_hasMoreNews ? 1 : 0),
+              itemBuilder: (context, index) {
+                if (index >= _favoriteNews.length) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                return _buildNewsGridItem(_favoriteNews[index], index);
+              },
+            ),
+          );
+        }
+      },
+    );
+  }
+
+  // સુધારેલી Marketplace Grid Item
+  Widget _buildMarketplaceGridItem(MarketplaceModel product, int index) {
+    final imageUrl = product.images.isNotEmpty
+        ? product.images.first
+        : 'https://via.placeholder.com/200';
+    final price = product.price.toStringAsFixed(2);
+
+    return GestureDetector(
+      onTap: () => _handleProductTap(product),
+      child: Card(
+        color: Colors.white,
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                  child: Image.network(
+                    imageUrl,
+                    height: 140,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      height: 140,
+                      width: double.infinity,
+                      color: Colors.grey[200],
+                      child: const Icon(Icons.image_not_supported, size: 50),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => _handleFavoriteToggle(product, false),
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.favorite,
+                          color: Colors.red,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      product.title ?? 'No Title',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        height: 1.3,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '₹$price',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    if (product.location != null &&
+                        (product.location!.village.isNotEmpty ||
+                            product.location!.district.isNotEmpty))
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on_outlined,
+                            size: 14,
+                            color: Colors.grey[600],
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              _getLocationText(product.location!),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
+  // સુધારેલી Marketplace Content
   Widget _buildMarketplaceContent() {
-    final isWeb = Get.width > 700;
-
     if (_isLoadingMarketplaces && _favoriteMarketplaces.isEmpty) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.primary),
@@ -770,169 +915,47 @@ class _FavoritesPageState extends State<FavoritesPage>
       );
     }
 
-    final crossAxisCount = isWeb ? 4 : 2;
-    final mainAxisExtent = isWeb ? 220.0 : 250.0;
-    final controller = isWeb ? _marketplaceWebScrollController : _marketplaceScrollController;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossAxisCount = AppBreakpoints.getCrossAxisCount(context);
+        final spacing = AppBreakpoints.isDesktop(context) ? 20.0 : 16.0;
+        final padding = AppBreakpoints.isDesktop(context) ? 24.0 : 16.0;
+        final mainAxisExtent = AppBreakpoints.isDesktop(context)
+            ? 240.0
+            : AppBreakpoints.isTablet(context)
+            ? 260.0
+            : 280.0;
 
-    return RefreshIndicator(
-      onRefresh: () => _getFavoriteMarketplaces(isRefresh: true),
-      child: GridView.builder(
-        controller: controller,
-        padding: const EdgeInsets.all(16),
-        shrinkWrap: true,
-        physics: const AlwaysScrollableScrollPhysics(),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: crossAxisCount,
-          childAspectRatio: 0.7,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          mainAxisExtent: mainAxisExtent,
-        ),
-        itemCount: _favoriteMarketplaces.length + (_hasMoreMarketplaces ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index >= _favoriteMarketplaces.length) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
-
-          final product = _favoriteMarketplaces[index];
-          final imageUrl = product.images.isNotEmpty == true
-              ? product.images.first
-              : 'https://via.placeholder.com/200';
-          final price = product.price.toStringAsFixed(2) ?? '0.00';
-
-          return GestureDetector(
-            onTap: () => _handleProductTap(product),
-            child: Card(
-              color: Colors.white,
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      ClipRRect(
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(12),
-                          topRight: Radius.circular(12),
-                        ),
-                        child: Image.network(
-                          imageUrl,
-                          height: 120,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            height: 120,
-                            width: double.infinity,
-                            color: Colors.grey[200],
-                            child: const Icon(Icons.image_not_supported, size: 40),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => _handleFavoriteToggle(product, false),
-                            borderRadius: BorderRadius.circular(20),
-                            child: Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.15),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.favorite,
-                                color: Colors.red,
-                                size: 20,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          product.title ?? 'No Title',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          maxLines: 2,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '₹$price',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        if (product.location != null &&
-                            (product.location!.village.isNotEmpty ||
-                                product.location!.district.isNotEmpty))
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.location_on_outlined,
-                                size: 14,
-                                color: Colors.grey[600],
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  _getLocationText(product.location!),
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  maxLines: 1,
-                                ),
-                              ),
-                            ],
-                          ),
-                      ],
-                    ),
-                  ),
-                  const Spacer(),
-                ],
-              ),
+        return RefreshIndicator(
+          onRefresh: () => _getFavoriteMarketplaces(isRefresh: true),
+          child: GridView.builder(
+            controller: _marketplaceScrollController,
+            padding: EdgeInsets.all(padding),
+            physics: const AlwaysScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              childAspectRatio: 0.7,
+              crossAxisSpacing: spacing,
+              mainAxisSpacing: spacing,
+              mainAxisExtent: mainAxisExtent,
             ),
-          );
-        },
-      ),
+            itemCount: _favoriteMarketplaces.length + (_hasMoreMarketplaces ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index >= _favoriteMarketplaces.length) {
+                return const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                );
+              }
+              return _buildMarketplaceGridItem(_favoriteMarketplaces[index], index);
+            },
+          ),
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final isWeb = Get.width > 700;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -945,8 +968,8 @@ class _FavoritesPageState extends State<FavoritesPage>
             child: Column(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppBreakpoints.isDesktop(context) ? 24 : AppSpacing.md,
                     vertical: 2,
                   ),
                   child: Row(
@@ -977,7 +1000,6 @@ class _FavoritesPageState extends State<FavoritesPage>
                     ],
                   ),
                 ),
-
                 SizedBox(
                   height: 50,
                   child: TabBar(
@@ -1014,7 +1036,6 @@ class _FavoritesPageState extends State<FavoritesPage>
     );
   }
 
-
   String _getLocationText(LocationModel location) {
     if (location.village.isNotEmpty && location.district.isNotEmpty) {
       return '${location.village}, ${location.district}';
@@ -1042,10 +1063,6 @@ class _FavoritesPageState extends State<FavoritesPage>
           setState(() {
             _favoriteNews.removeWhere((item) => item.id == news.id);
           });
-        }
-
-        if (mounted) {
-          _getFavoriteNews(isRefresh: true);
         }
       } else {
         AppToast.showError(
