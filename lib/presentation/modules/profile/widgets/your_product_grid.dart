@@ -10,11 +10,8 @@ import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
 import 'package:get/get.dart';
-
 import '../../../commons/dialogs/appDialog.dart';
 import '../../../commons/dialogs/app_toasts.dart';
-import '../../../controller/product_controller.dart';
-import '../../../routes/app_routes.dart';
 import '../../../services/api_service.dart';
 import '../../product/views/sell_product_page.dart';
 
@@ -35,8 +32,6 @@ class YourProductGrid extends StatefulWidget {
 }
 
 class _YourProductGridState extends State<YourProductGrid> {
-  ProductController? _controller;
-
   Future<bool> deleteProduct(String productId) async {
     final services = await getApiClient();
     try {
@@ -78,13 +73,11 @@ class _YourProductGridState extends State<YourProductGrid> {
       if (response.data.status && response.data.data != null) {
         final updated = response.data.data as MarketplaceModel;
 
-        // Update UI List
         setState(() {
           int index = widget.products.indexWhere((p) => p.id == updated.id);
           if (index != -1) widget.products[index] = updated;
         });
-        
-        // Show success message without navigating away
+
         AppToast.showSuccess(
           shouldActivate ? 'Listing is now Live' : 'Listing is now Paused',
         );
@@ -96,28 +89,10 @@ class _YourProductGridState extends State<YourProductGrid> {
     }
   }
 
-  String _mapDioError(DioException error) {
-    switch (error.type) {
-      case DioExceptionType.connectionTimeout:
-      case DioExceptionType.receiveTimeout:
-      case DioExceptionType.sendTimeout:
-        return 'Connection timed out. Please try again.';
-      case DioExceptionType.connectionError:
-        return 'Network unavailable. Check your internet connection.';
-      case DioExceptionType.badResponse:
-        final statusCode = error.response?.statusCode;
-        return 'Server error${statusCode != null ? ' ($statusCode)' : ''}. Please try again later.';
-      case DioExceptionType.badCertificate:
-      case DioExceptionType.cancel:
-      case DioExceptionType.unknown:
-        return error.message ?? 'Unexpected error occurred.';
-    }
-  }
-
   void _showProductOptionsBottomSheet(
-    BuildContext context,
-    MarketplaceModel product,
-  ) {
+      BuildContext context,
+      MarketplaceModel product,
+      ) {
     showCupertinoModalPopup<void>(
       context: context,
       builder: (BuildContext ctx) {
@@ -140,7 +115,6 @@ class _YourProductGridState extends State<YourProductGrid> {
               CupertinoActionSheetAction(
                 onPressed: () {
                   Navigator.pop(ctx);
-                  // Create a copy of the product with isFromYourPost set to true
                   final productToEdit = MarketplaceModel(
                     id: product.id,
                     title: product.title,
@@ -162,26 +136,16 @@ class _YourProductGridState extends State<YourProductGrid> {
                     updatedAt: product.updatedAt,
                     version: product.version,
                     list: product.list,
-                    isFromYourPost: true, // Set this flag to true
+                    isFromYourPost: true,
                   );
                   Get.to(() => SellProductPage(product: productToEdit));
                 },
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.edit,
-                      color: AppColors.primary,
-                      size: AppSpacing.iconMD,
-                    ),
+                    Icon(Icons.edit, color: AppColors.primary, size: AppSpacing.iconMD),
                     SizedBox(width: AppSpacing.sm),
-                    Text(
-                      'Edit',
-                      style: AppTextStyles.bodyLarge.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    Text('Edit', style: AppTextStyles.bodyLarge.copyWith(color: AppColors.primary, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
@@ -191,39 +155,25 @@ class _YourProductGridState extends State<YourProductGrid> {
                   final bool confirmed = await AppDialog.show(
                     context,
                     title: 'Delete Product',
-                    message:
-                        'Are you sure you want to delete "${product.title}"?',
+                    message: 'Are you sure you want to delete "${product.title}"?',
                     confirmText: 'Delete',
                     cancelText: 'Cancel',
                   );
-                  if (!mounted) return;
-                  if (confirmed) {
-                    bool success = await deleteProduct(product.id);
-                    if (!mounted) return;
-                    if (success) {
-                      setState(() {
-                        widget.products.removeWhere((p) => p.id == product.id);
-                      });
-                    }
+                  if (!mounted || !confirmed) return;
+                  bool success = await deleteProduct(product.id);
+                  if (success && mounted) {
+                    setState(() {
+                      widget.products.removeWhere((p) => p.id == product.id);
+                    });
                   }
                 },
                 isDestructiveAction: true,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      Icons.delete_forever,
-                      color: AppColors.error,
-                      size: AppSpacing.iconMD,
-                    ),
+                    Icon(Icons.delete_forever, color: AppColors.error, size: AppSpacing.iconMD),
                     SizedBox(width: AppSpacing.sm),
-                    Text(
-                      'Delete',
-                      style: AppTextStyles.bodyLarge.copyWith(
-                        color: AppColors.error,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    Text('Delete', style: AppTextStyles.bodyLarge.copyWith(color: AppColors.error, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
@@ -236,19 +186,14 @@ class _YourProductGridState extends State<YourProductGrid> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      product.isActive
-                          ? Icons.pause_circle_outline
-                          : Icons.check_circle_outline,
+                      product.isActive ? Icons.pause_circle_outline : Icons.check_circle_outline,
                       color: AppColors.success,
                       size: AppSpacing.iconMD,
                     ),
                     SizedBox(width: AppSpacing.sm),
                     Text(
                       product.isActive ? 'Pause' : 'Live',
-                      style: AppTextStyles.bodyLarge.copyWith(
-                        color: AppColors.success,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: AppTextStyles.bodyLarge.copyWith(color: AppColors.success, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -259,10 +204,7 @@ class _YourProductGridState extends State<YourProductGrid> {
               onPressed: () => Navigator.pop(ctx),
               child: Text(
                 'Cancel',
-                style: AppTextStyles.bodyLarge.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -273,123 +215,127 @@ class _YourProductGridState extends State<YourProductGrid> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.isLoading) {
-      return _buildShimmerGrid(context);
-    }
+    if (widget.isLoading) return _buildShimmerGrid(context);
+    if (widget.products.isEmpty) return _buildEmptyState();
 
-    if (widget.products.isEmpty) {
-      return _buildEmptyState();
-    }
+    final int crossAxisCount = _getCrossAxisCount(context);
+    final double spacing = 12;
+    final horizontalPadding = AppSpacing.md * 2;
+    final availableWidth = MediaQuery.of(context).size.width - horizontalPadding - (spacing * (crossAxisCount - 1));
+    final itemWidth = availableWidth / crossAxisCount;
 
     return Padding(
       padding: AppSpacing.horizontalMD,
       child: GridView.builder(
-        shrinkWrap: false,
         physics: const AlwaysScrollableScrollPhysics(),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: _getCrossAxisCount(context),
-          childAspectRatio: _getAspectRatio(context),
-          crossAxisSpacing: 12,
+          crossAxisCount: crossAxisCount,
+          childAspectRatio: _calculateChildAspectRatio(context, itemWidth),
+          crossAxisSpacing: spacing,
           mainAxisSpacing: 16,
         ),
         itemCount: widget.products.length,
         itemBuilder: (context, index) {
           final product = widget.products[index];
+
           return GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => widget.onProductTap(product),
-                child: Stack(
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.white,
-                        borderRadius: AppSpacing.borderRadiusMD,
-                        border: Border.all(
-                          color: AppColors.borderLight,
-                          width: 1,
-                        ),
-                        boxShadow: AppColors.cardShadow,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildProductImage(product),
-                          Expanded(
-                            child: Padding(
-                              padding: AppSpacing.paddingSM,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    product.title,
-                                    style: AppTextStyles.priceMedium.copyWith(
-                                      fontSize:
-                                          AppResponsiveSize.isMobile(context)
-                                          ? 16
-                                          : 18,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  AppSpacing.verticalSpaceXS,
-                                  Text(
-                                    "₹ ${product.price}",
-                                    style: AppTextStyles.bodySmall.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const Spacer(),
-                                  _buildLocationInfo(context, product.location),
-                                ],
+            behavior: HitTestBehavior.opaque,
+            onTap: () => widget.onProductTap(product),
+            child: Stack(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: AppSpacing.borderRadiusMD,
+                    border: Border.all(color: AppColors.borderLight, width: 1),
+                    boxShadow: AppColors.cardShadow,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildProductImage(context, product, itemWidth),
+                      Padding(
+                        padding: AppSpacing.paddingSM,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              product.title,
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                fontWeight: FontWeight.w600,
+                                fontSize: AppResponsiveSize.isMobile(context) ? 13.5 : AppResponsiveSize.isTablet(context) ? 14.5 : 15.5,
+                                height: 1.25,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+
+                            AppSpacing.verticalSpaceXS,
+
+                            Text(
+                              "₹ ${product.price}",
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                                fontSize: AppResponsiveSize.isMobile(context) ? 14 : 15,
                               ),
                             ),
-                          ),
+
+                            AppSpacing.verticalSpaceXS,
+
+                            _buildLocationInfo(context, product.location),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: GestureDetector(
+                    onTap: () => _showProductOptionsBottomSheet(context, product),
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppColors.black.withOpacity(0.4),
+                        shape: BoxShape.circle,
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, 2)),
                         ],
                       ),
+                      child: const Icon(Icons.more_vert, color: AppColors.white, size: 20),
                     ),
-                    Positioned(
-                      top: 6,
-                      right: 6,
-                      child: GestureDetector(
-                        onTap: () =>
-                            _showProductOptionsBottomSheet(context, product),
-                        child: Container(
-                          padding: const EdgeInsets.all(5),
-                          decoration: BoxDecoration(
-                            color: AppColors.black.withOpacity(0.35),
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.12),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                            border: Border.all(
-                              color: AppColors.white.withOpacity(0.4),
-                              width: 1.5,
-                            ),
-                          ),
-                          child: Icon(
-                            Icons.more_vert,
-                            color: AppColors.white,
-                            size: AppSpacing.iconMD,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              )
-              .animate()
+              ],
+            ),
+          ).animate()
               .fadeIn(duration: 600.ms, delay: (50 * index).ms)
               .scale(delay: (50 * index).ms, duration: 400.ms);
         },
       ),
     );
+  }
+
+  double _calculateChildAspectRatio(BuildContext context, double itemWidth) {
+    final double imageAspect = _getImageAspectRatio(context);
+    final double imageHeight = itemWidth / imageAspect;
+
+    final double titleHeight = AppResponsiveSize.isMobile(context) ? 36 : 40;
+    final double priceHeight = 20;
+    final double locationHeight = 18;
+    final double paddings = AppSpacing.paddingSM.vertical;
+    final double contentVerticalSpacing = AppSpacing.verticalSpaceXS.height! * 2;
+
+    final double contentHeight = titleHeight + priceHeight + locationHeight + paddings + contentVerticalSpacing;
+
+    final double totalHeight = imageHeight + contentHeight;
+
+    return itemWidth / (totalHeight == 0 ? 1 : totalHeight);
   }
 
   int _getCrossAxisCount(BuildContext context) {
@@ -398,52 +344,27 @@ class _YourProductGridState extends State<YourProductGrid> {
     return 2;
   }
 
-  double _getAspectRatio(BuildContext context) {
-    if (AppResponsiveSize.isDesktop(context)) return 0.75;
-    if (AppResponsiveSize.isTablet(context)) return 0.7;
-    return 0.68;
+  double _getImageAspectRatio(BuildContext context) {
+    if (AppResponsiveSize.isDesktop(context)) return 1.4;
+    if (AppResponsiveSize.isTablet(context)) return 1.3;
+    return 1.25;
   }
 
-  Widget _buildProductImage(MarketplaceModel product) {
-    final imageWidth =
-        (MediaQuery.of(context).size.width - (AppSpacing.md * 2) - 12) /
-        _getCrossAxisCount(context);
-    final imageHeight = imageWidth / 1.2;
+  Widget _buildProductImage(BuildContext context, MarketplaceModel product, double itemWidth) {
+    final double aspect = _getImageAspectRatio(context);
+    final double imageHeight = itemWidth / aspect;
 
-    return Stack(
-      children: [
-        AspectRatio(
-          aspectRatio: 1.2,
-          child: ClipRRect(
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppSpacing.radiusMD),
-            ),
-            child: Container(
-              color: AppColors.grey100,
-              child: product.images.isNotEmpty
-                  ? CustomImageWidget(
-                      imageUrl: product.images[0],
-                      height: imageHeight,
-                      width: imageWidth,
-                      fit: BoxFit.cover,
-                      cornerRadius: AppSpacing.radiusMD,
-                    )
-                  : _buildImagePlaceholder(),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildImagePlaceholder() {
-    return Container(
-      color: AppColors.grey100,
-      child: const Center(
-        child: Icon(
-          Icons.image_outlined,
-          size: AppSpacing.iconXL,
-          color: AppColors.grey400,
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusMD)),
+      child: SizedBox(
+        width: double.infinity,
+        height: imageHeight,
+        child: CustomImageWidget(
+          imageUrl: product.images.isNotEmpty ? product.images[0] : '',
+          height: imageHeight,
+          width: itemWidth,
+          fit: BoxFit.cover,
+          cornerRadius: AppSpacing.radiusMD,
         ),
       ),
     );
@@ -452,23 +373,18 @@ class _YourProductGridState extends State<YourProductGrid> {
   Widget _buildLocationInfo(BuildContext context, LocationModel? location) {
     if (location == null) return const SizedBox.shrink();
 
-    String fullAddress =
-        "${location.village}, ${location.taluko}, ${location.district}, ${location.country}";
+    String address = "${location.village ?? ''}, ${location.taluko ?? ''}";
 
     return Row(
       children: [
-        const Icon(
-          Icons.location_on_outlined,
-          size: 12,
-          color: AppColors.textOnAccent,
-        ),
-        const SizedBox(width: 2),
+        const Icon(Icons.location_on_outlined, size: 11, color: AppColors.textSecondary),
+        const SizedBox(width: 3),
         Expanded(
           child: Text(
-            fullAddress,
+            address,
             style: AppTextStyles.overline.copyWith(
-              color: AppColors.textOnAccent,
-              fontSize: AppResponsiveSize.isMobile(context) ? 10 : 11,
+              fontSize: AppResponsiveSize.isMobile(context) ? 9.5 : 10,
+              color: AppColors.textSecondary,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -485,26 +401,11 @@ class _YourProductGridState extends State<YourProductGrid> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.shopping_bag_outlined,
-              size: 80,
-              color: AppColors.grey400,
-            ),
+            Icon(Icons.shopping_bag_outlined, size: 80, color: AppColors.grey400),
             AppSpacing.verticalSpaceMD,
-            Text(
-              'No Products Found',
-              style: AppTextStyles.label.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
+            Text('No Products Found', style: AppTextStyles.label.copyWith(color: AppColors.textSecondary)),
             AppSpacing.verticalSpaceSM,
-            Text(
-              'Try adjusting your filters or check back later',
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.textHint,
-              ),
-              textAlign: TextAlign.center,
-            ),
+            Text('Try posting a product or check back later', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textHint), textAlign: TextAlign.center),
           ],
         ),
       ),
@@ -512,24 +413,25 @@ class _YourProductGridState extends State<YourProductGrid> {
   }
 
   Widget _buildShimmerGrid(BuildContext context) {
+    final int count = _getCrossAxisCount(context);
     return Padding(
       padding: AppSpacing.horizontalMD,
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: _getCrossAxisCount(context),
-          childAspectRatio: _getAspectRatio(context),
-          crossAxisSpacing: AppSpacing.sm,
-          mainAxisSpacing: AppSpacing.sm,
+          crossAxisCount: count,
+          childAspectRatio: 0.8,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 16,
         ),
         itemCount: 6,
-        itemBuilder: (context, index) => _buildShimmerCard(),
+        itemBuilder: (_, __) => _buildShimmerCard(context),
       ),
     );
   }
 
-  Widget _buildShimmerCard() {
+  Widget _buildShimmerCard(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.white,
@@ -540,43 +442,24 @@ class _YourProductGridState extends State<YourProductGrid> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AspectRatio(
-                aspectRatio: 1.2,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: AppColors.shimmerGradient,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(AppSpacing.radiusMD),
-                    ),
-                  ),
-                ),
-              )
-              .animate(onPlay: (controller) => controller.repeat())
-              .shimmer(duration: 1500.ms),
+            aspectRatio: _getImageAspectRatio(context),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: AppColors.shimmerGradient,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusMD)),
+              ),
+            ).animate(onPlay: (c) => c.repeat()).shimmer(duration: 1500.ms),
+          ),
           Padding(
             padding: AppSpacing.paddingSM,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                      height: 16,
-                      width: 80,
-                      decoration: BoxDecoration(
-                        gradient: AppColors.shimmerGradient,
-                        borderRadius: AppSpacing.borderRadiusXS,
-                      ),
-                    )
-                    .animate(onPlay: (controller) => controller.repeat())
-                    .shimmer(duration: 1500.ms),
+                Container(height: 14, width: double.infinity, color: Colors.grey[300])
+                    .animate(onPlay: (c) => c.repeat()).shimmer(duration: 1500.ms),
                 AppSpacing.verticalSpaceXS,
-                Container(
-                      height: 12,
-                      decoration: BoxDecoration(
-                        gradient: AppColors.shimmerGradient,
-                        borderRadius: AppSpacing.borderRadiusXS,
-                      ),
-                    )
-                    .animate(onPlay: (controller) => controller.repeat())
-                    .shimmer(duration: 1500.ms),
+                Container(height: 12, width: 80, color: Colors.grey[300])
+                    .animate(onPlay: (c) => c.repeat()).shimmer(duration: 1500.ms),
               ],
             ),
           ),
