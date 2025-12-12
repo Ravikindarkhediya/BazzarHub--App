@@ -14,6 +14,7 @@ import '../../../../app/data/constants/app_text_style.dart';
 import '../../../../app/data/constants/app_constant.dart';
 import '../../../commons/dialogs/app_toasts.dart';
 import '../../../commons/widgets/social_button.dart';
+import '../../../commons/widgets/web_page_wrapper.dart';
 import '../../../routes/app_routes.dart';
 import 'package:get/get.dart' hide Response;
 import '../../../services/api_service.dart';
@@ -117,10 +118,11 @@ class _SignupPageState extends State<SignupPage> {
 
     double cardPadding = AppResponsiveSize.isMobile(context) ? 24 : 32;
 
-    return Scaffold(
-      backgroundColor:AppColors.background,
-      body: SizedBox(
-        width: double.infinity,
+    return WebPageWrapper(
+      child: Scaffold(
+        backgroundColor:AppColors.background,
+        body: SizedBox(
+          width: double.infinity,
         height: double.infinity,
         child: SafeArea(
           child: Center(
@@ -391,6 +393,7 @@ class _SignupPageState extends State<SignupPage> {
             ),
           ),
         ),
+      ),
       ),
     );
   }

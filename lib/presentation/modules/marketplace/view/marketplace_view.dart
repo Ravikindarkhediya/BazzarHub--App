@@ -1,6 +1,7 @@
 import 'package:bazzar_hub_app/presentation/controller/location_controller.dart';
 import 'package:bazzar_hub_app/presentation/controller/product_controller.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,6 +10,7 @@ import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../commons/dialogs/app_toasts.dart';
 import '../../../commons/widgets/location_bar_widget.dart';
+import '../../../commons/widgets/web_page_wrapper.dart';
 import '../../../services/api_service.dart';
 import '../../../services/models/categorie/categorie_model.dart';
 import '../../../services/models/marketplace/marketplace_model.dart';
@@ -507,7 +509,7 @@ class _MarketplaceViewState extends State<MarketplaceView>
         },
         child: Column(
           children: [
-            HeaderWidget(),
+            if (!kIsWeb) HeaderWidget(),
 
             //  REACTIVE LOCATION BAR WITH OBX
             Obx(() {

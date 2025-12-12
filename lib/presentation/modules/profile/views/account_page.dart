@@ -2,6 +2,7 @@ import 'package:bazzar_hub_app/presentation/commons/dialogs/app_toasts.dart';
 import 'package:bazzar_hub_app/presentation/modules/profile/views/block_user.dart';
 import 'package:bazzar_hub_app/presentation/modules/profile/widgets/profile_info.dart';
 import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -600,7 +601,14 @@ class _AccountPageState extends State<AccountPage>
             onPressed: () async {
               Navigator.of(context).pop();
               await SessionManager().clearSession();
-              Get.offAllNamed(AppRoutes.login);
+              final isWebOrTablet = kIsWeb || MediaQuery.of(context).size.shortestSide >= 600;
+              if (isWebOrTablet) {
+                // In web/tablet mode, go to home wrapper where login/signup options are in header
+                Get.offAllNamed(AppRoutes.homeWrapper);
+              } else {
+                // In mobile mode, go to login screen
+                Get.offAllNamed(AppRoutes.login);
+              }
             },
           ),
         ],

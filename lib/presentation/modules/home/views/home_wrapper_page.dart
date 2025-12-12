@@ -1,10 +1,15 @@
+import 'dart:io' show Platform;
 import 'package:bazzar_hub_app/app/core/manager/location_manager.dart';
 import 'package:bazzar_hub_app/manager/wallet_manager.dart';
 import 'package:bazzar_hub_app/presentation/modules/marketplace/view/marketplace_view.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
 import '../../../../app/core/utils/app_spacing.dart';
+import '../../../commons/widgets/custom_app_bar.dart';
+import '../../../commons/widgets/web_header.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
 import '../../../../manager/firebase_manager.dart';
@@ -36,6 +41,9 @@ class _HomeWrapperState extends State<HomeWrapper> {
     const AccountPage(),     // 3 - Profile
   ];
 
+  // Check if the app is running on web
+  bool get _isWeb => kIsWeb || Platform.isMacOS || Platform.isWindows || Platform.isLinux;
+
   @override
   void initState() {
     super.initState();
@@ -64,16 +72,26 @@ class _HomeWrapperState extends State<HomeWrapper> {
 
     WalletManager().requestWalletCoinBalance();
     WalletManager().requestWalletPenBalance();
-
   }
 
   void _onItemTapped(int index) {
     _controller.changeTab(index);
+    setState(() {}); // Trigger a rebuild to update the app bar title
+  }
 
-    if (index == 1) {
-      _newsController.refresh();
+  String _getAppBarTitle(int index) {
+    switch (index) {
+      case 0:
+        return 'Home';
+      case 1:
+        return 'News';
+      case 2:
+        return 'Marketplace';
+      case 3:
+        return 'Profile';
+      default:
+        return 'Bazzar Hub';
     }
-
   }
 
   void _onSellTap() {
@@ -143,16 +161,40 @@ class _HomeWrapperState extends State<HomeWrapper> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: false,
+      extendBody: true, // Important for proper FAB positioning
+      appBar: _isWeb
+          ? PreferredSize(
+              preferredSize: const Size.fromHeight(60),
+              child: WebHeader(
+                currentIndex: _controller.currentIndex.value,
+                onItemTapped: _onItemTapped,
+              ),
+            ):null,
+          // : CustomAppBar(
+          //     title: _getAppBarTitle(_controller.currentIndex.value),
+          //     showLogo: true,
+          //     backgroundColor: Colors.white,
+          //   ),
       body: Obx(() => IndexedStack(
         index: _controller.currentIndex.value,
         children: _pages,
       )),
-      bottomNavigationBar: Obx(() => BottomNavBarWidget(
-        currentIndex: _controller.currentIndex.value,
-        onTap: _onItemTapped,
-        onSellTap: _onSellTap,
-      )),
+      floatingActionButton: _isWeb ? FloatingActionButton(
+        onPressed: _onSellTap,
+        backgroundColor: AppColors.accent,
+        elevation: 6,
+        highlightElevation: 8,
+        shape: const CircleBorder(),
+        child: const Icon(Icons.add, color: AppColors.primary, size: 30),
+      ) : null,
+      floatingActionButtonLocation: _isWeb ? FloatingActionButtonLocation.startFloat : null,
+      bottomNavigationBar: _isWeb
+          ? null
+          : Obx(() => BottomNavBarWidget(
+                currentIndex: _controller.currentIndex.value,
+                onTap: _onItemTapped,
+                onSellTap: _onSellTap,
+              )),
     );
   }
 }

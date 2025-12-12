@@ -1,4 +1,6 @@
 import 'package:bazzar_hub_app/app/core/utils/utils.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../app/core/utils/app_spacing.dart';
@@ -47,15 +49,14 @@ class HeaderWidget extends StatelessWidget {
               child: Row(
                 children: [
 
-                  /// App Logo & Name
-                  _buildAppBranding(),
-
-                  AppSpacing.horizontalSpaceSM,
+                  /// App Logo & Name - Hidden on web
+                  if (!kIsWeb) _buildAppBranding(),
+                  if (!kIsWeb) AppSpacing.horizontalSpaceSM,
 
                   Spacer(),
 
                   /// Search Icon
-                  _buildIconButton(
+                  if (!kIsWeb) _buildIconButton(
                     icon: Icons.search,
                     onTap:(){
 
@@ -63,10 +64,10 @@ class HeaderWidget extends StatelessWidget {
                     hasBadge: false,
                   ),
 
-                  AppSpacing.horizontalSpaceSM,
+                  if (!kIsWeb) AppSpacing.horizontalSpaceSM,
 
                   /// Notification Icon
-                  _buildIconButton(
+                  if (!kIsWeb) _buildIconButton(
                     icon: Icons.notifications_outlined,
                     onTap: (){
 

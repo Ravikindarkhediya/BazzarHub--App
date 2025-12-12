@@ -11,6 +11,9 @@ class SocialButton extends StatelessWidget {
   final VoidCallback onPressed;
   final Duration animationDuration;
   final Duration animationDelay;
+  final double? width;
+  final double? height;
+  final bool isFullWidth;
 
   const SocialButton({
     super.key,
@@ -18,49 +21,65 @@ class SocialButton extends StatelessWidget {
     required this.onPressed,
     this.iconPath = '',
     this.iconData,
+    this.width,
+    this.height = 48,
+    this.isFullWidth = true,
     this.animationDuration = const Duration(milliseconds: 1000),
     this.animationDelay = const Duration(milliseconds: 0),
   });
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    final buttonWidth = width ?? (isFullWidth ? (isMobile ? double.infinity : 400) : null);
+    
     Widget iconWidget;
 
     if (iconPath.isNotEmpty) {
       iconWidget = Image.asset(
         iconPath,
-        height: AppSpacing.iconLG,
-        width: AppSpacing.iconLG,
+        height: 24,
+        width: 24,
       );
     } else if (iconData != null) {
       iconWidget = Icon(
         iconData,
         color: AppColors.black,
-        size: AppSpacing.iconXL,
+        size: 24,
       );
     } else {
       iconWidget = const SizedBox.shrink();
     }
 
-    return SizedBox(
-      width: double.infinity,
-      height: 55,
-      child: OutlinedButton.icon(
+    return Container(
+      width: buttonWidth,
+      height: height,
+      constraints: isFullWidth ? const BoxConstraints(minWidth: double.infinity) : null,
+      child: OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
           side: BorderSide(color: AppColors.primary.withOpacity(0.6)),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(8),
           ),
           backgroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
-        icon: iconWidget,
-        label: Text(
-          label,
-          style: AppTextStyles.button.copyWith(
-            color: AppColors.textOnAccent,
-            fontWeight: FontWeight.w500,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            iconWidget,
+            if (iconPath.isNotEmpty || iconData != null) const SizedBox(width: 12),
+            Text(
+              label,
+              style: AppTextStyles.button.copyWith(
+                color: AppColors.textOnAccent,
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
+            ),
+          ],
         ),
       ),
     ).animate().fadeIn(duration: animationDuration, delay: animationDelay);

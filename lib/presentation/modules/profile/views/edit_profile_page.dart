@@ -2,6 +2,7 @@ import 'package:bazzar_hub_app/app/core/utils/app_spacing.dart';
 import 'package:bazzar_hub_app/manager/session_manager.dart';
 import 'package:bazzar_hub_app/app/data/constants/app_colors.dart';
 import 'package:bazzar_hub_app/presentation/commons/dialogs/app_toasts.dart';
+import 'package:bazzar_hub_app/presentation/commons/widgets/web_page_wrapper.dart';
 import 'package:bazzar_hub_app/presentation/controller/location_controller.dart';
 import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
 import 'package:bazzar_hub_app/presentation/services/api_service.dart';
@@ -9,6 +10,7 @@ import 'package:bazzar_hub_app/presentation/services/models/user/user_model.dart
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:get/get.dart' hide MultipartFile, FormData;
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -34,7 +36,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final TextEditingController _bioController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
 
-  // GetX Location Controller
   final LocationController _locationController = Get.put(LocationController());
 
   File? _selectedAvatarImage;
@@ -51,27 +52,25 @@ class _EditProfilePageState extends State<EditProfilePage> {
     super.initState();
     _loadUserData();
   }
+
   String? _validateLocationFields() {
     final locationData = _locationController.getLocationData();
 
     if (locationData['state'] == null || locationData['state']!.isEmpty) {
       return 'Please select a state';
     }
-
     if (locationData['district'] == null || locationData['district']!.isEmpty) {
       return 'Please select a district';
     }
-
     if (locationData['taluka'] == null || locationData['taluka']!.isEmpty) {
       return 'Please select a taluka';
     }
-
     if (locationData['village'] == null || locationData['village']!.isEmpty) {
       return 'Please select a village';
     }
-
     return null;
   }
+
   Future<void> _loadUserData() async {
     setState(() => _isInitialLoading = true);
 
@@ -95,50 +94,35 @@ class _EditProfilePageState extends State<EditProfilePage> {
           }
         }
 
-        // Load locations data (JSON file)
         await _locationController.loadLocationsData();
 
-        //  Load complete location hierarchy if available
         if (user.state != null && user.state!.isNotEmpty) {
-          // Set state
-          _locationController.selectedState.value = user.state;
-          
-          // Load districts for the state
+          _locationController.selectedState.value = user.state!;
           await _locationController.loadDistricts(user.state!, clearSelection: false);
-          
-          // If district is available, load and set it
+
           if (user.district != null && user.district!.isNotEmpty) {
-            _locationController.selectedDistrict.value = user.district;
-            
-            // Load talukas for the district
+            _locationController.selectedDistrict.value = user.district!;
             await _locationController.loadTalukas(user.state!, user.district!, clearSelection: false);
-            
-            // If taluka is available, load and set it
+
             if (user.taluka != null && user.taluka!.isNotEmpty) {
               _locationController.selectedTaluka.value = user.taluka!;
-              
-              // Load villages for the taluka
-              if (user.taluka != null && user.taluka!.isNotEmpty) {
-                await _locationController.loadVillages(
-                  user.state!, 
-                  user.district!, 
-                  user.taluka!,
-                  clearSelection: false,
-                );
-              }
-              
-              // If village is available, set it
+              await _locationController.loadVillages(
+                user.state!,
+                user.district!,
+                user.taluka!,
+                clearSelection: false,
+              );
+
               if (user.village != null && user.village!.isNotEmpty) {
                 _locationController.selectedVillage.value = user.village!;
               }
             }
           }
-          
         }
       }
     } catch (e) {
       AppToast.showError('Error loading user data');
-      debugPrint(' Error: $e');
+      debugPrint('Error: $e');
     } finally {
       setState(() => _isInitialLoading = false);
     }
@@ -176,10 +160,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     try {
       String fileName = imageFile.path.split('/').last;
       FormData formData = FormData.fromMap({
-        "myfile": await MultipartFile.fromFile(
-          imageFile.path,
-          filename: fileName,
-        ),
+        "myfile": await MultipartFile.fromFile(imageFile.path, filename: fileName),
       });
 
       final dio = Dio();
@@ -267,11 +248,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   },
                   child: const Column(
                     children: [
-                      Icon(
-                        Icons.camera_alt,
-                        size: 32,
-                        color: AppColors.primary,
-                      ),
+                      Icon(Icons.camera_alt, size: 32, color: AppColors.primary),
                       SizedBox(height: 8),
                       Text('Camera'),
                     ],
@@ -284,11 +261,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   },
                   child: const Column(
                     children: [
-                      Icon(
-                        Icons.photo_library,
-                        size: 32,
-                        color: AppColors.primary,
-                      ),
+                      Icon(Icons.photo_library, size: 32, color: AppColors.primary),
                       SizedBox(height: 8),
                       Text('Gallery'),
                     ],
@@ -304,12 +277,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Future<void> _updateProfile() async {
-    // Validate form
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
-    //  Validate location fields
     final locationError = _validateLocationFields();
     if (locationError != null) {
       AppToast.showError(locationError);
@@ -326,7 +295,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     try {
       final locationData = _locationController.getLocationData();
 
-      //  Now all location fields are guaranteed to have values
       final params = <String, dynamic>{
         'name': _nameController.text.trim(),
         if (_uploadedAvatarUrl != null && _uploadedAvatarUrl!.isNotEmpty)
@@ -335,8 +303,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
         if (_selectedGender != null) 'gender': _selectedGender!,
         if (_dobController.text.isNotEmpty) 'dob': _dobController.text,
         'bio': _bioController.text.trim(),
-
-        // LOCATION: All fields are required and validated
         'state': locationData['state']!,
         'district': locationData['district']!,
         'taluka': locationData['taluka']!,
@@ -348,27 +314,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
       if (response.data.status) {
         await SessionManager().saveUserData(response.data.data!);
-
-        // Save location and set refresh flag
         await _locationController.saveUserLocation();
 
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('marketplace_refresh_needed', true);
 
         AppToast.showSuccess('Profile updated successfully');
-        Get.offAllNamed(
-          AppRoutes.homeWrapper,
-          arguments: {'initialTab': 3},
-        );
+        Get.offAllNamed(AppRoutes.homeWrapper, arguments: {'initialTab': 3});
       } else {
         AppToast.showError(response.data.message ?? 'Update failed');
       }
     } on DioException catch (e) {
       AppToast.showError(e.response?.data['message'] ?? 'Network error');
-      debugPrint('Dio error: ${e.message}');
     } catch (e) {
       AppToast.showError('Error: $e');
-      debugPrint('Error: $e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -420,10 +379,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       Expanded(
                         child: Text(
                           title,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -437,9 +393,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     decoration: InputDecoration(
                       hintText: 'Search $title...',
                       prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       filled: true,
                       fillColor: AppColors.grey100,
                     ),
@@ -451,36 +405,27 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   child: filtered.isEmpty
                       ? const Center(child: Text('No items found'))
                       : ListView.builder(
-                          itemCount: filtered.length,
-                          itemBuilder: (_, i) {
-                            final item = filtered[i];
-                            final isSelected = current == item;
+                    itemCount: filtered.length,
+                    itemBuilder: (_, i) {
+                      final item = filtered[i];
+                      final isSelected = current == item;
 
-                            return ListTile(
-                              title: Text(item),
-                              trailing: isSelected
-                                  ? const Icon(
-                                      Icons.check,
-                                      color: AppColors.primary,
-                                    )
-                                  : null,
-                              selected: isSelected,
-                              selectedTileColor: AppColors.primary.withOpacity(
-                                0.1,
-                              ),
-                              onTap: () {
-                                onSelect(item);
-
-                                Future.delayed(
-                                  const Duration(milliseconds: 100),
-                                  () {
-                                    Navigator.pop(context);
-                                  },
-                                );
-                              },
-                            );
-                          },
-                        ),
+                      return ListTile(
+                        title: Text(item),
+                        trailing: isSelected
+                            ? const Icon(Icons.check, color: AppColors.primary)
+                            : null,
+                        selected: isSelected,
+                        selectedTileColor: AppColors.primary.withOpacity(0.1),
+                        onTap: () {
+                          onSelect(item);
+                          Future.delayed(const Duration(milliseconds: 100), () {
+                            Navigator.pop(context);
+                          });
+                        },
+                      );
+                    },
+                  ),
                 ),
               ],
             ),
@@ -500,16 +445,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }) {
     String getPlaceholder() {
       switch (label.toLowerCase()) {
-        case 'state':
-          return 'Select State';
-        case 'district':
-          return 'Select District';
-        case 'taluka':
-          return 'Select Taluka';
-        case 'village':
-          return 'Select Village';
-        default:
-          return 'Select $label';
+        case 'state': return 'Select State';
+        case 'district': return 'Select District';
+        case 'taluka': return 'Select Taluka';
+        case 'village': return 'Select Village';
+        default: return 'Select $label';
       }
     }
 
@@ -520,11 +460,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         child: Row(
           children: [
-            Icon(
-              icon,
-              color: enabled ? AppColors.primary : AppColors.grey400,
-              size: 24,
-            ),
+            Icon(icon, color: enabled ? AppColors.primary : AppColors.grey400, size: 24),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -532,28 +468,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 style: TextStyle(
                   fontSize: 15,
                   color: enabled
-                      ? (value != null
-                            ? AppColors.textPrimary
-                            : AppColors.textSecondary.withOpacity(0.7))
+                      ? (value != null ? AppColors.textPrimary : AppColors.textSecondary.withOpacity(0.7))
                       : AppColors.textSecondary.withOpacity(0.5),
-                  fontWeight: value != null
-                      ? FontWeight.w500
-                      : FontWeight.normal,
+                  fontWeight: value != null ? FontWeight.w500 : FontWeight.normal,
                 ),
               ),
             ),
             if (isLoading)
-              const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
+              const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
             else if (enabled)
-              const Icon(
-                Icons.keyboard_arrow_down,
-                size: 16,
-                color: AppColors.textSecondary,
-              ),
+              const Icon(Icons.keyboard_arrow_down, size: 16, color: AppColors.textSecondary),
           ],
         ),
       ),
@@ -570,16 +494,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }) {
     String getHintText() {
       switch (fieldKey) {
-        case 'name':
-          return 'Enter your full name';
-        case 'email':
-          return 'Enter your email address';
-        case 'phone':
-          return 'Enter your phone number';
-        case 'bio':
-          return 'Tell us about yourself';
-        default:
-          return 'Enter $fieldKey';
+        case 'name': return 'Enter your full name';
+        case 'email': return 'Enter your email address';
+        case 'phone': return 'Enter your phone number';
+        case 'bio': return 'Tell us about yourself';
+        default: return 'Enter $fieldKey';
       }
     }
 
@@ -602,56 +521,44 @@ class _EditProfilePageState extends State<EditProfilePage> {
           Expanded(
             child: isBio
                 ? SizedBox(
-                    height: 70,
-                    child: TextFormField(
-                      controller: controller,
-                      keyboardType: TextInputType.multiline,
-                      maxLines: null,
-                      expands: true,
-                      textAlignVertical: TextAlignVertical.top,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        color: AppColors.textPrimary,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: getHintText(),
-                        hintStyle: TextStyle(
-                          color: AppColors.textSecondary.withOpacity(0.6),
-                        ),
-                        border: InputBorder.none,
-                        isDense: true,
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                      validator: validator,
-                    ),
-                  )
+              height: 70,
+              child: TextFormField(
+                controller: controller,
+                keyboardType: TextInputType.multiline,
+                maxLines: null,
+                expands: true,
+                textAlignVertical: TextAlignVertical.top,
+                style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
+                decoration: InputDecoration(
+                  hintText: getHintText(),
+                  hintStyle: TextStyle(color: AppColors.textSecondary.withOpacity(0.6)),
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                validator: validator,
+              ),
+            )
                 : SizedBox(
-                    height: 48,
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: TextFormField(
-                        controller: controller,
-                        keyboardType: keyboardType,
-                        maxLines: 1,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          color: AppColors.textPrimary,
-                          height: 1.3,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: getHintText(),
-                          hintStyle: TextStyle(
-                            color: AppColors.textSecondary.withOpacity(0.6),
-                            height: 1.3,
-                          ),
-                          border: InputBorder.none,
-                          isDense: true,
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                        validator: validator,
-                      ),
-                    ),
+              height: 48,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: TextFormField(
+                  controller: controller,
+                  keyboardType: keyboardType,
+                  maxLines: 1,
+                  style: const TextStyle(fontSize: 15, color: AppColors.textPrimary, height: 1.3),
+                  decoration: InputDecoration(
+                    hintText: getHintText(),
+                    hintStyle: TextStyle(color: AppColors.textSecondary.withOpacity(0.6), height: 1.3),
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
                   ),
+                  validator: validator,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -682,24 +589,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
       field: DropdownButtonHideUnderline(
         child: DropdownButtonFormField<String>(
           value: _selectedGender,
-          hint: const Text(
-            'Select Gender',
-            style: TextStyle(color: AppColors.textSecondary),
-          ),
+          hint: const Text('Select Gender', style: TextStyle(color: AppColors.textSecondary)),
           decoration: const InputDecoration(
             border: InputBorder.none,
             isDense: true,
             contentPadding: EdgeInsets.zero,
           ),
           items: _genderOptions
-              .map<DropdownMenuItem<String>>(
-                (g) => DropdownMenuItem<String>(value: g, child: Text(g)),
-              )
+              .map((g) => DropdownMenuItem<String>(value: g, child: Text(g)))
               .toList(),
-          onChanged: (String? val) {
-            if (val != null) {
-              setState(() => _selectedGender = val);
-            }
+          onChanged: (val) {
+            if (val != null) setState(() => _selectedGender = val);
           },
           style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
         ),
@@ -709,351 +609,250 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final isTablet = MediaQuery.of(context).size.width > 600;
-    final horizontalPadding = isTablet ? AppSpacing.xl : AppSpacing.md;
+    // Detect if running on web or large screen
+    final bool isWebOrTablet = MediaQuery.of(context).size.width > 700;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        toolbarHeight: 80,
-        leading: Container(
-          margin: const EdgeInsets.all(12),
-          decoration: const BoxDecoration(
-            color: AppColors.primary,
-            shape: BoxShape.circle,
-          ),
-          child: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => Navigator.pop(context),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-          ),
-        ),
-        title: const Text(
-          'Edit Profile',
-          style: TextStyle(
-            color: AppColors.primary,
-            fontWeight: FontWeight.w600,
+    return WebPageWrapper(
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: kIsWeb ? null : AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          toolbarHeight: 80,
+          leading: Container(
+            margin: const EdgeInsets.all(12),
+            decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+            child: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
           ),
         ),
-        centerTitle: true,
+        body: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: isWebOrTablet ? 800 : 600),
+            child: _buildContent(isWebOrTablet),
+          ),
+        ),
       ),
-      body: _isInitialLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            )
-          : SingleChildScrollView(
-              padding: EdgeInsets.symmetric(
-                horizontal: horizontalPadding,
-                vertical: AppSpacing.md,
-              ),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    AppSpacing.verticalSpaceMD,
+    );
+  }
 
-                    Center(
-                      child: Stack(
-                        children: [
-                          GestureDetector(
-                            onTap: _showImagePickerBottomSheet,
-                            child: Container(
-                              width: 120,
-                              height: 120,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: AppColors.primary,
-                                  width: 3,
-                                ),
-                              ),
-                              child: ClipOval(
-                                child: _isUploadingImage
-                                    ? const Center(
-                                        child: CircularProgressIndicator(
-                                          color: AppColors.primary,
-                                        ),
-                                      )
-                                    : _uploadedAvatarUrl != null &&
-                                          _uploadedAvatarUrl!.isNotEmpty
-                                    ? Image.network(
-                                        _uploadedAvatarUrl!,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) =>
-                                            const Icon(Icons.person, size: 50),
-                                      )
-                                    : _selectedAvatarImage != null
-                                    ? Image.file(
-                                        _selectedAvatarImage!,
-                                        fit: BoxFit.cover,
-                                      )
-                                    : const Icon(
-                                        Icons.person,
-                                        size: 50,
-                                        color: AppColors.grey400,
-                                      ),
-                              ),
+  Widget _buildContent(bool isWebOrTablet) {
+    return _isInitialLoading
+        ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+        : SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+              horizontal: isWebOrTablet ? 32 : AppSpacing.md,
+              vertical: AppSpacing.md,
+            ),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  AppSpacing.verticalSpaceMD,
+
+                  // Avatar Section
+                  Center(
+                    child: Stack(
+                      children: [
+                        GestureDetector(
+                          onTap: _showImagePickerBottomSheet,
+                          child: Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: AppColors.primary, width: 3),
                             ),
-                          ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: GestureDetector(
-                              onTap: _showImagePickerBottomSheet,
-                              child: const CircleAvatar(
-                                radius: 18,
-                                backgroundColor: AppColors.primary,
-                                child: Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    AppSpacing.verticalSpaceMD,
-
-                    Card(
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      color: AppColors.surface,
-                      child: Column(
-                        children: [
-                          const SizedBox(height: 8),
-
-                          _buildInlineEditField(
-                            fieldKey: 'name',
-                            icon: Icons.person_outline,
-                            controller: _nameController,
-                            validator: (v) =>
-                                v?.isEmpty ?? true ? 'Name is required' : null,
-                          ),
-                          const Divider(height: 1),
-
-                          _buildInlineEditField(
-                            fieldKey: 'email',
-                            icon: Icons.email_outlined,
-                            controller: _emailController,
-                          ),
-                          const Divider(height: 1),
-
-                          _buildInlineEditField(
-                            fieldKey: 'phone',
-                            icon: Icons.phone_outlined,
-                            controller: _phoneController,
-                          ),
-                          const Divider(height: 1),
-
-                          _buildInlineGenderField(),
-                          const Divider(height: 1),
-
-                          _buildFieldRow(
-                            icon: const Icon(
-                              Icons.cake_outlined,
-                              color: AppColors.primary,
-                              size: 24,
-                            ),
-                            field: InkWell(
-                              onTap: _selectDate,
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      _dobController.text.isEmpty
-                                          ? 'Select your date of birth'
-                                          : _dobController.text,
-                                      style: TextStyle(
-                                        fontSize: 15,
-                                        color: _dobController.text.isEmpty
-                                            ? AppColors.textSecondary
-                                                  .withOpacity(0.7)
-                                            : AppColors.textPrimary,
-                                      ),
-                                    ),
-                                  ),
-                                  const Icon(
-                                    Icons.calendar_today,
-                                    size: 20,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const Divider(height: 1),
-
-                          _buildInlineEditField(
-                            fieldKey: 'bio',
-                            icon: Icons.description_outlined,
-                            controller: _bioController,
-                          ),
-                          const Divider(height: 1),
-
-                          //  LOCATION FIELDS
-                          Obx(() {
-                            final currentState =
-                                _locationController.selectedState.value;
-                            return _buildLocationField(
-                              label: "State",
-                              value: currentState,
-                              icon: Icons.map_outlined,
-                              enabled: true,
-                              isLoading: false,
-                              onTap: () {
-                                _showLocationPicker(
-                                  title: "Select State",
-                                  items: _locationController.statesList,
-                                  current: currentState,
-                                  onSelect: (val) async {
-                                    await _locationController.selectState(val);
-                                  },
-                                );
-                              },
-                            );
-                          }),
-                          const Divider(height: 1),
-
-                          Obx(() {
-                            final currentDistrict =
-                                _locationController.selectedDistrict.value;
-                            return _buildLocationField(
-                              label: "District",
-                              value: currentDistrict,
-                              icon: Icons.location_city_outlined,
-                              enabled: _locationController.canSelectDistrict,
-                              isLoading:
-                                  _locationController.isLoadingDistricts.value,
-                              onTap: () {
-                                _showLocationPicker(
-                                  title: "Select District",
-                                  items: _locationController.districtsList,
-                                  current: currentDistrict,
-                                  onSelect: (val) async {
-                                    await _locationController.selectDistrict(
-                                      val,
-                                    );
-                                  },
-                                );
-                              },
-                            );
-                          }),
-                          const Divider(height: 1),
-
-                          Obx(() {
-                            final currentTaluka =
-                                _locationController.selectedTaluka.value;
-                            return _buildLocationField(
-                              label: "Taluka",
-                              value: currentTaluka,
-                              icon: Icons.place_outlined,
-                              enabled: _locationController.canSelectTaluka,
-                              isLoading:
-                                  _locationController.isLoadingTalukas.value,
-                              onTap: () {
-                                _showLocationPicker(
-                                  title: "Select Taluka",
-                                  items: _locationController.talukasList,
-                                  current: currentTaluka,
-                                  onSelect: (val) async {
-                                    await _locationController.selectTaluka(val);
-                                  },
-                                );
-                              },
-                            );
-                          }),
-                          const Divider(height: 1),
-
-                          Obx(() {
-                            final currentVillage =
-                                _locationController.selectedVillage.value;
-                            return _buildLocationField(
-                              label: "Village",
-                              value: currentVillage,
-                              icon: Icons.house_outlined,
-                              enabled: _locationController.canSelectVillage,
-                              isLoading:
-                                  _locationController.isLoadingVillages.value,
-                              onTap: () {
-                                _showLocationPicker(
-                                  title: "Select Village",
-                                  items: _locationController.villagesList,
-                                  current: currentVillage,
-                                  onSelect: (val) {
-                                    _locationController.selectVillage(val);
-                                  },
-                                );
-                              },
-                            );
-                          }),
-
-                          const SizedBox(height: 12),
-                        ],
-                      ),
-                    ),
-
-                    AppSpacing.verticalSpaceXL,
-
-                    SizedBox(
-                      height: 55,
-                      child: ElevatedButton(
-                        onPressed: (_isLoading || _isUploadingImage)
-                            ? null
-                            : _updateProfile,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          elevation: 10,
-                        ),
-                        child: _isLoading
-                            ? const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    'Updating...',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                    ),
-                                  ),
-                                  SizedBox(width: 12),
-                                  SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2,
-                                    ),
-                                  ),
-                                ],
+                            child: ClipOval(
+                              child: _isUploadingImage
+                                  ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                                  : _uploadedAvatarUrl != null && _uploadedAvatarUrl!.isNotEmpty
+                                  ? Image.network(
+                                _uploadedAvatarUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const Icon(Icons.person, size: 50),
                               )
-                            : const Text(
-                                'Update Profile',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+                                  : _selectedAvatarImage != null
+                                  ? Image.file(_selectedAvatarImage!, fit: BoxFit.cover)
+                                  : const Icon(Icons.person, size: 50, color: AppColors.grey400),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: GestureDetector(
+                            onTap: _showImagePickerBottomSheet,
+                            child: const CircleAvatar(
+                              radius: 18,
+                              backgroundColor: AppColors.primary,
+                              child: Icon(Icons.camera_alt, color: Colors.white, size: 18),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  AppSpacing.verticalSpaceMD,
+
+                  // Form Card
+                  Card(
+                    elevation: 6,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                    color: AppColors.surface,
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 12),
+
+                        _buildInlineEditField(
+                          fieldKey: 'name',
+                          icon: Icons.person_outline,
+                          controller: _nameController,
+                          validator: (v) => v?.isEmpty ?? true ? 'Name is required' : null,
+                        ),
+                        const Divider(height: 1),
+                        _buildInlineEditField(fieldKey: 'email', icon: Icons.email_outlined, controller: _emailController),
+                        const Divider(height: 1),
+                        _buildInlineEditField(fieldKey: 'phone', icon: Icons.phone_outlined, controller: _phoneController),
+                        const Divider(height: 1),
+                        _buildInlineGenderField(),
+                        const Divider(height: 1),
+
+                        _buildFieldRow(
+                          icon: const Icon(Icons.cake_outlined, color: AppColors.primary, size: 24),
+                          field: InkWell(
+                            onTap: _selectDate,
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    _dobController.text.isEmpty
+                                        ? 'Select your date of birth'
+                                        : _dobController.text,
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      color: _dobController.text.isEmpty
+                                          ? AppColors.textSecondary.withOpacity(0.7)
+                                          : AppColors.textPrimary,
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                const Icon(Icons.calendar_today, size: 20, color: AppColors.textSecondary),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        _buildInlineEditField(fieldKey: 'bio', icon: Icons.description_outlined, controller: _bioController),
+                        const Divider(height: 1),
+
+                        // Location Fields
+                        Obx(() => _buildLocationField(
+                          label: "State",
+                          value: _locationController.selectedState.value,
+                          icon: Icons.map_outlined,
+                          enabled: true,
+                          isLoading: false,
+                          onTap: () => _showLocationPicker(
+                            title: "Select State",
+                            items: _locationController.statesList,
+                            current: _locationController.selectedState.value,
+                            onSelect: (val) => _locationController.selectState(val),
+                          ),
+                        )),
+                        const Divider(height: 1),
+
+                        Obx(() => _buildLocationField(
+                          label: "District",
+                          value: _locationController.selectedDistrict.value,
+                          icon: Icons.location_city_outlined,
+                          enabled: _locationController.canSelectDistrict,
+                          isLoading: _locationController.isLoadingDistricts.value,
+                          onTap: () => _showLocationPicker(
+                            title: "Select District",
+                            items: _locationController.districtsList,
+                            current: _locationController.selectedDistrict.value,
+                            onSelect: (val) => _locationController.selectDistrict(val),
+                          ),
+                        )),
+                        const Divider(height: 1),
+
+                        Obx(() => _buildLocationField(
+                          label: "Taluka",
+                          value: _locationController.selectedTaluka.value,
+                          icon: Icons.place_outlined,
+                          enabled: _locationController.canSelectTaluka,
+                          isLoading: _locationController.isLoadingTalukas.value,
+                          onTap: () => _showLocationPicker(
+                            title: "Select Taluka",
+                            items: _locationController.talukasList,
+                            current: _locationController.selectedTaluka.value,
+                            onSelect: (val) => _locationController.selectTaluka(val),
+                          ),
+                        )),
+                        const Divider(height: 1),
+
+                        Obx(() => _buildLocationField(
+                          label: "Village",
+                          value: _locationController.selectedVillage.value,
+                          icon: Icons.house_outlined,
+                          enabled: _locationController.canSelectVillage,
+                          isLoading: _locationController.isLoadingVillages.value,
+                          onTap: () => _showLocationPicker(
+                            title: "Select Village",
+                            items: _locationController.villagesList,
+                            current: _locationController.selectedVillage.value,
+                            onSelect: (val) => _locationController.selectVillage(val),
+                          ),
+                        )),
+
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                  ),
+
+                  AppSpacing.verticalSpaceXL,
+
+                  SizedBox(
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: (_isLoading || _isUploadingImage) ? null : _updateProfile,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        elevation: 8,
+                      ),
+                      child: _isLoading
+                          ? const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('Updating...', style: TextStyle(color: Colors.white, fontSize: 16)),
+                          SizedBox(width: 12),
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          ),
+                        ],
+                      )
+                          : const Text(
+                        'Update Profile',
+                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                     ),
+                  ),
 
-                    AppSpacing.verticalSpaceMD,
-                  ],
-                ),
+                  AppSpacing.verticalSpaceLG,
+                ],
               ),
             ),
+
     );
   }
 }

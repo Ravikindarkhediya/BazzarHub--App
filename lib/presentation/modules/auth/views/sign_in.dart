@@ -13,6 +13,7 @@ import '../../../../app/data/constants/app_text_style.dart';
 import '../../../../app/data/constants/app_constant.dart';
 import '../../../commons/dialogs/app_toasts.dart';
 import '../../../commons/widgets/social_button.dart';
+import '../../../commons/widgets/web_page_wrapper.dart';
 import '../../../routes/app_routes.dart';
 import '../../../services/api_service.dart';
 import '../../../services/auth_service.dart';
@@ -96,28 +97,46 @@ class _SignInPageState extends State<SignInPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor:AppColors.background,
-      body: SizedBox(
-        width: double.infinity,
-        height: double.infinity,
-        // decoration: const BoxDecoration(gradient: AppColors.shimmerGradient),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
+    final isMobile = AppResponsiveSize.isMobile(context);
+    final isTablet = AppResponsiveSize.isTablet(context);
+    
+    // Calculate responsive values
+    final double horizontalPadding = isMobile 
+        ? 24 
+        : isTablet 
+            ? MediaQuery.of(context).size.width * 0.2 
+            : MediaQuery.of(context).size.width * 0.3;
+            
+    final double containerWidth = isMobile 
+        ? double.infinity 
+        : isTablet 
+            ? 500 
+            : 600;
+    
+    return WebPageWrapper(
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: SizedBox(
+          width: double.infinity,
+          height: double.infinity,
+          child: SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.symmetric(
+                  horizontal: horizontalPadding,
+                  vertical: 16,
+                ),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                     Icon(
                       Icons.store_rounded,
                       color: AppColors.primary,
-                      size: AppResponsiveSize.widthPercent(
-                        context,
-                        16,
-                      ),
+                      size: isMobile 
+                          ? AppResponsiveSize.widthPercent(context, 16)
+                          : 80,
                     )
                         .animate()
                         .fadeIn(duration: 800.ms)
@@ -131,6 +150,7 @@ class _SignInPageState extends State<SignInPage> {
                         color: AppColors.primary,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.5,
+                        fontSize: isMobile ? null : 40,
                         shadows: [
                           Shadow(
                             color: AppColors.primary.withOpacity(0.3),
@@ -144,6 +164,7 @@ class _SignInPageState extends State<SignInPage> {
 
                     // Card container for text fields only
                     Container(
+                      width: containerWidth,
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(14),
@@ -167,15 +188,8 @@ class _SignInPageState extends State<SignInPage> {
                               controller: _emailController,
                               icon: Icons.email_outlined,
                               keyboardType: TextInputType.emailAddress,
-                              validator: CommonTextField.emailValidator, maxLength: 0,
-                              // validator: (value) {
-                              //   if (value == null || value.isEmpty) {
-                              //     return "Please enter your email";
-                              //   } else if (!value.contains("@")) {
-                              //     return "Enter a valid email";
-                              //   }
-                              //   return null;
-                              // },
+                              validator: CommonTextField.emailValidator,
+                              maxLength: 0,
                             ).animate().fadeIn(duration: 800.ms, delay: 300.ms),
                           ),
                           const Divider(
@@ -206,7 +220,8 @@ class _SignInPageState extends State<SignInPage> {
                                   );
                                 },
                               ),
-                              validator: CommonTextField.passwordValidator, maxLength: 0,
+                              validator: CommonTextField.passwordValidator,
+                              maxLength: 0,
                             ).animate().fadeIn(duration: 800.ms, delay: 400.ms),
                           ),
 
@@ -216,110 +231,121 @@ class _SignInPageState extends State<SignInPage> {
 
                     const SizedBox(height: 16),
 
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => EmailView()),
-                          );
-                        },
-                        style: TextButton.styleFrom(
-                          padding: EdgeInsets.zero,
-                          minimumSize: Size(0, 0),
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: Text(
-                          "Forgot Password?",
-                          style: AppTextStyles.label.copyWith(
-                            color: AppColors.primary,
-                            decoration: TextDecoration.underline,
-                          ),
+                    TextButton(
+                      onPressed: () {
+                        Get.toNamed('/forgot-password'); // Using direct route string since the named route is not defined
+                      },
+                      child: Text(
+                        'Forgot Password?',
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w500,
+                          fontSize: isMobile ? null : 16,
                         ),
                       ),
-                    ),
+                    )
+                        .animate()
+                        .fadeIn(duration: 800.ms, delay: 650.ms)
+                        .slideY(begin: 0.3, end: 0, duration: 600.ms, curve: Curves.easeOutQuart),
 
-                    const SizedBox(height: 25),
+                    const SizedBox(height: 24),
 
                     SizedBox(
-                      width: double.infinity,
-                      height: 55,
+                      width: isMobile ? double.infinity : 400,
+                      height: 48,
                       child: ElevatedButton(
-                        onPressed: _isLoading
-                            ? null
-                            : () async {
-                          if (_formKey.currentState!.validate()) {
-                            requestLogin();
-                          } else {
-                            print(' Form validation failed');
-                          }
-                        },
+                        onPressed: _isLoading ? null : requestLogin,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          elevation: 12,
-                          shadowColor: AppColors.primary.withOpacity(0.7),
+                          elevation: 0,
                         ),
                         child: _isLoading
-                            ? const CircularProgressIndicator(
-                          color: AppColors.textOnAccent,
-                          strokeWidth: 2,
-                        )
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
                             : Text(
-                          "Login",
-                          style: AppTextStyles.button.copyWith(
-                            color: AppColors.textOnPrimary,
-                            fontWeight: FontWeight.bold,
-                            shadows: [
-                              Shadow(
-                                color: AppColors.accent.withOpacity(0.8),
-                                blurRadius: 10,
+                                'Sign In',
+                                style: AppTextStyles.button.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: isMobile ? null : 18,
+                                ),
                               ),
-                            ],
-                          ),
-                        ),
                       ),
-                    ).animate().fadeIn(
-                      duration: 900.ms,
-                      delay: 300.ms,
-                    ),
+                    )
+                        .animate()
+                        .fadeIn(duration: 800.ms, delay: 600.ms)
+                        .slideY(begin: 0.3, end: 0, duration: 600.ms, curve: Curves.easeOutQuart),
 
-                    const SizedBox(height: 25),
+                    const SizedBox(height: 24),
 
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CommonWidget().buildDivider(),
-                        Text(
-                          'or',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyLarge!
-                              .copyWith(color: AppColors.primary),
-                        ),
-                        CommonWidget().buildDivider(),
-                      ],
-                    ),
+                    SizedBox(
+                      width: isMobile ? double.infinity : 400,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Divider(
+                              color: Colors.grey[400],
+                              thickness: 1,
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'or continue with',
+                              style: AppTextStyles.bodyMedium.copyWith(
+                                color: Colors.grey[600],
+                                fontSize: isMobile ? null : 15,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Divider(
+                              color: Colors.grey[400],
+                              thickness: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                        .animate()
+                        .fadeIn(duration: 800.ms, delay: 700.ms)
+                        .slideY(begin: 0.3, end: 0, duration: 600.ms, curve: Curves.easeOutQuart),
 
-                    const SizedBox(height: 25),
+                    const SizedBox(height: 24),
 
-                    SocialButton(
-                      label: "Continue with Google",
-                      iconPath: "assets/icons/google.png",
-                      onPressed: () => AuthService().handleGoogleSignIn(),
-                      animationDelay: 400.ms,
+                    SizedBox(
+                      width: isMobile ? double.infinity : 400,
+                      child: SocialButton(
+                        label: "Continue with Google",
+                        iconPath: "assets/icons/google.png",
+                        onPressed: () => AuthService().handleGoogleSignIn(),
+                        animationDelay: 400.ms,
+                        height: 48,
+                        isFullWidth: true,
+                      ),
                     ),
 
                     if (defaultTargetPlatform == TargetPlatform.iOS) ...[
                       const SizedBox(height: AppSpacing.md),
-                      SocialButton(
-                        label: "Continue with Apple",
-                        iconData: Icons.apple,
-                        onPressed: () {},
-                        animationDelay: 500.ms,
+                      SizedBox(
+                        width: isMobile ? double.infinity : 400,
+                        child: SocialButton(
+                          label: "Continue with Apple",
+                          iconData: Icons.apple,
+                          onPressed: () {},
+                          animationDelay: 500.ms,
+                          height: 48,
+                          isFullWidth: true,
+                        ),
                       ),
                     ],
 
@@ -334,7 +360,8 @@ class _SignInPageState extends State<SignInPage> {
                             color: AppColors.textOnAccent,
                           ),
                         ),
-                        const SizedBox(width: 6),
+                        const SizedBox(height: 24),
+
                         TextButton(
                           style: TextButton.styleFrom(
                             padding: EdgeInsets.zero,
@@ -367,6 +394,7 @@ class _SignInPageState extends State<SignInPage> {
             ),
           ),
         ),
+      ),
       ),
     );
   }

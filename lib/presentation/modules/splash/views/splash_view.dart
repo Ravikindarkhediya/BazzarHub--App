@@ -33,9 +33,13 @@ class _SplashViewState extends State<SplashView>
 
   void _startSplashTimer() {
     Timer(const Duration(seconds: 4), () async {
-      if (kIsWeb) {
-        Navigator.pushReplacementNamed(context, AppRoutes.login);
+      final isWebOrTablet = kIsWeb || MediaQuery.of(context).size.shortestSide >= 600;
+      
+      if (isWebOrTablet) {
+        // In web/tablet mode, always go to home wrapper where login/signup options are in header
+        Navigator.pushReplacementNamed(context, AppRoutes.homeWrapper);
       } else {
+        // Mobile flow remains the same
         final hasSession = await SessionManager().isLoggedIn();
         final isProfileComplete = await SessionManager().isProfileComplete();
 

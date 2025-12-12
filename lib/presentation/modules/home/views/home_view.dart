@@ -1,6 +1,7 @@
 import 'package:bazzar_hub_app/app/core/manager/log_manager.dart';
 import 'package:bazzar_hub_app/presentation/services/models/marketplace/marketplace_model.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -86,9 +87,8 @@ class _HomeViewState extends State<HomeView> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  if (!kIsWeb) HeaderWidget(),
             /// 🎯 Header Section
-            HeaderWidget(),
-            const BannerCarousel(),
 
             Obx(() {
               debugPrint('News section rebuilding. Loading: ${newsController.isLoading.value}, Error: ${newsController.errorMessage.value}, News count: ${newsController.newsList.length}');
