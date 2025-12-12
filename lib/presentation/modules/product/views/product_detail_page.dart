@@ -5,6 +5,7 @@ import 'package:bazzar_hub_app/presentation/commons/widgets/report_bottom_sheet.
 import 'package:bazzar_hub_app/presentation/modules/product/views/sell_product_page.dart';
 import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -42,10 +43,8 @@ class ProductDetailPage extends StatefulWidget {
     this.hideAppBarActions = false,
   });
 
-  /// Named route for navigation
   static const String routeName = '/product-detail';
 
-  /// Route generator
   static Route<dynamic> route(RouteSettings settings) {
     final args = settings.arguments as ProductPageArguments;
     return MaterialPageRoute(
@@ -69,8 +68,16 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   final ScrollController _scrollController = ScrollController();
   bool _isLoading = true;
   String? _errorMessage;
-  String? _currentUserId;
   SessionManager sessionManager = SessionManager();
+
+  // Platform Detection
+  bool get _isWebDesktop => kIsWeb && MediaQuery.of(context).size.width >= 1200;
+  bool get _isTablet =>
+      kIsWeb &&
+      MediaQuery.of(context).size.width >= 768 &&
+      MediaQuery.of(context).size.width < 1200;
+  bool get _isMobile => MediaQuery.of(context).size.width < 768;
+
   @override
   void initState() {
     super.initState();
@@ -152,29 +159,16 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         AppToast.showSuccess('Product deleted successfully');
         await _setMarketplaceRefreshFlag();
         if (mounted) {
-          // Return deletion result to marketplace view
-          // In _deleteProduct success block
-          Get.offAllNamed(AppRoutes.homeWrapper, arguments: {'initialTab': 2});
-
-// OR better: pop with result before navigating
-          Navigator.pop(context, {
-            'action': 'deleted',
-            'productId': widget.productId,
-          });
           Get.offAllNamed(AppRoutes.homeWrapper, arguments: {'initialTab': 2});
         }
       } else {
         AppToast.showError(response.data.message ?? 'Failed to delete product');
       }
     } on TypeError catch (e) {
-      // Handle the type casting error specifically
       AppToast.showError('Product deleted successfully');
       await _setMarketplaceRefreshFlag();
       if (mounted) {
-        Get.offAllNamed(
-          AppRoutes.homeWrapper,
-          arguments: {'initialTab': 2},
-        );
+        Get.offAllNamed(AppRoutes.homeWrapper, arguments: {'initialTab': 2});
       }
     } on DioException catch (e) {
       AppToast.showError('Network error: ${e.message}');
@@ -184,7 +178,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   Future<void> _setMarketplaceRefreshFlag({bool force = false}) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      // Only set the flag if we're not already in the process of returning to marketplace
       if (force || !(ModalRoute.of(context)?.isCurrent ?? false)) {
         await prefs.setBool('marketplace_refresh_needed', true);
       }
@@ -217,13 +210,14 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
       if (response.data.status && response.data.data != null) {
         final updated = response.data.data as MarketplaceModel;
-        // After successful pause/live
         _controller!.updateProduct(updated);
-        AppToast.showSuccess(shouldActivate ? 'Listing live' : 'Listing paused');
+        AppToast.showSuccess(
+          shouldActivate ? 'Listing live' : 'Listing paused',
+        );
 
         Navigator.pop(context, {
           'action': 'status_changed',
-          'product': updated, // updated product
+          'product': updated,
         });
       } else {
         AppToast.showError(
@@ -276,7 +270,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          // Edit Button
           Expanded(
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
@@ -307,10 +300,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   () => SellProductPage(product: _controller?.product),
                 );
                 if (!mounted) return;
-                // In ProductDetailPage after edit
                 if (result == true) {
                   await _fetchProductDetail(initialLoad: true);
-                  // Then pop with updated product
                   Navigator.pop(context, {
                     'action': 'edited',
                     'product': _controller?.product,
@@ -319,10 +310,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               },
             ),
           ),
-
           AppSpacing.horizontalSpaceMD,
-
-          // Pause Button
           Expanded(
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
@@ -348,10 +336,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               onPressed: _toggleActiveStatus,
             ),
           ),
-
           AppSpacing.horizontalSpaceMD,
-
-          // Delete Button
           Expanded(
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
@@ -374,7 +359,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   context,
                   title: 'Delete Product?',
                   message:
-                  'Are you sure you want to delete this product permanently?',
+                      'Are you sure you want to delete this product permanently?',
                   confirmText: 'Delete',
                   cancelText: 'Cancel',
                 );
@@ -396,28 +381,72 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
     if (_isLoading && controller == null) {
       return Scaffold(
-      extendBodyBehindAppBar: true,
-      backgroundColor: AppColors.background,
-      body: _buildLoadingState(),
-    );
+        extendBodyBehindAppBar: true,
+        backgroundColor: _isMobile
+            ? AppColors.background
+            : const Color(0xFFF5F7FA),
+        body: _buildLoadingState(),
+      );
     }
 
     if (_errorMessage != null && controller == null) {
       return Scaffold(
-      extendBodyBehindAppBar: true,
-      backgroundColor: AppColors.background,
-      body: _buildErrorState(),
-    );
+        extendBodyBehindAppBar: true,
+        backgroundColor: _isMobile
+            ? AppColors.background
+            : const Color(0xFFF5F7FA),
+        body: _buildErrorState(),
+      );
     }
 
     if (controller == null) {
       return Scaffold(
-      extendBodyBehindAppBar: true,
-      backgroundColor: AppColors.background,
-      body: _buildErrorState(message: 'Product not available right now.'),
-    );
+        extendBodyBehindAppBar: true,
+        backgroundColor: _isMobile
+            ? AppColors.background
+            : const Color(0xFFF5F7FA),
+        body: _buildErrorState(message: 'Product not available right now.'),
+      );
     }
 
+    // Web Layout
+    if (_isWebDesktop || _isTablet) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF5F7FA),
+        body: SafeArea(
+          bottom: false,
+          child: RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: () => _fetchProductDetail(initialLoad: true),
+            child: CustomScrollView(
+              controller: _scrollController,
+              physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics(),
+              ),
+              slivers: [
+                _buildWebAppBar(controller),
+                ..._buildErrorBanner(),
+                ..._buildReportInfoBanner(),
+                SliverToBoxAdapter(
+                  child: ProductDetailsWidget(
+                    controller: controller,
+                    showRelatedProducts: widget.showRelatedProducts,
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 40)),
+              ],
+            ),
+          ),
+        ),
+        bottomNavigationBar:
+            ((_controller?.product.createdBy?.id ?? '') ==
+                (SessionManager().userObjectModel?.id ?? ''))
+            ? _buildBottomNavigationBar()
+            : null,
+      );
+    }
+
+    //  Mobile Layout (Original)
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: AppColors.background,
@@ -444,14 +473,13 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     controller: controller,
                     showRelatedProducts: widget.showRelatedProducts,
                   ),
-                  ),
                 ),
+              ),
               const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
             ],
           ),
         ),
       ),
-
       bottomNavigationBar:
           ((_controller?.product.createdBy?.id ?? '') ==
               (SessionManager().userObjectModel?.id ?? ''))
@@ -460,6 +488,72 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     );
   }
 
+  //  WEB APP BAR (Fixed, No Image)
+  Widget _buildWebAppBar(ProductController controller) {
+    return SliverAppBar(
+      pinned: true,
+      expandedHeight: 0,
+      backgroundColor: Colors.white,
+      elevation: 2,
+      shadowColor: Colors.black.withOpacity(0.1),
+      automaticallyImplyLeading: false,
+      leading: Center(
+        child: _buildAppbarIcon(
+          icon: Icons.arrow_back_rounded,
+          onTap: () async {
+            LogManager.trackMarketplaceView(widget.productId);
+            if (widget.onFavoriteChanged != null &&
+                _controller?.isFavorite !=
+                    (_controller?.product.favorites == 1)) {
+              widget.onFavoriteChanged!();
+            }
+            Navigator.pop(context, {'action': 'viewed'});
+          },
+          background: AppColors.primary,
+          iconColor: AppColors.white,
+        ),
+      ),
+      actions: [
+        if (!widget.hideAppBarActions) ...[
+          _buildAppbarIcon(
+            icon: controller.isFavorite
+                ? Icons.favorite_rounded
+                : Icons.favorite_border_rounded,
+            onTap: controller.isFavoriteLoading
+                ? null
+                : () async {
+                    final prev = controller.isFavorite;
+                    await controller.toggleFavorite(context);
+                    if (widget.onFavoriteChanged != null &&
+                        prev != controller.isFavorite) {
+                      widget.onFavoriteChanged!();
+                    }
+                  },
+            background: controller.isFavorite ? Colors.red : AppColors.primary,
+            iconColor: controller.isFavorite ? Colors.red : AppColors.white,
+            isLoading: controller.isFavoriteLoading,
+            loadingColor: AppColors.white,
+          ),
+          const SizedBox(width: AppSpacing.md),
+          _buildAppbarIcon(
+            icon: Icons.more_vert,
+            onTap: () => {
+              ReportBottomSheet.show(
+                context: context,
+                type: 'marketplace',
+                id: widget.productId,
+              ),
+            },
+            background: AppColors.primary,
+            iconColor: AppColors.white,
+          ),
+        ],
+        const SizedBox(width: AppSpacing.md),
+      ],
+    );
+  }
+
+  //  MOBILE SLIVER APP BAR (Original with Image)
   SliverAppBar _buildSliverAppBar(ProductController controller) {
     return SliverAppBar(
       pinned: true,
@@ -474,17 +568,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             icon: Icons.arrow_back_rounded,
             onTap: () async {
               LogManager.trackMarketplaceView(widget.productId);
-
-              // Only notify if favorite actually changed
               if (widget.onFavoriteChanged != null &&
-                  _controller?.isFavorite != (_controller?.product.favorites == 1)) {
+                  _controller?.isFavorite !=
+                      (_controller?.product.favorites == 1)) {
                 widget.onFavoriteChanged!();
               }
-
-              // Return structured result instead of raw product
-              Navigator.pop(context, {
-                'action': 'viewed', // default: no change
-              });
+              Navigator.pop(context, {'action': 'viewed'});
             },
             background: AppColors.primary,
             iconColor: AppColors.white,
@@ -640,7 +729,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     ];
   }
 
-  /// Helper: AppBar Action Icon Button (rounded, with ripple)
   Widget _buildAppbarIcon({
     required IconData icon,
     VoidCallback? onTap,
@@ -649,7 +737,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     bool isLoading = false,
     Color? loadingColor,
   }) {
-
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -674,7 +761,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   height: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(loadingColor ?? AppColors.primary),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      loadingColor ?? AppColors.primary,
+                    ),
                   ),
                 )
               : Icon(icon, size: 18, color: iconColor),
@@ -684,7 +773,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   }
 }
 
-/// Arguments for navigation
 class ProductPageArguments {
   final String productId;
   final MarketplaceModel? product;
@@ -701,7 +789,6 @@ class ProductPageArguments {
   });
 }
 
-/// Extension for easy navigation from HomeView
 extension ProductPageNavigation on BuildContext {
   Future<void> navigateToProductDetail({
     required String productId,

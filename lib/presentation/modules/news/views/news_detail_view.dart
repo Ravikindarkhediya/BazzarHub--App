@@ -40,12 +40,12 @@ class _NewsDetailViewState extends State<NewsDetailView>
     with WidgetsBindingObserver {
   Map<String, dynamic>? _reportInfo;
 
-  // ✅ Platform Detection
+  // Platform Detection
   bool get _isWebDesktop => kIsWeb && MediaQuery.of(context).size.width >= 1200;
   bool get _isTablet =>
       kIsWeb &&
-          MediaQuery.of(context).size.width >= 768 &&
-          MediaQuery.of(context).size.width < 1200;
+      MediaQuery.of(context).size.width >= 768 &&
+      MediaQuery.of(context).size.width < 1200;
   bool get _isMobile => MediaQuery.of(context).size.width < 768;
 
   @override
@@ -177,36 +177,36 @@ class _NewsDetailViewState extends State<NewsDetailView>
             SliverToBoxAdapter(
               child: _isWebDesktop
                   ? _buildWebLayout(
-                news,
-                media,
-                title,
-                content,
-                village,
-                createdAt,
-                views,
-                controller,
-              )
+                      news,
+                      media,
+                      title,
+                      content,
+                      village,
+                      createdAt,
+                      views,
+                      controller,
+                    )
                   : _isTablet
                   ? _buildTabletLayout(
-                news,
-                media,
-                title,
-                content,
-                village,
-                createdAt,
-                views,
-                controller,
-              )
+                      news,
+                      media,
+                      title,
+                      content,
+                      village,
+                      createdAt,
+                      views,
+                      controller,
+                    )
                   : _buildMobileLayout(
-                news,
-                media,
-                title,
-                content,
-                village,
-                createdAt,
-                views,
-                controller,
-              ),
+                      news,
+                      media,
+                      title,
+                      content,
+                      village,
+                      createdAt,
+                      views,
+                      controller,
+                    ),
             ),
           ],
         ),
@@ -214,7 +214,7 @@ class _NewsDetailViewState extends State<NewsDetailView>
     });
   }
 
-  // ✅ SLIVER APP BAR
+  // SLIVER APP BAR
   Widget _buildSliverAppBar(NewsDetailController controller) {
     return SliverAppBar(
       expandedHeight: 0,
@@ -233,27 +233,27 @@ class _NewsDetailViewState extends State<NewsDetailView>
               margin: const EdgeInsets.only(right: 8.0),
               child: isLoading
                   ? SizedBox(
-                width: 36,
-                height: 36,
-                child: Center(
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        AppColors.primary,
+                      width: 36,
+                      height: 36,
+                      child: Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppColors.primary,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ),
-              )
+                    )
                   : _buildAppbarIcon(
-                icon: isFavorite ? Icons.favorite : Icons.favorite_border,
-                background: Colors.black45,
-                iconColor: isFavorite ? Colors.red : Colors.white,
-                onTap: () => controller.toggleFavorite(),
-              ),
+                      icon: isFavorite ? Icons.favorite : Icons.favorite_border,
+                      background: Colors.black45,
+                      iconColor: isFavorite ? Colors.red : Colors.white,
+                      onTap: () => controller.toggleFavorite(),
+                    ),
             );
           }),
           Padding(
@@ -324,17 +324,17 @@ class _NewsDetailViewState extends State<NewsDetailView>
     );
   }
 
-  // ✅ WEB DESKTOP LAYOUT
+  // WEB DESKTOP LAYOUT
   Widget _buildWebLayout(
-      NewsModel news,
-      List<Map<String, dynamic>> media,
-      String title,
-      String content,
-      String village,
-      String createdAt,
-      int views,
-      NewsDetailController controller,
-      ) {
+    NewsModel news,
+    List<Map<String, dynamic>> media,
+    String title,
+    String content,
+    String village,
+    String createdAt,
+    int views,
+    NewsDetailController controller,
+  ) {
     return Center(
       child: Container(
         constraints: const BoxConstraints(maxWidth: 1280),
@@ -372,10 +372,9 @@ class _NewsDetailViewState extends State<NewsDetailView>
                               : null,
                         ),
                       ),
-
                     // Title & Meta (TOP)
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -389,7 +388,7 @@ class _NewsDetailViewState extends State<NewsDetailView>
                               color: const Color(0xFF0F172A),
                             ),
                           ),
-                          const SizedBox(height: 5),
+                          const SizedBox(height: 3),
                           _buildMetaInfo(village, createdAt, views),
                         ],
                       ),
@@ -447,17 +446,17 @@ class _NewsDetailViewState extends State<NewsDetailView>
     );
   }
 
-  // ✅ TABLET LAYOUT
+  // TABLET LAYOUT
   Widget _buildTabletLayout(
-      NewsModel news,
-      List<Map<String, dynamic>> media,
-      String title,
-      String content,
-      String village,
-      String createdAt,
-      int views,
-      NewsDetailController controller,
-      ) {
+    NewsModel news,
+    List<Map<String, dynamic>> media,
+    String title,
+    String content,
+    String village,
+    String createdAt,
+    int views,
+    NewsDetailController controller,
+  ) {
     return Center(
       child: Container(
         constraints: const BoxConstraints(maxWidth: 900),
@@ -498,11 +497,12 @@ class _NewsDetailViewState extends State<NewsDetailView>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+
                         Text(
-                          title,
+                          'title',
                           style: GoogleFonts.inter(
                             fontSize: 30,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w600,
                             height: 1.2,
                             letterSpacing: -0.5,
                             color: const Color(0xFF0F172A),
@@ -558,17 +558,17 @@ class _NewsDetailViewState extends State<NewsDetailView>
     );
   }
 
-  // ✅ MOBILE LAYOUT (100% ORIGINAL)
+  // MOBILE LAYOUT (100% ORIGINAL)
   Widget _buildMobileLayout(
-      NewsModel news,
-      List<Map<String, dynamic>> media,
-      String title,
-      String content,
-      String village,
-      String createdAt,
-      int views,
-      NewsDetailController controller,
-      ) {
+    NewsModel news,
+    List<Map<String, dynamic>> media,
+    String title,
+    String content,
+    String village,
+    String createdAt,
+    int views,
+    NewsDetailController controller,
+  ) {
     final metaText =
         "${village.isNotEmpty ? "$village · " : ""}$createdAt • $views views";
 
@@ -627,7 +627,7 @@ class _NewsDetailViewState extends State<NewsDetailView>
     );
   }
 
-  // ✅ WEB META INFO (Chips)
+  //  WEB META INFO (Chips)
   Widget _buildMetaInfo(String village, String createdAt, int views) {
     return Wrap(
       spacing: 12,
@@ -666,7 +666,7 @@ class _NewsDetailViewState extends State<NewsDetailView>
     );
   }
 
-  // ✅ WEB AUTHOR CARD
+  // WEB AUTHOR CARD
   Widget _buildWebAuthorCard(NewsModel news) {
     if (news.createdBy == null) return const SizedBox.shrink();
 
@@ -769,13 +769,16 @@ class _NewsDetailViewState extends State<NewsDetailView>
     );
   }
 
-  // ✅ WEB CONTENT
+  // WEB CONTENT
   Widget _buildWebContent(String? content) {
     if (content == null || content.isEmpty) {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(32),
-          child: Text('No content available', style: TextStyle(color: Colors.grey)),
+          child: Text(
+            'No content available',
+            style: TextStyle(color: Colors.grey),
+          ),
         ),
       );
     }
@@ -869,10 +872,7 @@ class _NewsDetailViewState extends State<NewsDetailView>
         ),
 
         // ✅ SAME AS ANDROID - Divs
-        "div": Style(
-          margin: Margins.zero,
-          padding: HtmlPaddings.zero,
-        ),
+        "div": Style(margin: Margins.zero, padding: HtmlPaddings.zero),
 
         // ✅ SAME AS ANDROID - Blockquotes
         "blockquote": Style(
@@ -930,7 +930,7 @@ class _NewsDetailViewState extends State<NewsDetailView>
     );
   }
 
-  // ✅ STICKY RELATED NEWS (Web Sidebar)
+  // STICKY RELATED NEWS (Web Sidebar)
   Widget _buildStickyRelatedNews(List<NewsModel> relatedNews) {
     return Container(
       decoration: BoxDecoration(
@@ -978,11 +978,11 @@ class _NewsDetailViewState extends State<NewsDetailView>
     );
   }
 
-  // ✅ RELATED NEWS SECTION (Tablet Grid)
+  // RELATED NEWS SECTION (Tablet Grid)
   Widget _buildRelatedNewsSection(
-      List<NewsModel> relatedNews, {
-        required int crossAxisCount,
-      }) {
+    List<NewsModel> relatedNews, {
+    required int crossAxisCount,
+  }) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -1031,7 +1031,7 @@ class _NewsDetailViewState extends State<NewsDetailView>
     );
   }
 
-  // ✅ MOBILE RELATED NEWS (Original)
+  // MOBILE RELATED NEWS (Original)
   Widget _buildMobileRelatedNews(List<NewsModel> relatedNews) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1085,7 +1085,7 @@ class _NewsDetailViewState extends State<NewsDetailView>
     }
   }
 
-  // ✅ MOBILE AUTHOR PROFILE (Original)
+  // MOBILE AUTHOR PROFILE (Original)
   Widget _buildAuthorProfile() {
     final controller = Get.find<NewsDetailController>(tag: widget.newsId);
     final news = controller.newsDetail.value;
@@ -1139,7 +1139,7 @@ class _NewsDetailViewState extends State<NewsDetailView>
     );
   }
 
-  // ✅ MOBILE CONTENT SECTION (Original)
+  //  MOBILE CONTENT SECTION (Original)
   Widget _buildMobileContentSection(String? content) {
     if (content == null || content.isEmpty) {
       return Column(
@@ -1147,7 +1147,10 @@ class _NewsDetailViewState extends State<NewsDetailView>
           _buildAuthorProfile(),
           const Padding(
             padding: EdgeInsets.all(16.0),
-            child: Text('No content available', style: TextStyle(color: Colors.grey)),
+            child: Text(
+              'No content available',
+              style: TextStyle(color: Colors.grey),
+            ),
           ),
         ],
       );
@@ -1162,7 +1165,9 @@ class _NewsDetailViewState extends State<NewsDetailView>
         children: [
           InkWell(
             onTap: () async {
-              final controller = Get.find<NewsDetailController>(tag: widget.newsId);
+              final controller = Get.find<NewsDetailController>(
+                tag: widget.newsId,
+              );
               final news = controller.newsDetail.value;
               final sellerId = news?.createdBy?.id;
 
@@ -1194,25 +1199,67 @@ class _NewsDetailViewState extends State<NewsDetailView>
                 fontFamily: GoogleFonts.poppins().fontFamily,
                 color: Colors.grey.shade800,
               ),
-              "p": Style(margin: Margins.only(bottom: 12, left: 0), padding: HtmlPaddings.only(left: 0)),
-              "h1": Style(fontSize: FontSize(32), fontWeight: FontWeight.bold, margin: Margins.only(top: 20, bottom: 16)),
-              "h2": Style(fontSize: FontSize(28), fontWeight: FontWeight.bold, margin: Margins.only(top: 18, bottom: 14)),
-              "h3": Style(fontSize: FontSize(24), fontWeight: FontWeight.bold, margin: Margins.only(top: 16, bottom: 12)),
+              "p": Style(
+                margin: Margins.only(bottom: 12, left: 0),
+                padding: HtmlPaddings.only(left: 0),
+              ),
+              "h1": Style(
+                fontSize: FontSize(32),
+                fontWeight: FontWeight.bold,
+                margin: Margins.only(top: 20, bottom: 16),
+              ),
+              "h2": Style(
+                fontSize: FontSize(28),
+                fontWeight: FontWeight.bold,
+                margin: Margins.only(top: 18, bottom: 14),
+              ),
+              "h3": Style(
+                fontSize: FontSize(24),
+                fontWeight: FontWeight.bold,
+                margin: Margins.only(top: 16, bottom: 12),
+              ),
               "strong": Style(fontWeight: FontWeight.bold),
               "b": Style(fontWeight: FontWeight.bold),
-              "a": Style(color: AppColors.primary, textDecoration: TextDecoration.underline),
-              "ul": Style(margin: Margins.only(left: 20, bottom: 12, top: 8), padding: HtmlPaddings.only(left: 0), listStyleType: ListStyleType.disc),
-              "ol": Style(margin: Margins.only(left: 20, bottom: 12, top: 8), padding: HtmlPaddings.only(left: 0), listStyleType: ListStyleType.decimal),
-              "li": Style(margin: Margins.only(bottom: 6), padding: HtmlPaddings.only(left: 8)),
+              "a": Style(
+                color: AppColors.primary,
+                textDecoration: TextDecoration.underline,
+              ),
+              "ul": Style(
+                margin: Margins.only(left: 20, bottom: 12, top: 8),
+                padding: HtmlPaddings.only(left: 0),
+                listStyleType: ListStyleType.disc,
+              ),
+              "ol": Style(
+                margin: Margins.only(left: 20, bottom: 12, top: 8),
+                padding: HtmlPaddings.only(left: 0),
+                listStyleType: ListStyleType.decimal,
+              ),
+              "li": Style(
+                margin: Margins.only(bottom: 6),
+                padding: HtmlPaddings.only(left: 8),
+              ),
               "blockquote": Style(
-                border: const Border(left: BorderSide(color: AppColors.primary, width: 4)),
+                border: const Border(
+                  left: BorderSide(color: AppColors.primary, width: 4),
+                ),
                 margin: Margins.only(left: 0, top: 12, bottom: 12),
                 padding: HtmlPaddings.only(left: 16, top: 8, bottom: 8),
                 backgroundColor: Colors.grey.shade100,
                 fontStyle: FontStyle.italic,
               ),
-              "code": Style(backgroundColor: Colors.grey.shade200, padding: HtmlPaddings.symmetric(horizontal: 6, vertical: 2), fontFamily: 'monospace', fontSize: FontSize(14)),
-              "pre": Style(backgroundColor: Colors.grey.shade200, padding: HtmlPaddings.all(12), margin: Margins.only(top: 8, bottom: 8), fontFamily: 'monospace', fontSize: FontSize(14)),
+              "code": Style(
+                backgroundColor: Colors.grey.shade200,
+                padding: HtmlPaddings.symmetric(horizontal: 6, vertical: 2),
+                fontFamily: 'monospace',
+                fontSize: FontSize(14),
+              ),
+              "pre": Style(
+                backgroundColor: Colors.grey.shade200,
+                padding: HtmlPaddings.all(12),
+                margin: Margins.only(top: 8, bottom: 8),
+                fontFamily: 'monospace',
+                fontSize: FontSize(14),
+              ),
             },
             onLinkTap: (url, attributes, element) {
               if (url != null) _launchUrl(url);
@@ -1223,11 +1270,11 @@ class _NewsDetailViewState extends State<NewsDetailView>
     );
   }
 
-  // ✅ MEDIA GALLERY
+  // MEDIA GALLERY
   Widget _buildMediaGallery(
-      List<Map<String, dynamic>>? media,
-      NewsDetailController controller,
-      ) {
+    List<Map<String, dynamic>>? media,
+    NewsDetailController controller,
+  ) {
     if (media == null || media.isEmpty) return const SizedBox.shrink();
 
     final mediaUrls = media
@@ -1249,7 +1296,10 @@ class _NewsDetailViewState extends State<NewsDetailView>
     );
   }
 
-  Widget _buildErrorState(String errorMessage, NewsDetailController controller) {
+  Widget _buildErrorState(
+    String errorMessage,
+    NewsDetailController controller,
+  ) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: Center(
@@ -1264,15 +1314,30 @@ class _NewsDetailViewState extends State<NewsDetailView>
                   color: Colors.red.shade50,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.error_outline_rounded, size: 64, color: Colors.red.shade400),
+                child: Icon(
+                  Icons.error_outline_rounded,
+                  size: 64,
+                  color: Colors.red.shade400,
+                ),
               ),
               const SizedBox(height: 32),
-              Text('Oops!', style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w800, color: const Color(0xFF0F172A))),
+              Text(
+                'Oops!',
+                style: GoogleFonts.inter(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF0F172A),
+                ),
+              ),
               const SizedBox(height: 12),
               Text(
                 errorMessage.isNotEmpty ? errorMessage : 'Something went wrong',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(fontSize: 15, color: Colors.grey[600], height: 1.5),
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  color: Colors.grey[600],
+                  height: 1.5,
+                ),
               ),
               const SizedBox(height: 32),
               ElevatedButton(
@@ -1280,11 +1345,22 @@ class _NewsDetailViewState extends State<NewsDetailView>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 40,
+                    vertical: 16,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   elevation: 0,
                 ),
-                child: Text('Try Again', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600)),
+                child: Text(
+                  'Try Again',
+                  style: GoogleFonts.inter(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ],
           ),
@@ -1296,11 +1372,8 @@ class _NewsDetailViewState extends State<NewsDetailView>
   String _preprocessCheckboxes(String html) {
     // ✅ Handle checkbox lists - Android style (works for both mobile & web)
     html = html.replaceAllMapped(
-      RegExp(
-        r'<ul[^>]*list-style:none[^>]*>(.*?)</ul>',
-        dotAll: true,
-      ),
-          (match) {
+      RegExp(r'<ul[^>]*list-style:none[^>]*>(.*?)</ul>', dotAll: true),
+      (match) {
         var listContent = match.group(1) ?? '';
 
         // Process each checkbox li item
@@ -1309,7 +1382,7 @@ class _NewsDetailViewState extends State<NewsDetailView>
             r'<li[^>]*data-checked="(checked|unchecked)"[^>]*>(.*?)</li>',
             dotAll: true,
           ),
-              (liMatch) {
+          (liMatch) {
             final isChecked = liMatch.group(1) == 'checked';
             var content = liMatch.group(2) ?? '';
 
@@ -1332,11 +1405,8 @@ class _NewsDetailViewState extends State<NewsDetailView>
 
     // ✅ Handle standalone checkbox li items (fallback)
     html = html.replaceAllMapped(
-      RegExp(
-        r'<li[^>]*data-checked="checked"[^>]*>(.*?)</li>',
-        dotAll: true,
-      ),
-          (match) {
+      RegExp(r'<li[^>]*data-checked="checked"[^>]*>(.*?)</li>', dotAll: true),
+      (match) {
         var content = match.group(1) ?? '';
         content = content.replaceAll(RegExp(r'<input[^>]*>'), '');
         content = content.trim();
@@ -1345,11 +1415,8 @@ class _NewsDetailViewState extends State<NewsDetailView>
     );
 
     html = html.replaceAllMapped(
-      RegExp(
-        r'<li[^>]*data-checked="unchecked"[^>]*>(.*?)</li>',
-        dotAll: true,
-      ),
-          (match) {
+      RegExp(r'<li[^>]*data-checked="unchecked"[^>]*>(.*?)</li>', dotAll: true),
+      (match) {
         var content = match.group(1) ?? '';
         content = content.replaceAll(RegExp(r'<input[^>]*>'), '');
         content = content.trim();
@@ -1362,7 +1429,6 @@ class _NewsDetailViewState extends State<NewsDetailView>
 
     return html;
   }
-
 
   Future<void> _launchUrl(String url) async {
     try {

@@ -292,6 +292,7 @@ Check out this amazing product on BazzarHub!
     _product = _product.copyWith(
       favoritesCount: safeCount,
       favorites: _isFavorite ? 1 : 0,
+      isFavorite: _isFavorite,
     );
   }
 
@@ -347,6 +348,9 @@ extension MarketplaceModelCopyWith on MarketplaceModel {
     String? createdAt,
     String? updatedAt,
     int? version,
+    bool? isFavorite,
+    List<MarketplaceModel>? list,
+    bool? isFromYourPost,
   }) {
     return MarketplaceModel(
       id: id ?? this.id,
@@ -360,6 +364,7 @@ extension MarketplaceModelCopyWith on MarketplaceModel {
       views: views ?? this.views,
       favoritesCount: favoritesCount ?? this.favoritesCount,
       favorites: favorites ?? this.favorites,
+      isFavorite: isFavorite ?? this.isFavorite,
       isActive: isActive ?? this.isActive,
       location: location ?? this.location,
       contactInfo: contactInfo ?? this.contactInfo,
@@ -367,6 +372,8 @@ extension MarketplaceModelCopyWith on MarketplaceModel {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       version: version ?? this.version,
+      list: list ?? this.list,
+      isFromYourPost: isFromYourPost ?? this.isFromYourPost,
     );
   }
 }
