@@ -1,11 +1,11 @@
 import 'package:bazzar_hub_app/presentation/commons/dialogs/appDialog.dart';
 import 'package:bazzar_hub_app/presentation/commons/dialogs/app_toasts.dart';
-import 'package:bazzar_hub_app/presentation/modules/marketplace/view/marketplace_view.dart';
 import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import '../../../../app/core/utils/app_language.dart';
@@ -19,7 +19,7 @@ import '../widgets/image_upload_section.dart';
 import '../widgets/searchable_dropdown.dart';
 
 class SellProductPage extends StatefulWidget {
-  final MarketplaceModel? product; // Optional product for edit mode
+  final MarketplaceModel? product;
 
   const SellProductPage({super.key, this.product});
 
@@ -37,6 +37,7 @@ class _SellProductPageState extends State<SellProductPage> {
   bool _isInitialized = false;
 
   bool get isEditMode => widget.product != null;
+  bool get isWeb => kIsWeb;
 
   @override
   void initState() {
@@ -49,10 +50,8 @@ class _SellProductPageState extends State<SellProductPage> {
     await _controller.loadCategories();
 
     if (isEditMode) {
-      // Edit Mode - load product data
       await _controller.initializeForEdit(widget.product!);
     } else {
-      // Create Mode - just load location data
       await _controller.loadLocationData();
     }
 
@@ -89,33 +88,29 @@ class _SellProductPageState extends State<SellProductPage> {
   Future<void> submitForm() async {
     final success = await _controller.submitProduct(context);
     if (success && mounted) {
-      // Show success message
       HapticFeedback.heavyImpact();
-      AppToast.showSuccess(isEditMode ? 'Product updated successfully!' : 'Product listed successfully!');
-      
+      AppToast.showSuccess(
+        isEditMode
+            ? 'Product updated successfully!'
+            : 'Product listed successfully!',
+      );
+
       setState(() => _isSubmitted = true);
-      
-      // Add small delay to ensure toast is shown before any navigation
+
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       if (mounted) {
         if (isEditMode) {
-          // If we came from YourPostView, just pop back
           if (widget.product?.isFromYourPost == true) {
             Get.back(result: {'refresh': true});
           } else {
-            // Otherwise, go to marketplace
             Get.offAllNamed(
               AppRoutes.homeWrapper,
               arguments: {'initialTab': 2},
             );
           }
         } else {
-          // For new products, always go to marketplace
-          Get.offAllNamed(
-            AppRoutes.homeWrapper,
-            arguments: {'initialTab': 2},
-          );
+          Get.offAllNamed(AppRoutes.homeWrapper, arguments: {'initialTab': 2});
         }
       }
     }
@@ -124,29 +119,35 @@ class _SellProductPageState extends State<SellProductPage> {
   String? _validateCurrentStep() {
     switch (_currentStep) {
       case 0:
-        if (_controller.selectedCategoryId == null)
+        if (_controller.selectedCategoryId == null) {
           return 'Please select a category';
+        }
         break;
       case 1:
         if (_controller.images.isEmpty) return 'Please add at least one image';
         break;
       case 2:
-        if (_controller.titleController.text.trim().isEmpty)
+        if (_controller.titleController.text.trim().isEmpty) {
           return 'Product title is required';
-        if (_controller.descriptionController.text.trim().isEmpty)
+        }
+        if (_controller.descriptionController.text.trim().isEmpty) {
           return 'Description is required';
-        if (_controller.priceController.text.trim().isEmpty)
+        }
+        if (_controller.priceController.text.trim().isEmpty) {
           return 'Price is required';
+        }
         final price = double.tryParse(_controller.priceController.text.trim());
         if (price == null || price <= 0) return 'Enter a valid price';
         break;
       case 3:
         if (_controller.selectedState == null) return 'Please select a state';
-        if (_controller.selectedDistrict == null)
+        if (_controller.selectedDistrict == null) {
           return 'Please select a district';
+        }
         if (_controller.showSubDistrict &&
-            _controller.selectedSubDistrict == null)
+            _controller.selectedSubDistrict == null) {
           return 'Please select a sub-district';
+        }
         break;
     }
     return null;
@@ -172,12 +173,13 @@ class _SellProductPageState extends State<SellProductPage> {
           return shouldPop;
         },
         child: Scaffold(
-          backgroundColor: AppColors.background,
+          resizeToAvoidBottomInset: !isWeb,
+          backgroundColor: isWeb ? AppColors.grey100 : AppColors.background,
           appBar: AppBar(
             backgroundColor: AppColors.white,
             elevation: 0,
             leading: IconButton(
-              icon: Icon(Icons.arrow_back),
+              icon: const Icon(Icons.arrow_back),
               onPressed: () async {
                 final shouldPop = await AppDialog.show(
                   context,
@@ -199,23 +201,293 @@ class _SellProductPageState extends State<SellProductPage> {
             ),
           ),
           body: !_isInitialized
-              ? Center(
+              ? const Center(
                   child: CircularProgressIndicator(color: AppColors.primary),
                 )
-              : Column(
-                  children: [
-                    _buildProgressIndicator(),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        padding: AppSpacing.paddingMD,
-                        child: Form(key: _formKey, child: _buildStepContent()),
-                      ),
-                    ),
-                    _buildBottomButtons(),
-                  ],
-                ),
+              : isWeb
+              ? _buildWebLayout()
+              : _buildMobileLayout(),
         ),
       ),
+    );
+  }
+
+  // WEB LAYOUT - Responsive with Sections
+  Widget _buildWebLayout() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        double horizontalPadding;
+        if (constraints.maxWidth >= 1200) {
+          horizontalPadding = 32;
+        } else if (constraints.maxWidth >= 900) {
+          horizontalPadding = 24;
+        } else if (constraints.maxWidth >= 600) {
+          horizontalPadding = 16;
+        } else {
+          horizontalPadding = 12;
+        }
+
+        return SingleChildScrollView(
+          child: Center(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 1000),
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: 24,
+              ),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Section 1: Category
+                    _buildWebSection(
+                      step: '1',
+                      title: 'Choose Category',
+                      subtitle:
+                          'Select the category that best describes your product',
+                      child: _buildCategoryStep(),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Section 2: Images
+                    _buildWebSection(
+                      step: '2',
+                      title: 'Upload Images',
+                      subtitle:
+                          'Add up to 6 photos/videos. First will be cover.',
+                      child: _buildImageStep(),
+                      removeTopPadding: true,
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Section 3: Product Details
+                    _buildWebSection(
+                      step: '3',
+                      title: 'Product Details',
+                      subtitle: 'Enter the details about your product',
+                      child: _buildProductDetailsStep(),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Section 4: Address
+                    _buildWebSection(
+                      step: '4',
+                      title: 'Address Details',
+                      subtitle: 'Select your location from the dropdowns below',
+                      child: _buildAddressStep(),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Section 5: Contact
+                    _buildWebSection(
+                      step: '5',
+                      title: 'Contact Information',
+                      subtitle:
+                          'Buyers will use this information to contact you',
+                      child: _buildContactStep(),
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // Submit Button
+                    _buildWebSubmitButton(),
+
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Web Section Builder
+  Widget _buildWebSection({
+    required String step,
+    required String title,
+    required String subtitle,
+    required Widget child,
+    bool removeTopPadding = false,
+  }) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.borderLight, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.03),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      step,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: AppTextStyles.h5.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Content
+          Padding(
+            padding: EdgeInsets.fromLTRB(20, removeTopPadding ? 0 : 20, 20, 20),
+            child: child,
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
+  }
+
+  // Web Submit Button
+  Widget _buildWebSubmitButton() {
+    return Consumer<SellProductController>(
+      builder: (context, controller, _) {
+        return SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: ElevatedButton(
+            onPressed: controller.isLoading || controller.isUploading
+                ? null
+                : submitForm,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.white,
+              elevation: 0,
+              disabledBackgroundColor: AppColors.grey300,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: controller.isLoading || controller.isUploading
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          color: AppColors.white,
+                          strokeWidth: 2.5,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Text(
+                        controller.isUploading
+                            ? 'Uploading Images...'
+                            : (isEditMode
+                                  ? 'Updating Product...'
+                                  : 'Submitting Product...'),
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        isEditMode ? Icons.check_circle_outline : Icons.publish,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        isEditMode ? 'Update Product' : 'Publish Product',
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        );
+      },
+    );
+  }
+
+  // MOBILE LAYOUT (ORIGINAL - NO CHANGES)
+  Widget _buildMobileLayout() {
+    return Column(
+      children: [
+        _buildProgressIndicator(),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: AppSpacing.paddingMD,
+            child: Form(key: _formKey, child: _buildStepContent()),
+          ),
+        ),
+        _buildBottomButtons(),
+      ],
     );
   }
 
@@ -274,135 +546,337 @@ class _SellProductPageState extends State<SellProductPage> {
   Widget _buildCategoryStep() {
     return Consumer<SellProductController>(
       builder: (context, controller, _) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Choose Category',
-              style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Select the category that best describes your product',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 24),
-            if (controller.categories.isEmpty)
-              const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
-              )
-            else
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  mainAxisSpacing: AppSpacing.sm,
-                  crossAxisSpacing: AppSpacing.sm,
-                  childAspectRatio: 0.82,
+        return Align(
+          alignment: AlignmentDirectional.topStart,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Mobile: Show title/subtitle
+              if (!isWeb) ...[
+                Text(
+                  'Choose Category',
+                  style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
                 ),
-                itemCount: controller.categories.length,
-                itemBuilder: (context, index) {
-                  final category = controller.categories[index];
-                  final isSelected =
-                      controller.selectedCategoryId == category.id;
-                  return InkWell(
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          controller.selectCategory(category.id);
-                        },
-                        borderRadius: AppSpacing.borderRadiusMD,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
-                          curve: Curves.easeInOut,
-                          padding: const EdgeInsets.all(AppSpacing.xs),
-                          decoration: BoxDecoration(
-                            color: AppColors.white,
-                            borderRadius: AppSpacing.borderRadiusMD,
-                            border: Border.all(
-                              color: isSelected
-                                  ? AppColors.primary
-                                  : AppColors.borderLight,
-                              width: isSelected ? 2.5 : 1,
+                const SizedBox(height: 8),
+                Text(
+                  'Select the category that best describes your product',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
+              if (controller.categories.isEmpty)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(40),
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  ),
+                )
+              else
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final screenWidth = constraints.maxWidth;
+
+                    // MOBILE: Original GridView
+                    if (!isWeb) {
+                      return GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              mainAxisSpacing: AppSpacing.sm,
+                              crossAxisSpacing: AppSpacing.sm,
+                              childAspectRatio: 0.82,
                             ),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Expanded(
-                                child: Container(
-                                  margin: EdgeInsets.only(top: 8, bottom: 8),
+                        itemCount: controller.categories.length,
+                        itemBuilder: (context, index) {
+                          final category = controller.categories[index];
+                          final isSelected =
+                              controller.selectedCategoryId == category.id;
+
+                          return InkWell(
+                                onTap: () {
+                                  HapticFeedback.selectionClick();
+                                  controller.selectCategory(category.id);
+                                },
+                                borderRadius: AppSpacing.borderRadiusMD,
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 250),
+                                  padding: const EdgeInsets.all(AppSpacing.xs),
                                   decoration: BoxDecoration(
-                                    color: AppColors.primary.withOpacity(0.1),
-                                    borderRadius: AppSpacing.borderRadiusSM,
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: AppSpacing.borderRadiusSM,
-                                    child: AspectRatioImage(
-                                      imageUrl: category.icon ?? "",
-                                      aspectRatio: 1 / 1,
+                                    color: AppColors.white,
+                                    borderRadius: AppSpacing.borderRadiusMD,
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? AppColors.primary
+                                          : AppColors.borderLight,
+                                      width: isSelected ? 2.5 : 1,
                                     ),
                                   ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Expanded(
+                                        child: Container(
+                                          margin: const EdgeInsets.only(
+                                            top: 8,
+                                            bottom: 8,
+                                          ),
+                                          constraints: const BoxConstraints(
+                                            maxHeight: 80,
+                                            maxWidth: 80,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.primary
+                                                .withOpacity(0.1),
+                                            borderRadius:
+                                                AppSpacing.borderRadiusSM,
+                                          ),
+                                          child: ClipRRect(
+                                            borderRadius:
+                                                AppSpacing.borderRadiusSM,
+                                            child: AspectRatioImage(
+                                              imageUrl: category.icon ?? "",
+                                              aspectRatio: 1 / 1,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                        ),
+                                        child: Text(
+                                          AppLanguage.getText(category.name),
+                                          style: AppTextStyles.caption.copyWith(
+                                            color: AppColors.textPrimary,
+                                            fontWeight: isSelected
+                                                ? FontWeight.w600
+                                                : FontWeight.w500,
+                                            height: 1.3,
+                                            fontSize: 11,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                AppLanguage.getText(category.name),
-                                style: AppTextStyles.caption.copyWith(
-                                  color: AppColors.textPrimary,
-                                  fontWeight: isSelected
-                                      ? FontWeight.w600
-                                      : FontWeight.w500,
-                                  height: 1.3,
-                                  fontSize: 11,
-                                ),
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                      .animate()
-                      .fadeIn(duration: 400.ms, delay: (50 * index).ms)
-                      .scale(
-                        begin: const Offset(0.8, 0.8),
-                        end: const Offset(1, 1),
+                              )
+                              .animate()
+                              .fadeIn(duration: 400.ms, delay: (50 * index).ms)
+                              .scale(
+                                begin: const Offset(0.8, 0.8),
+                                end: const Offset(1, 1),
+                              );
+                        },
                       );
-                },
-              ),
-          ],
-        ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
+                    }
+
+                    // WEB: Wrap Layout
+                    int crossAxisCount;
+                    double iconSize;
+                    double fontSize;
+
+                    if (screenWidth >= 900) {
+                      crossAxisCount = 6;
+                      iconSize = 70;
+                      fontSize = 13;
+                    } else if (screenWidth >= 700) {
+                      crossAxisCount = 5;
+                      iconSize = 65;
+                      fontSize = 12.5;
+                    } else if (screenWidth >= 500) {
+                      crossAxisCount = 4;
+                      iconSize = 60;
+                      fontSize = 12;
+                    } else if (screenWidth >= 400) {
+                      crossAxisCount = 3;
+                      iconSize = 55;
+                      fontSize = 11.5;
+                    } else {
+                      crossAxisCount = 2;
+                      iconSize = 50;
+                      fontSize = 11;
+                    }
+
+                    final spacing = screenWidth >= 700 ? 16.0 : 12.0;
+
+                    return Wrap(
+                      spacing: spacing,
+                      runSpacing: spacing,
+                      children: controller.categories.asMap().entries.map((
+                        entry,
+                      ) {
+                        final index = entry.key;
+                        final category = entry.value;
+                        final isSelected =
+                            controller.selectedCategoryId == category.id;
+
+                        return LayoutBuilder(
+                              builder: (context, itemConstraints) {
+                                final itemWidth =
+                                    (screenWidth -
+                                        (crossAxisCount - 1) * spacing) /
+                                    crossAxisCount;
+
+                                return SizedBox(
+                                  width: itemWidth,
+                                  child: InkWell(
+                                    onTap: () {
+                                      HapticFeedback.selectionClick();
+                                      controller.selectCategory(category.id);
+                                    },
+                                    borderRadius: BorderRadius.circular(14),
+                                    child: AnimatedContainer(
+                                      duration: const Duration(
+                                        milliseconds: 300,
+                                      ),
+                                      padding: EdgeInsets.all(
+                                        screenWidth >= 700 ? 14 : 10,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? AppColors.primary.withOpacity(
+                                                0.08,
+                                              )
+                                            : Colors.white,
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? AppColors.primary
+                                              : AppColors.grey300,
+                                          width: isSelected ? 2 : 1.5,
+                                        ),
+                                        boxShadow: isSelected
+                                            ? [
+                                                BoxShadow(
+                                                  color: AppColors.primary
+                                                      .withOpacity(0.2),
+                                                  blurRadius: 12,
+                                                  offset: const Offset(0, 4),
+                                                ),
+                                              ]
+                                            : [
+                                                BoxShadow(
+                                                  color: Colors.black
+                                                      .withOpacity(0.05),
+                                                  blurRadius: 8,
+                                                  offset: const Offset(0, 2),
+                                                ),
+                                              ],
+                                      ),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Container(
+                                            width: iconSize,
+                                            height: iconSize,
+                                            padding: EdgeInsets.all(
+                                              screenWidth >= 700 ? 10 : 8,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: isSelected
+                                                  ? Colors.white
+                                                  : AppColors.grey100,
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                              border: Border.all(
+                                                color: isSelected
+                                                    ? AppColors.primary
+                                                          .withOpacity(0.2)
+                                                    : AppColors.grey300,
+                                                width: 1,
+                                              ),
+                                            ),
+                                            child: ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              child: AspectRatioImage(
+                                                imageUrl: category.icon ?? "",
+                                                aspectRatio: 1 / 1,
+                                              ),
+                                            ),
+                                          ),
+                                          SizedBox(
+                                            height: screenWidth >= 700 ? 10 : 8,
+                                          ),
+                                          Text(
+                                            AppLanguage.getText(category.name),
+                                            style: TextStyle(
+                                              fontSize: fontSize,
+                                              fontWeight: isSelected
+                                                  ? FontWeight.w700
+                                                  : FontWeight.w600,
+                                              color: isSelected
+                                                  ? AppColors.primary
+                                                  : AppColors.textPrimary,
+                                              height: 1.2,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            )
+                            .animate()
+                            .fadeIn(duration: 400.ms, delay: (40 * index).ms)
+                            .scale(
+                              begin: const Offset(0.9, 0.9),
+                              end: const Offset(1, 1),
+                            );
+                      }).toList(),
+                    );
+                  },
+                ),
+            ],
+          ),
+        );
       },
     );
   }
 
   Widget _buildImageStep() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-        children: [ImageUploadSection(controller: _controller,
-          title: 'News Images',
-          subtitle: 'Add up to 6 photos/videos. First will be cover.',)],
-    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
+    // Mobile: ImageUploadSection with title
+    if (!isWeb) {
+      return ImageUploadSection(
+        controller: _controller,
+        title: 'Product Images',
+        subtitle: 'Add up to 6 photos/videos. First will be cover.',
+      );
+    }
+
+    // Web: Empty title/subtitle (count only)
+    return ImageUploadSection(controller: _controller, title: '', subtitle: '');
   }
 
   Widget _buildProductDetailsStep() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Product Details',
-          style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 24),
+        // Mobile: Show title
+        if (!isWeb) ...[
+          Text(
+            'Product Details',
+            style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 24),
+        ],
         _buildTextField(
           controller: _controller.titleController,
           label: 'Product Title',
           hint: 'e.g., iPhone 13 Pro Max 256GB',
           icon: Icons.title,
-          required: true
+          required: true,
         ),
         const SizedBox(height: 16),
         _buildTextField(
@@ -411,7 +885,7 @@ class _SellProductPageState extends State<SellProductPage> {
           hint: 'Describe your product in detail...',
           icon: Icons.description,
           maxLines: 5,
-            required: true
+          required: true,
         ),
         const SizedBox(height: 16),
         _buildTextField(
@@ -420,7 +894,7 @@ class _SellProductPageState extends State<SellProductPage> {
           hint: 'Enter price in ₹',
           icon: Icons.currency_rupee,
           keyboardType: TextInputType.number,
-            required: true
+          required: true,
         ),
         const SizedBox(height: 16),
         _buildConditionDropdown(),
@@ -435,21 +909,25 @@ class _SellProductPageState extends State<SellProductPage> {
       builder: (context, controller, _) {
         if (!controller.isLocationDataReady)
           return _buildLocationLoadingState();
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Address Details',
-              style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Select your location from the dropdowns below',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
+            // Mobile: Show title/subtitle
+            if (!isWeb) ...[
+              Text(
+                'Address Details',
+                style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
               ),
-            ),
-            const SizedBox(height: 24),
+              const SizedBox(height: 8),
+              Text(
+                'Select your location from the dropdowns below',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
             _buildReadOnlyField(
               label: 'Country',
               value: 'India',
@@ -518,11 +996,11 @@ class _SellProductPageState extends State<SellProductPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        const SizedBox(height: 32),
+        const SizedBox(height: 40),
         const Center(
           child: CircularProgressIndicator(color: AppColors.primary),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
         Text(
           'Fetching latest address data…',
           style: AppTextStyles.bodyMedium.copyWith(
@@ -578,18 +1056,21 @@ class _SellProductPageState extends State<SellProductPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Contact Information',
-          style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Buyers will use this information to contact you',
-          style: AppTextStyles.bodySmall.copyWith(
-            color: AppColors.textSecondary,
+        // Mobile: Show title/subtitle
+        if (!isWeb) ...[
+          Text(
+            'Contact Information',
+            style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
           ),
-        ),
-        const SizedBox(height: 24),
+          const SizedBox(height: 8),
+          Text(
+            'Buyers will use this information to contact you',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
         _buildTextField(
           controller: _controller.contactController,
           label: 'Contact Number',
@@ -618,25 +1099,23 @@ class _SellProductPageState extends State<SellProductPage> {
     bool required = false,
     TextInputType? keyboardType,
   }) {
-    final displayLabel = required ? '$label' : label;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         RichText(
           text: TextSpan(
-            text: displayLabel,
+            text: label,
             style: AppTextStyles.bodyMedium.copyWith(
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
             ),
             children: required
                 ? [
-              TextSpan(
-                text: ' *',
-                style: const TextStyle(color: Colors.red),
-              ),
-            ]
+                    const TextSpan(
+                      text: ' *',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ]
                 : [],
           ),
         ),
@@ -648,7 +1127,9 @@ class _SellProductPageState extends State<SellProductPage> {
           style: AppTextStyles.bodyMedium,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.textHint),
+            hintStyle: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textHint,
+            ),
             prefixIcon: Icon(icon, color: AppColors.primary),
             filled: true,
             fillColor: AppColors.white,
@@ -664,13 +1145,15 @@ class _SellProductPageState extends State<SellProductPage> {
               borderRadius: AppSpacing.borderRadiusMD,
               borderSide: const BorderSide(color: AppColors.primary, width: 2),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
           ),
         ),
       ],
     );
   }
-
 
   Widget _buildTypeDropdown() {
     return Consumer<SellProductController>(
@@ -910,7 +1393,7 @@ class _SellProductPageState extends State<SellProductPage> {
         boxShadow: [
           BoxShadow(
             color: AppColors.grey900.withOpacity(0.1),
-            offset: Offset(0, -2),
+            offset: const Offset(0, -2),
             blurRadius: 8,
           ),
         ],
@@ -941,8 +1424,8 @@ class _SellProductPageState extends State<SellProductPage> {
                         fontSize: 16,
                       ),
                     ),
-                    SizedBox(width: 8),
-                    Icon(Icons.arrow_forward, size: 20),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.arrow_forward, size: 20),
                   ],
                 ),
               ),
@@ -959,7 +1442,7 @@ class _SellProductPageState extends State<SellProductPage> {
                         onPressed: _previousStep,
                         style: OutlinedButton.styleFrom(
                           padding: EdgeInsets.zero,
-                          side: BorderSide(
+                          side: const BorderSide(
                             color: AppColors.primary,
                             width: 1.5,
                           ),
@@ -970,8 +1453,8 @@ class _SellProductPageState extends State<SellProductPage> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.arrow_back, size: 18),
-                            SizedBox(width: 4),
+                            const Icon(Icons.arrow_back, size: 18),
+                            const SizedBox(width: 4),
                             Text(
                               'Previous',
                               style: AppTextStyles.button.copyWith(
@@ -984,7 +1467,7 @@ class _SellProductPageState extends State<SellProductPage> {
                       ),
                     ),
                   ),
-                if (_currentStep != 4) SizedBox(width: AppSpacing.sm),
+                if (_currentStep != 4) const SizedBox(width: AppSpacing.sm),
                 if (_currentStep == 4)
                   Expanded(
                     flex: 2,
@@ -1007,7 +1490,7 @@ class _SellProductPageState extends State<SellProductPage> {
                             ? Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  SizedBox(
+                                  const SizedBox(
                                     width: 20,
                                     height: 20,
                                     child: CircularProgressIndicator(
@@ -1015,7 +1498,7 @@ class _SellProductPageState extends State<SellProductPage> {
                                       strokeWidth: 2,
                                     ),
                                   ),
-                                  SizedBox(width: 12),
+                                  const SizedBox(width: 12),
                                   Text(
                                     controller.isUploading
                                         ? 'Uploading...'
@@ -1067,8 +1550,8 @@ class _SellProductPageState extends State<SellProductPage> {
                                 fontSize: 16,
                               ),
                             ),
-                            SizedBox(width: 8),
-                            Icon(Icons.arrow_forward, size: 20),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.arrow_forward, size: 20),
                           ],
                         ),
                       ),

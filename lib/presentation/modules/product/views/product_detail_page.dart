@@ -109,6 +109,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   }
 
   Future<void> _fetchProductDetail({bool initialLoad = false}) async {
+    if (widget.productId.isEmpty) {
+      return;
+    }
     if (!mounted) return;
     setState(() {
       if (initialLoad || _controller == null) {
@@ -139,6 +142,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         _errorMessage = _mapDioError(error);
       });
     } catch (error) {
+      debugPrint('Fetching Exception: $error');
       if (!mounted) return;
       setState(() {
         _errorMessage = error.toString();

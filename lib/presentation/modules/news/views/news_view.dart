@@ -24,8 +24,11 @@ class _NewsViewState extends State<NewsView>
     with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   late TabController _tabController;
   late NewsController _newsController;
+  late ScrollController _scrollController;
 
   int _selectedCategoryIndex = 0;
+  bool _showTopBars = true;
+  double _lastScrollOffset = 0;
 
   @override
   bool get wantKeepAlive => true;
@@ -36,12 +39,17 @@ class _NewsViewState extends State<NewsView>
     _newsController = Get.isRegistered<NewsController>()
         ? Get.find<NewsController>()
         : Get.put(NewsController(), permanent: true);
+
     _tabController = TabController(
       length: Utils.newsLocationCategories.length,
       vsync: this,
       initialIndex: _newsController.currentLocationTabIndex.value,
     );
     _tabController.addListener(_handleTabSelection);
+
+    // Initialize ScrollController
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
   }
 
   void _handleTabSelection() {
@@ -52,9 +60,37 @@ class _NewsViewState extends State<NewsView>
     }
   }
 
+  // Scroll Listener - Only for Web
+  void _onScroll() {
+    // Skip if not web or mobile size
+    if (!kIsWeb || MediaQuery.of(context).size.width < 600) return;
+
+    final currentOffset = _scrollController.offset;
+
+    // Scrolling down - hide topbars (after 80px scroll)
+    if (currentOffset > _lastScrollOffset && currentOffset > 80) {
+      if (_showTopBars) {
+        setState(() {
+          _showTopBars = false;
+        });
+      }
+    }
+    // Scrolling up - show topbars
+    else if (currentOffset < _lastScrollOffset) {
+      if (!_showTopBars) {
+        setState(() {
+          _showTopBars = true;
+        });
+      }
+    }
+
+    _lastScrollOffset = currentOffset;
+  }
+
   @override
   void dispose() {
     _tabController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -73,52 +109,105 @@ class _NewsViewState extends State<NewsView>
   Widget build(BuildContext context) {
     super.build(context);
 
+    final isWebTabletOrDesktop = kIsWeb && MediaQuery.of(context).size.width >= 600;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-          // Header
-          HeaderWidget(
-            isFromNewsTab: true,
-            tabController: _tabController,
-            selectedIndex: _newsController.currentLocationTabIndex.value,
-            onTabSelect: (index) {
-              setState(() {
-                _selectedCategoryIndex = index;
-                _newsController.updateLocationTabIndex(index);
-                _newsController.callNewApi(false, index);
-              });
-            },
-          ),
+          // ========== HEADER WIDGET (with Animation for Web) ==========
+          if (isWebTabletOrDesktop)
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              height: _showTopBars ? null : 0,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 300),
+                opacity: _showTopBars ? 1.0 : 0.0,
+                child: HeaderWidget(
+                  isFromNewsTab: true,
+                  tabController: _tabController,
+                  selectedIndex: _newsController.currentLocationTabIndex.value,
+                  onTabSelect: (index) {
+                    setState(() {
+                      _selectedCategoryIndex = index;
+                      _newsController.updateLocationTabIndex(index);
+                      _newsController.callNewApi(false, index);
+                    });
+                  },
+                ),
+              ),
+            )
+          else
+          // Mobile - Always Visible
+            HeaderWidget(
+              isFromNewsTab: true,
+              tabController: _tabController,
+              selectedIndex: _newsController.currentLocationTabIndex.value,
+              onTabSelect: (index) {
+                setState(() {
+                  _selectedCategoryIndex = index;
+                  _newsController.updateLocationTabIndex(index);
+                  _newsController.callNewApi(false, index);
+                });
+              },
+            ),
 
           // Main Content
           Expanded(
             child: Column(
               children: [
-                // CATEGORY SELECTOR
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-                  child: Obx(() {
-                    if (_newsController.newsCategories.isEmpty) {
-                      return const SizedBox.shrink();
-                    }
+                // ========== CATEGORY SELECTOR (with Animation for Web) ==========
+                if (isWebTabletOrDesktop)
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    height: _showTopBars ? null : 0,
+                    child: AnimatedOpacity(
+                      duration: const Duration(milliseconds: 300),
+                      opacity: _showTopBars ? 1.0 : 0.0,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                        child: Obx(() {
+                          if (_newsController.newsCategories.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
 
-                    return CategorySelectorWidget(
-                      categories: _newsController.newsCategories,
-                      selectedIndex: _newsController.selectedSubCatIndex.value,
-                      onSelect: (index) {
-                        _newsController.callNewApi(true, index);
-                      },
-                    );
-                  }),
-                ),
+                          return CategorySelectorWidget(
+                            categories: _newsController.newsCategories,
+                            selectedIndex: _newsController.selectedSubCatIndex.value,
+                            onSelect: (index) {
+                              _newsController.callNewApi(true, index);
+                            },
+                          );
+                        }),
+                      ),
+                    ),
+                  )
+                else
+                // Mobile - Always Visible
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                    child: Obx(() {
+                      if (_newsController.newsCategories.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
 
-                // MAIN CONTENT AREA
+                      return CategorySelectorWidget(
+                        categories: _newsController.newsCategories,
+                        selectedIndex: _newsController.selectedSubCatIndex.value,
+                        onSelect: (index) {
+                          _newsController.callNewApi(true, index);
+                        },
+                      );
+                    }),
+                  ),
+
+                // ========== MAIN CONTENT AREA ==========
                 Expanded(
                   child: GetBuilder<NewsController>(
                     id: 'news_list',
                     builder: (controller) {
-
                       // 1) LOADING
                       if (controller.isLoading.value) {
                         return const Center(child: CircularProgressIndicator());
@@ -148,6 +237,7 @@ class _NewsViewState extends State<NewsView>
                           onRefresh: () => controller.refresh(),
                           color: AppColors.primary,
                           child: CustomScrollView(
+                            controller: _scrollController,
                             physics: const AlwaysScrollableScrollPhysics(),
                             slivers: [
                               SliverFillRemaining(
@@ -191,6 +281,7 @@ class _NewsViewState extends State<NewsView>
   // Original ListView for Mobile and Android
   Widget _buildListView(BuildContext context, NewsController controller) {
     return ListView.builder(
+      controller: _scrollController, // Attach ScrollController
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(
         horizontal: 16,
@@ -261,6 +352,7 @@ class _NewsViewState extends State<NewsView>
     final horizontalPadding = screenWidth >= 1200 ? 32.0 : 16.0;
 
     return CustomScrollView(
+      controller: _scrollController, // Attach ScrollController
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
         // Featured News Card (Full Width)
@@ -318,13 +410,12 @@ class _NewsViewState extends State<NewsView>
   // Get aspect ratio based on screen width
   double _getChildAspectRatio(double screenWidth) {
     if (screenWidth >= 1200) {
-      return 1.0; // ✅ 0.85 se 1.0 kiya (height kam hogi - Desktop)
+      return 1.0;
     } else if (screenWidth >= 600) {
-      return 0.95; // ✅ 0.8 se 0.95 kiya (height kam hogi - Tablet)
+      return 0.95;
     }
     return 1.0;
   }
-
 
   void _handleNewsTap(news) {
     if (news.id == null || news.id!.isEmpty) {

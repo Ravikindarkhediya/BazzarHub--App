@@ -89,8 +89,14 @@ class HbMarkateplaceItemsWidget extends StatelessWidget {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => ProductDetailPage(product: product, productId: '',),
+          ProductDetailPage.route(
+            RouteSettings(
+              arguments: ProductPageArguments(
+                productId: product.id,
+                product: product,
+                showRelatedProducts: true,
+              ),
+            ),
           ),
         );
       },

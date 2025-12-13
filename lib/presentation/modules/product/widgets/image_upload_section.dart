@@ -130,17 +130,42 @@ class ImageUploadSection extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(),
-            const SizedBox(height: 8),
-            Text(
-              subtitle,
-              style: const TextStyle(
-                decoration: TextDecoration.none,
-                fontSize: 13,
-                color: CupertinoColors.systemGrey,
+            // Mobile: Always show full header (original behavior)
+            if (!kIsWeb) ...[
+              _buildHeader(),
+              const SizedBox(height: 8),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  decoration: TextDecoration.none,
+                  fontSize: 13,
+                  color: CupertinoColors.systemGrey,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
+            ],
+
+            // Web: Show full header if title/subtitle exist
+            if (kIsWeb && (title.isNotEmpty || subtitle.isNotEmpty)) ...[
+              _buildHeader(),
+              const SizedBox(height: 8),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  decoration: TextDecoration.none,
+                  fontSize: 13,
+                  color: CupertinoColors.systemGrey,
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // Web: Show only count if title/subtitle empty
+            if (kIsWeb && title.isEmpty && subtitle.isEmpty) ...[
+              _buildCountOnly(),
+              const SizedBox(height: 12),
+            ],
+
             _buildImageGrid(context),
           ],
         );
@@ -148,6 +173,7 @@ class ImageUploadSection extends StatelessWidget {
     );
   }
 
+// Full header with title + count
   Widget _buildHeader() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -172,6 +198,23 @@ class ImageUploadSection extends StatelessWidget {
       ],
     );
   }
+
+// Only count (for web without title)
+  Widget _buildCountOnly() {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Text(
+        '${controller.imageCount}/${controller.maxImages}',
+        style: const TextStyle(
+          decoration: TextDecoration.none,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: CupertinoColors.systemGrey,
+        ),
+      ),
+    );
+  }
+
 
   Widget _buildImageGrid(BuildContext context) {
     return LayoutBuilder(

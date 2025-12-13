@@ -34,29 +34,26 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-  // Initialize the NewsController
   final NewsController newsController = Get.isRegistered<NewsController>()
       ? Get.find<NewsController>()
       : Get.put(NewsController(), permanent: true);
-  
-  // Marketplace data
+
   List<MarketplaceModel> _marketplaceProducts = [];
   bool _isLoadingMarketplace = false;
 
   @override
   void initState() {
     super.initState();
-    // The NewsController will automatically fetch news in its onInit
     _fetchMarketplaceProducts();
   }
 
   Future<void> _fetchMarketplaceProducts() async {
     setState(() => _isLoadingMarketplace = true);
-    
+
     try {
       var services = await getApiClient();
       var response = await services.getMarketplace({"page": 1, "limit": 10});
-      
+
       if (response.data.status) {
         setState(() {
           _marketplaceProducts = response.data.data ?? [];
@@ -67,12 +64,6 @@ class _HomeViewState extends State<HomeView> {
     } finally {
       setState(() => _isLoadingMarketplace = false);
     }
-  }
-
-  @override
-  void dispose() {
-    // No need to dispose the controller here as GetX will handle it
-    super.dispose();
   }
 
   @override
@@ -88,127 +79,119 @@ class _HomeViewState extends State<HomeView> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (!kIsWeb) HeaderWidget(),
-            /// 🎯 Header Section
 
-            Obx(() {
-              debugPrint('News section rebuilding. Loading: ${newsController.isLoading.value}, Error: ${newsController.errorMessage.value}, News count: ${newsController.newsList.length}');
+                  /// 🎯 News Section
+                  Obx(() {
+                    if (newsController.isLoading.value && newsController.newsList.isEmpty) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 20.0),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
 
-              if (newsController.isLoading.value && newsController.newsList.isEmpty) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20.0),
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
-
-              if (newsController.errorMessage.value.isNotEmpty) {
-                return Container(
-                  // margin: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                  // padding: const EdgeInsets.all(0),
-                  decoration: BoxDecoration(
-                    color: Colors.red[50],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red[200]!)
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Error loading news',
-                        style: TextStyle(color: Colors.red[800], fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        newsController.errorMessage.value,
-                        style: TextStyle(color: Colors.red[700]),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 12),
-                      ElevatedButton.icon(
-                        onPressed: newsController.fetchNews,
-                        icon: const Icon(Icons.refresh, size: 16),
-                        label: const Text('Retry'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red[100],
-                          foregroundColor: Colors.red[800],
+                    if (newsController.errorMessage.value.isNotEmpty) {
+                      return Container(
+                        margin: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.red[50],
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.red[200]!),
                         ),
-                      )
-                    ],
-                  ),
-                );
-              }
+                        child: Column(
+                          children: [
+                            Text(
+                              'Error loading news',
+                              style: TextStyle(
+                                color: Colors.red[800],
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              newsController.errorMessage.value,
+                              style: TextStyle(color: Colors.red[700]),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 12),
+                            ElevatedButton.icon(
+                              onPressed: newsController.fetchNews,
+                              icon: const Icon(Icons.refresh, size: 16),
+                              label: const Text('Retry'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red[100],
+                                foregroundColor: Colors.red[800],
+                              ),
+                            )
+                          ],
+                        ),
+                      );
+                    }
 
-              if (newsController.newsList.isEmpty) {
-                return Container(
-                  margin: const EdgeInsets.symmetric(vertical: 20, horizontal: 0),
-                  padding: const EdgeInsets.all(0),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Column(
-                    children: [
-                      Icon(Icons.article_outlined, size: 48, color: Colors.grey),
-                      SizedBox(height: 12),
-                      Text(
-                        'No news available',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Check back later for updates',
-                        style: TextStyle(color: Colors.grey),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                );
-              }
+                    if (newsController.newsList.isEmpty) {
+                      return Container(
+                        margin: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                        padding: const EdgeInsets.all(32),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Column(
+                          children: [
+                            Icon(Icons.article_outlined, size: 48, color: Colors.grey),
+                            SizedBox(height: 12),
+                            Text(
+                              'No news available',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Check back later for updates',
+                              style: TextStyle(color: Colors.grey),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      );
+                    }
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 16),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 0.0, vertical: 8.0),
-                    child: HBNewsItemsWidget(
-                      newsItems: newsController.newsList.take(5).toList(),
-                      title: "Latest News",
-                      subtitle: "Stay updated with the latest happenings",
-                      onNewsTap: (news) {
-                        Get.to(
-                          () => NewsDetailView(
-                            newsId: news.id,
-                            initialData: news.toJson(),
-                          ),
-                        );
-                      },
-                      onFavoriteToggle: (isFavorite) {
-                        // You can implement favorite functionality here if needed
-                      },
-                    ),
-                  ),
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 16),
+                        HBNewsItemsWidget(
+                          newsItems: newsController.newsList.take(5).toList(),
+                          title: "Latest News",
+                          subtitle: "Stay updated with the latest happenings",
+                          onNewsTap: (news) {
+                            Get.to(
+                                  () => NewsDetailView(
+                                newsId: news.id,
+                                initialData: news.toJson(),
+                              ),
+                            );
+                          },
+                          onFavoriteToggle: (isFavorite) {
+                            // Implement favorite functionality if needed
+                          },
+                        ),
+                      ],
+                    );
+                  }),
 
                   // Marketplace Items Section
+                  HbMarkateplaceItemsWidget(
+                    products: _marketplaceProducts,
+                    isLoading: _isLoadingMarketplace,
+                  ),
 
-
-                ],
-              );
-            }),
-
-            // Marketplace Items Section
-            Column(
-              children: [
-                HbMarkateplaceItemsWidget(
-                  products: _marketplaceProducts,
-                  isLoading: _isLoadingMarketplace,
-                ),
-
-                AdvancedWeatherCard(
+                  // Weather Card
+                  AdvancedWeatherCard(
                     cityName: "Ahmedabad",
                     temperature: "30°C",
                     feelsLike: "33°C",
                     weatherDescription: "Partly Cloudy",
                     iconUrl: "https://openweathermap.org/img/wn/02d@2x.png",
-
                     minTemp: "26°C",
                     maxTemp: "34°C",
                     humidity: "62%",
@@ -220,12 +203,10 @@ class _HomeViewState extends State<HomeView> {
                     sunset: "06:12 PM",
                     uvIndex: "7",
                     clouds: "45%",
-                  )
-              ],
+                  ),
+                ],
+              ),
             ),
-              ]
-            ),
-            )
           );
         },
       ),

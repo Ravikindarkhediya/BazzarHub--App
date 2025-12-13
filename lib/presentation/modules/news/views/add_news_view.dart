@@ -37,6 +37,7 @@ class _AddNewsViewState extends State<AddNewsView> {
   bool _isInitialized = false;
 
   bool get isEditMode => widget.news != null;
+  bool get isWeb => kIsWeb;
 
   @override
   void initState() {
@@ -85,6 +86,37 @@ class _AddNewsViewState extends State<AddNewsView> {
   }
 
   Future<void> submitForm() async {
+    // Validate all sections
+    if (_controller.selectedCategoryId == null) {
+      AppToast.showError('Please select a category');
+      return;
+    }
+    if (_controller.images.isEmpty) {
+      AppToast.showError('Please add at least one image');
+      return;
+    }
+    if (_controller.titleEnglishController.text.trim().isEmpty) {
+      AppToast.showError('Title is required');
+      return;
+    }
+    if (_controller.contentEnglishController.text.trim().isEmpty) {
+      AppToast.showError('Content is required');
+      return;
+    }
+    if (_controller.selectedState == null) {
+      AppToast.showError('Please select a state');
+      return;
+    }
+    if (_controller.selectedDistrict == null) {
+      AppToast.showError('Please select a district');
+      return;
+    }
+    if (_controller.showSubDistrict &&
+        _controller.selectedSubDistrict == null) {
+      AppToast.showError('Please select a sub-district');
+      return;
+    }
+
     final success = await _controller.submitNews(context);
     if (success && mounted) {
       AppToast.showSuccess(
@@ -110,10 +142,10 @@ class _AddNewsViewState extends State<AddNewsView> {
         break;
       case 2:
         if (_controller.titleEnglishController.text.trim().isEmpty) {
-          return 'English title is required';
+          return 'Title is required';
         }
         if (_controller.contentEnglishController.text.trim().isEmpty) {
-          return 'English content is required';
+          return 'Content is required';
         }
         break;
       case 3:
@@ -152,8 +184,8 @@ class _AddNewsViewState extends State<AddNewsView> {
           return shouldPop;
         },
         child: Scaffold(
-          resizeToAvoidBottomInset: false,
-          backgroundColor: AppColors.background,
+          resizeToAvoidBottomInset: !isWeb,
+          backgroundColor: isWeb ? AppColors.grey100 : AppColors.background,
           appBar: AppBar(
             backgroundColor: AppColors.white,
             elevation: 0,
@@ -183,20 +215,286 @@ class _AddNewsViewState extends State<AddNewsView> {
               ? const Center(
                   child: CircularProgressIndicator(color: AppColors.primary),
                 )
-              : Column(
-                  children: [
-                    _buildProgressIndicator(),
-                    Expanded(
-                      child: SingleChildScrollView(
-                        padding: AppSpacing.paddingMD,
-                        child: Form(key: _formKey, child: _buildStepContent()),
-                      ),
-                    ),
-                    _buildBottomButtons(),
-                  ],
-                ),
+              : isWeb
+              ? _buildWebLayout()
+              : _buildMobileLayout(),
         ),
       ),
+    );
+  }
+
+  // WEB LAYOUT - Fully Responsive with Scrollable Submit Button
+  Widget _buildWebLayout() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Responsive padding based on screen width
+        double horizontalPadding;
+        if (constraints.maxWidth >= 1200) {
+          horizontalPadding = 32;
+        } else if (constraints.maxWidth >= 900) {
+          horizontalPadding = 24;
+        } else if (constraints.maxWidth >= 600) {
+          horizontalPadding = 16;
+        } else {
+          horizontalPadding = 12;
+        }
+
+        return SingleChildScrollView(
+          child: Center(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 1000),
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: 24,
+              ),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Section 1: Category
+                    _buildWebSection(
+                      step: '1',
+                      title: 'Choose Category',
+                      subtitle:
+                          'Select the category that best describes your news',
+                      child: _buildCategoryStep(),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Section 2: Images
+                    _buildWebSection(
+                      step: '2',
+                      title: 'Upload Images',
+                      subtitle:
+                          'Add up to 6 photos/videos. First will be cover.',
+                      child: _buildImageStep(),
+                      removeTopPadding: true,
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Section 3: News Details
+                    _buildWebSection(
+                      step: '3',
+                      title: 'News Details',
+                      subtitle:
+                          'Enter the title, content and tags for your news',
+                      child: NewsDetailsWidget(),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Section 4: Address
+                    _buildWebSection(
+                      step: '4',
+                      title: 'Address Details',
+                      subtitle: 'All fields marked with * are required',
+                      child: _buildAddressStep(),
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // Submit Button - Scrollable with page
+                    _buildWebSubmitButton(),
+
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Same as before - no changes needed
+  Widget _buildWebSection({
+    required String step,
+    required String title,
+    required String subtitle,
+    required Widget child,
+    bool removeTopPadding = false,
+  }) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.borderLight, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.03),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      step,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: AppTextStyles.h5.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Content
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              20, // left
+              removeTopPadding ? 0 : 20, // top
+              20, // right
+              20, // bottom
+            ),
+            child: child,
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
+  }
+
+  // Web Submit Button
+  Widget _buildWebSubmitButton() {
+    return Consumer<AddNewsController>(
+      builder: (context, controller, _) {
+        return SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: ElevatedButton(
+            onPressed: controller.isLoading || controller.isUploading
+                ? null
+                : submitForm,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.white,
+              elevation: 0,
+              disabledBackgroundColor: AppColors.grey300,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            child: controller.isLoading || controller.isUploading
+                ? Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          color: AppColors.white,
+                          strokeWidth: 2.5,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Text(
+                        controller.isUploading
+                            ? 'Uploading Images...'
+                            : (isEditMode
+                                  ? 'Updating News...'
+                                  : 'Publishing News...'),
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        isEditMode ? Icons.check_circle_outline : Icons.publish,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        isEditMode ? 'Update News' : 'Publish News',
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        );
+      },
+    );
+  }
+
+  // MOBILE LAYOUT
+  Widget _buildMobileLayout() {
+    return Column(
+      children: [
+        _buildProgressIndicator(),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: AppSpacing.paddingMD,
+            child: Form(key: _formKey, child: _buildStepContent()),
+          ),
+        ),
+        _buildBottomButtons(),
+      ],
     );
   }
 
@@ -258,29 +556,33 @@ class _AddNewsViewState extends State<AddNewsView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Choose Category',
-                style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Select the category that best describes your news',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
+              if (!isWeb) ...[
+                Text(
+                  'Choose Category',
+                  style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
                 ),
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 8),
+                Text(
+                  'Select the category that best describes your news',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
               if (controller.categories.isEmpty)
                 const Center(
-                  child: CircularProgressIndicator(color: AppColors.primary),
+                  child: Padding(
+                    padding: EdgeInsets.all(40),
+                    child: CircularProgressIndicator(color: AppColors.primary),
+                  ),
                 )
               else
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    final isWeb = kIsWeb;
                     final screenWidth = constraints.maxWidth;
 
-                    // ANDROID: Exact original GridView (3 columns)
+                    // MOBILE: Original GridView (No changes)
                     if (!isWeb) {
                       return GridView.builder(
                         shrinkWrap: true,
@@ -290,7 +592,7 @@ class _AddNewsViewState extends State<AddNewsView> {
                               crossAxisCount: 3,
                               mainAxisSpacing: AppSpacing.sm,
                               crossAxisSpacing: AppSpacing.sm,
-                              childAspectRatio: 0.82, // Android original
+                              childAspectRatio: 0.82,
                             ),
                         itemCount: controller.categories.length,
                         itemBuilder: (context, index) {
@@ -306,7 +608,6 @@ class _AddNewsViewState extends State<AddNewsView> {
                                 borderRadius: AppSpacing.borderRadiusMD,
                                 child: AnimatedContainer(
                                   duration: const Duration(milliseconds: 250),
-                                  curve: Curves.easeInOut,
                                   padding: const EdgeInsets.all(AppSpacing.xs),
                                   decoration: BoxDecoration(
                                     color: AppColors.white,
@@ -328,8 +629,7 @@ class _AddNewsViewState extends State<AddNewsView> {
                                             bottom: 8,
                                           ),
                                           constraints: const BoxConstraints(
-                                            maxHeight:
-                                                80, // Android original icon size
+                                            maxHeight: 80,
                                             maxWidth: 80,
                                           ),
                                           decoration: BoxDecoration(
@@ -360,7 +660,7 @@ class _AddNewsViewState extends State<AddNewsView> {
                                                 ? FontWeight.w600
                                                 : FontWeight.w500,
                                             height: 1.3,
-                                            fontSize: 11, // Android original
+                                            fontSize: 11,
                                           ),
                                           textAlign: TextAlign.center,
                                           maxLines: 2,
@@ -381,24 +681,38 @@ class _AddNewsViewState extends State<AddNewsView> {
                       );
                     }
 
-                    final crossAxisCount = screenWidth > 800 ? 4 : 3;
-                    final itemWidth =
-                        (screenWidth - (crossAxisCount - 1) * AppSpacing.sm) /
-                        crossAxisCount;
-                    final baseHeight = itemWidth * 0.62;
-                    final iconSize = itemWidth * 0.45;
+                    // WEB: Better Unselected Visibility
+                    int crossAxisCount;
+                    double iconSize;
+                    double fontSize;
 
-                    final captionStyle = AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w500,
-                      height: 1.3,
-                      fontSize: 13, // Web bigger text
-                    );
+                    if (screenWidth >= 900) {
+                      crossAxisCount = 6;
+                      iconSize = 70;
+                      fontSize = 13;
+                    } else if (screenWidth >= 700) {
+                      crossAxisCount = 5;
+                      iconSize = 65;
+                      fontSize = 12.5;
+                    } else if (screenWidth >= 500) {
+                      crossAxisCount = 4;
+                      iconSize = 60;
+                      fontSize = 12;
+                    } else if (screenWidth >= 400) {
+                      crossAxisCount = 3;
+                      iconSize = 55;
+                      fontSize = 11.5;
+                    } else {
+                      crossAxisCount = 2;
+                      iconSize = 50;
+                      fontSize = 11;
+                    }
+
+                    final spacing = screenWidth >= 700 ? 16.0 : 12.0;
 
                     return Wrap(
-                      spacing: AppSpacing.sm,
-                      runSpacing: AppSpacing.sm,
-                      alignment: WrapAlignment.start,
+                      spacing: spacing,
+                      runSpacing: spacing,
                       children: controller.categories.asMap().entries.map((
                         entry,
                       ) {
@@ -407,96 +721,127 @@ class _AddNewsViewState extends State<AddNewsView> {
                         final isSelected =
                             controller.selectedCategoryId == category.id;
 
-                        final containerWidth = baseHeight;
-                        final containerHeight = isSelected
-                            ? baseHeight * 0.90
-                            : baseHeight;
+                        return LayoutBuilder(
+                              builder: (context, itemConstraints) {
+                                final itemWidth =
+                                    (screenWidth -
+                                        (crossAxisCount - 1) * spacing) /
+                                    crossAxisCount;
 
-                        return SizedBox(
-                              width: containerWidth,
-                              height: containerHeight,
-                              child: InkWell(
-                                onTap: () {
-                                  HapticFeedback.selectionClick();
-                                  controller.selectCategory(category.id!);
-                                },
-                                borderRadius: AppSpacing.borderRadiusMD,
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 250),
-                                  curve: Curves.easeInOut,
-                                  width: double.infinity,
-                                  height: double.infinity,
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.white,
-                                    borderRadius: AppSpacing.borderRadiusMD,
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? AppColors.primary
-                                          : AppColors.borderLight,
-                                      width: isSelected ? 2.5 : 1,
-                                    ),
-                                    boxShadow: isSelected
-                                        ? [
-                                            BoxShadow(
-                                              color: AppColors.primary
-                                                  .withOpacity(0.3),
-                                              blurRadius: 8,
-                                              offset: const Offset(0, 4),
-                                            ),
-                                          ]
-                                        : null,
-                                  ),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Container(
-                                        width: iconSize,
-                                        height: iconSize,
-                                        margin: const EdgeInsets.symmetric(
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primary.withOpacity(
-                                            0.1,
-                                          ),
-                                          borderRadius:
-                                              AppSpacing.borderRadiusSM,
-                                        ),
-                                        child: ClipRRect(
-                                          borderRadius:
-                                              AppSpacing.borderRadiusSM,
-                                          child: AspectRatioImage(
-                                            imageUrl: category.icon ?? "",
-                                            aspectRatio: 1 / 1,
-                                          ),
-                                        ),
+                                return SizedBox(
+                                  width: itemWidth,
+                                  child: InkWell(
+                                    onTap: () {
+                                      HapticFeedback.selectionClick();
+                                      controller.selectCategory(category.id!);
+                                    },
+                                    borderRadius: BorderRadius.circular(14),
+                                    child: AnimatedContainer(
+                                      duration: const Duration(
+                                        milliseconds: 300,
                                       ),
-                                      Expanded(
-                                        child: Padding(
-                                          padding: const EdgeInsets.only(
-                                            top: 6,
+                                      padding: EdgeInsets.all(
+                                        screenWidth >= 700 ? 14 : 10,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        // Better unselected background
+                                        color: isSelected
+                                            ? AppColors.primary.withOpacity(
+                                                0.08,
+                                              )
+                                            : Colors.white,
+                                        borderRadius: BorderRadius.circular(14),
+                                        // Always show border for visibility
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? AppColors.primary
+                                              : AppColors
+                                                    .grey300, // Visible border
+                                          width: isSelected
+                                              ? 2
+                                              : 1.5, // Thicker unselected
+                                        ),
+                                        boxShadow: isSelected
+                                            ? [
+                                                BoxShadow(
+                                                  color: AppColors.primary
+                                                      .withOpacity(0.2),
+                                                  blurRadius: 12,
+                                                  offset: const Offset(0, 4),
+                                                ),
+                                              ]
+                                            : [
+                                                BoxShadow(
+                                                  color: Colors.black
+                                                      .withOpacity(0.05),
+                                                  blurRadius: 8,
+                                                  offset: const Offset(0, 2),
+                                                ),
+                                              ],
+                                      ),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Container(
+                                            width: iconSize,
+                                            height: iconSize,
+                                            padding: EdgeInsets.all(
+                                              screenWidth >= 700 ? 10 : 8,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              // Better unselected icon background
+                                              color: isSelected
+                                                  ? Colors.white
+                                                  : AppColors.grey100,
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                              // Border for icon container
+                                              border: Border.all(
+                                                color: isSelected
+                                                    ? AppColors.primary
+                                                          .withOpacity(0.2)
+                                                    : AppColors.grey300,
+                                                width: 1,
+                                              ),
+                                            ),
+                                            child: ClipRRect(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              child: AspectRatioImage(
+                                                imageUrl: category.icon ?? "",
+                                                aspectRatio: 1 / 1,
+                                              ),
+                                            ),
                                           ),
-                                          child: Text(
+                                          SizedBox(
+                                            height: screenWidth >= 700 ? 10 : 8,
+                                          ),
+                                          Text(
                                             AppLanguage.getText(category.name),
-                                            style: captionStyle.copyWith(
+                                            style: TextStyle(
+                                              fontSize: fontSize,
                                               fontWeight: isSelected
-                                                  ? FontWeight.w600
-                                                  : FontWeight.w500,
+                                                  ? FontWeight.w700
+                                                  : FontWeight
+                                                        .w600, // Bold for unselected
+                                              color: isSelected
+                                                  ? AppColors.primary
+                                                  : AppColors.textPrimary,
+                                              height: 1.2,
                                             ),
                                             textAlign: TextAlign.center,
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
                                           ),
-                                        ),
+                                        ],
                                       ),
-                                    ],
+                                    ),
                                   ),
-                                ),
-                              ),
+                                );
+                              },
                             )
                             .animate()
-                            .fadeIn(duration: 400.ms, delay: (50 * index).ms)
+                            .fadeIn(duration: 400.ms, delay: (40 * index).ms)
                             .scale(
                               begin: const Offset(0.9, 0.9),
                               end: const Offset(1, 1),
@@ -506,23 +851,28 @@ class _AddNewsViewState extends State<AddNewsView> {
                   },
                 ),
             ],
-          ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0),
+          ),
         );
       },
     );
   }
 
   Widget _buildImageStep() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ImageUploadSection(
-          controller: _controller,
-          title: 'News Images',
-          subtitle: 'Add up to 6 photos/videos. First will be cover.',
-        ),
-      ],
-    ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
+    // Mobile: Column wrapper WITHOUT title/subtitle (ImageUploadSection will handle it)
+    if (!isWeb) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ImageUploadSection(
+            controller: _controller,
+            title: 'News Images',
+            subtitle: 'Add up to 6 photos/videos. First will be cover.',
+          ),
+        ],
+      );
+    }
+
+    return ImageUploadSection(controller: _controller, title: '', subtitle: '');
   }
 
   Widget _buildAddressStep() {
@@ -535,26 +885,26 @@ class _AddNewsViewState extends State<AddNewsView> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Address Details',
-              style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'All fields marked with * are required',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
+            if (!isWeb) ...[
+              Text(
+                'Address Details',
+                style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
               ),
-            ),
-            const SizedBox(height: 24),
-
+              const SizedBox(height: 8),
+              Text(
+                'All fields marked with * are required',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
             _buildReadOnlyField(
               label: 'Country',
               value: 'India',
               icon: Icons.public,
             ),
             const SizedBox(height: 16),
-
             SearchableDropdown(
               label: 'State',
               hint: 'Select state',
@@ -566,7 +916,6 @@ class _AddNewsViewState extends State<AddNewsView> {
               isRequired: true,
             ),
             const SizedBox(height: 16),
-
             SearchableDropdown(
               label: 'District',
               hint: controller.selectedState == null
@@ -579,7 +928,6 @@ class _AddNewsViewState extends State<AddNewsView> {
               icon: Icons.location_on,
               isRequired: true,
             ),
-
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 250),
               child: controller.showSubDistrict
@@ -604,7 +952,6 @@ class _AddNewsViewState extends State<AddNewsView> {
                   : const SizedBox(key: ValueKey('empty')),
             ),
             const SizedBox(height: 16),
-
             SearchableDropdown(
               label: 'Village',
               hint: controller.allowManualVillageEntry
@@ -621,7 +968,7 @@ class _AddNewsViewState extends State<AddNewsView> {
               isRequired: true,
             ),
           ],
-        ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.1, end: 0);
+        );
       },
     );
   }
@@ -630,11 +977,11 @@ class _AddNewsViewState extends State<AddNewsView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        const SizedBox(height: 32),
+        const SizedBox(height: 40),
         const Center(
           child: CircularProgressIndicator(color: AppColors.primary),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
         Text(
           'Fetching latest address data…',
           style: AppTextStyles.bodyMedium.copyWith(
@@ -941,6 +1288,7 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final isWeb = kIsWeb;
     return Consumer<AddNewsController>(
       builder: (context, controller, _) {
         if (_selectedTags.isEmpty &&
@@ -955,12 +1303,13 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'News Details',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 24),
-
+            if (!isWeb) ...[
+              Text(
+                'News Details',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 24),
+            ],
             _buildTextField(
               controller: controller.titleEnglishController,
               label: 'Title',
@@ -969,7 +1318,6 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
               required: true,
             ),
             const SizedBox(height: 24),
-
             RichTextFieldWidget(
               controller: controller.contentEnglishController,
               quillController: controller.contentEnglishQuillController,
@@ -978,9 +1326,7 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
               icon: Icons.description,
               required: true,
             ),
-
             const SizedBox(height: 24),
-
             _buildTagsSection(controller),
           ],
         );
@@ -997,14 +1343,12 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
     bool required = false,
     TextInputType? keyboardType,
   }) {
-    final displayLabel = required ? label : label;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         RichText(
           text: TextSpan(
-            text: displayLabel,
+            text: label,
             style: AppTextStyles.bodyMedium.copyWith(
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
@@ -1069,76 +1413,61 @@ class _NewsDetailsWidgetState extends State<NewsDetailsWidget> {
         AppSpacing.verticalSpaceSM,
         Container(
           width: double.infinity,
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                offset: const Offset(0, 4),
-                blurRadius: 12,
-              ),
-            ],
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.borderLight),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: _isTagsLoading
-                    ? const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(24.0),
-                          child: CircularProgressIndicator(),
-                        ),
-                      )
-                    : _availableTags.isEmpty
-                    ? const Padding(
-                        padding: EdgeInsets.all(24.0),
-                        child: Center(
-                          child: Text(
-                            'No tags available',
-                            style: TextStyle(color: Colors.grey, fontSize: 14),
-                          ),
-                        ),
-                      )
-                    : Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: _availableTags.map((tag) {
-                          final isSelected = _selectedTags.contains(tag);
-                          return FilterChip(
-                            label: Text(tag),
-                            selected: isSelected,
-                            onSelected: (selected) {
-                              _toggleTag(tag, controller);
-                            },
-                            backgroundColor: Colors.grey[200],
-                            selectedColor: AppColors.primary.withOpacity(0.3),
-                            checkmarkColor: AppColors.primary,
-                            labelStyle: TextStyle(
-                              color: isSelected
-                                  ? AppColors.primary
-                                  : Colors.black87,
-                              fontWeight: isSelected
-                                  ? FontWeight.w600
-                                  : FontWeight.normal,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                              side: BorderSide(
-                                color: isSelected
-                                    ? AppColors.primary
-                                    : Colors.transparent,
-                                width: isSelected ? 1.5 : 0,
-                              ),
-                            ),
-                          );
-                        }).toList(),
+          child: _isTagsLoading
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24.0),
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              : _availableTags.isEmpty
+              ? const Padding(
+                  padding: EdgeInsets.all(24.0),
+                  child: Center(
+                    child: Text(
+                      'No tags available',
+                      style: TextStyle(color: Colors.grey, fontSize: 14),
+                    ),
+                  ),
+                )
+              : Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _availableTags.map((tag) {
+                    final isSelected = _selectedTags.contains(tag);
+                    return FilterChip(
+                      label: Text(tag),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        _toggleTag(tag, controller);
+                      },
+                      backgroundColor: Colors.grey[200],
+                      selectedColor: AppColors.primary.withOpacity(0.2),
+                      checkmarkColor: AppColors.primary,
+                      labelStyle: TextStyle(
+                        color: isSelected ? AppColors.primary : Colors.black87,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.normal,
                       ),
-              ),
-            ],
-          ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        side: BorderSide(
+                          color: isSelected
+                              ? AppColors.primary
+                              : Colors.transparent,
+                          width: isSelected ? 1.5 : 0,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
         ),
       ],
     );
@@ -1239,19 +1568,20 @@ class _RichTextFieldWidgetState extends State<RichTextFieldWidget> {
           ),
         ),
         const SizedBox(height: 8),
-
         Container(
           decoration: BoxDecoration(
-            color: AppColors.accent,
+            color: AppColors.white,
             borderRadius: AppSpacing.borderRadiusMD,
             border: Border.all(color: AppColors.borderLight),
           ),
           child: Column(
             children: [
               Container(
-                decoration: const BoxDecoration(
-                  color: AppColors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                decoration: BoxDecoration(
+                  color: AppColors.grey50,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(12),
+                  ),
                 ),
                 child: quill.QuillSimpleToolbar(
                   controller: _quillController,
@@ -1291,7 +1621,6 @@ class _RichTextFieldWidgetState extends State<RichTextFieldWidget> {
                   ),
                 ),
               ),
-
               Container(
                 constraints: BoxConstraints(
                   minHeight: 200,
