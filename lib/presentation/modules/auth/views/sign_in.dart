@@ -233,7 +233,7 @@ class _SignInPageState extends State<SignInPage> {
 
                     TextButton(
                       onPressed: () {
-                        Get.toNamed('/forgot-password'); // Using direct route string since the named route is not defined
+                        Get.toNamed(AppRoutes.emailView);
                       },
                       child: Text(
                         'Forgot Password?',

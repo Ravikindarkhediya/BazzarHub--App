@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 
 import '../modules/auth/views/sign_in.dart';
 import '../modules/auth/views/signup_page.dart';
+import '../modules/auth/views/email_view.dart';
 import '../modules/chat/views/chat_page.dart';
 import '../modules/home/views/home_wrapper_page.dart';
 import '../modules/main/view/main_page.dart';
@@ -32,6 +33,7 @@ class AppPages {
     GetPage(name: AppRoutes.completeProfile, page: () => const CompleteProfileView()),
     GetPage(name: AppRoutes.login, page: () => const SignInPage()),
     GetPage(name: AppRoutes.signup, page: () => const SignupPage()),
+    GetPage(name: AppRoutes.emailView, page: () => const EmailView()),
     GetPage(
       name: AppRoutes.notificationPage,
       page: () => const NotificationPage(),
@@ -99,6 +101,7 @@ class AppRoutes {
   static const home = '/home';
   static const login = '/login';
   static const signup = '/signup';
+  static const emailView = '/forgot-password';
   static const productPage = '/productPage';
   static const searchPage = '/searchPage';
   static const notificationPage = '/notificationPage';
