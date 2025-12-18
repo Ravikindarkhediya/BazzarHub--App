@@ -262,6 +262,7 @@ class _NewsViewState extends State<NewsView>
               ],
             ),
           ),
+          SizedBox(height: 70),
         ],
       ),
     );

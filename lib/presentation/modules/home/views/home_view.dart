@@ -292,6 +292,7 @@ class _HomeViewState extends State<HomeView> {
                       uvIndex: "7",
                       clouds: "45%",
                     ),
+                    SizedBox(height: 80),
                   ],
                 ),
               ),
