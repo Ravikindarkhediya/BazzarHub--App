@@ -15,6 +15,7 @@ import 'models/categorie/categorie_model.dart';
 import 'models/marketplace/marketplace_model.dart';
 import 'models/news/favorite_news_model.dart';
 import 'models/report/report_response_model.dart';
+
 import 'models/upload/upload_response_model.dart';
 import 'models/user/user_model.dart';
 import 'models/user/user_token_model.dart';
@@ -313,6 +314,12 @@ abstract class ApiServices {
   @DELETE("${Endpoints.DELETE_MARKETPLACE_REPORT}/{id}")
   Future<HttpResponse<BaseModel<dynamic>>> deleteMarketplaceReport(
     @Path("id") String reportId,
+  );
+
+  // User Report List
+  @GET(Endpoints.USER_REPORT_LIST)
+  Future<HttpResponse<BaseListModel<ReportResponseModel>>> getUserReportList(
+    @Queries() Map<String, dynamic> queryParams,
   );
 
   // Wallet

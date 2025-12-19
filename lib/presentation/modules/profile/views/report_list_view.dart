@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 import 'package:bazzar_hub_app/app/core/utils/app_spacing.dart';
 import 'package:bazzar_hub_app/app/data/constants/app_colors.dart';
 import 'package:bazzar_hub_app/app/data/constants/app_text_style.dart';
@@ -53,20 +51,22 @@ class ResponsiveBreakpoints {
 class ReportItemCard extends StatelessWidget {
   final ReportResponseModel report;
   final bool isNewsReport;
+  final bool isUserReport;
   final VoidCallback? onRefreshNews;
   final VoidCallback? onRefreshMarketplace;
 
   const ReportItemCard({
     super.key,
     required this.report,
-    required this.isNewsReport,
+    this.isNewsReport = false,
+    this.isUserReport = false,
     this.onRefreshNews,
     this.onRefreshMarketplace,
   });
 
   @override
   Widget build(BuildContext context) {
-    final item = isNewsReport ? report.news : report.listing;
+    final item = isUserReport ? report.reportedUser : (isNewsReport ? report.news : report.listing);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -149,7 +149,7 @@ class ReportItemCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
-                  isNewsReport ? Icons.article_outlined : Icons.shopping_bag_outlined,
+                  isUserReport ? Icons.person_outline : (isNewsReport ? Icons.article_outlined : Icons.shopping_bag_outlined),
                   color: AppColors.primary.withOpacity(0.6),
                   size: 28,
                 ),
@@ -182,6 +182,37 @@ class ReportItemCard extends StatelessWidget {
   void _handleCardTap(BuildContext context, dynamic item) {
     if (item == null) return;
 
+    if (isUserReport) {
+      // For user reports, show user details in a dialog
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('User Report Details'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Reported User: ${item.name ?? 'Unknown'}'),
+              if (item.email?.isNotEmpty == true) 
+                Text('Email: ${item.email}'),
+              Text('Reason: ${_formatReason(report.reason)}'),
+              if (report.message.isNotEmpty) 
+                Text('Message: ${report.message}'),
+              Text('Status: ${report.status.toUpperCase()}'),
+              Text('Reported on: ${_formatDate(report.createdAt)}'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Close'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     final reportPayload = {
       'reason': report.reason,
       'status': report.status,
@@ -208,13 +239,16 @@ class ReportItemCard extends StatelessWidget {
   }
 
   Widget _buildTitleWidget(dynamic item) {
-    final String? title = item?.title;
     String? displayTitle;
 
-    if (!isNewsReport) {
-      displayTitle = (title?.isNotEmpty ?? false) ? title : 'No title';
+    if (isUserReport) {
+      final userName = item?.name?.isNotEmpty == true ? item.name : 'Unknown User';
+      final userEmail = item?.email?.isNotEmpty == true ? item.email : '';
+      displayTitle = userEmail.isNotEmpty ? '$userName - $userEmail' : userName;
+    } else if (!isNewsReport) {
+      displayTitle = item?.title?.isNotEmpty == true ? item.title : 'No title';
     } else {
-      displayTitle = (title?.isNotEmpty ?? false) ? title : 'No title';
+      displayTitle = item?.title?.isNotEmpty == true ? item.title : 'No title';
     }
 
     return Text(
@@ -223,7 +257,7 @@ class ReportItemCard extends StatelessWidget {
         fontWeight: FontWeight.bold,
         fontSize: 15,
       ),
-      maxLines: 1,
+      maxLines: 2,
       overflow: TextOverflow.ellipsis,
     );
   }
@@ -332,7 +366,13 @@ class _ReportListViewState extends State<ReportListView>
   int _newsPage = 1;
   String? _newsError;
 
-  List<Map<String, String>> _staticReportedUsers = [];
+  final List<ReportResponseModel> _userReports = [];
+  bool _isLoadingUser = false;
+  bool _hasMoreUser = true;
+  int _userPage = 1;
+  String? _userError;
+
+  late ScrollController _userScrollController;
 
   final int _limit = 10;
   final ApiServices _apiServices = Get.find<ApiServices>();
@@ -348,9 +388,9 @@ class _ReportListViewState extends State<ReportListView>
 
     _newsScrollController = ScrollController()..addListener(_scrollListener);
     _marketplaceScrollController = ScrollController()..addListener(_scrollListener);
+    _userScrollController = ScrollController()..addListener(_scrollListener);
 
     _loadNewsReports();
-    _loadUserReports();
   }
 
   @override
@@ -358,6 +398,7 @@ class _ReportListViewState extends State<ReportListView>
     _tabController.dispose();
     _newsScrollController.dispose();
     _marketplaceScrollController.dispose();
+    _userScrollController.dispose();
     super.dispose();
   }
 
@@ -370,13 +411,19 @@ class _ReportListViewState extends State<ReportListView>
       if (_marketplaceReports.isEmpty && !_isLoadingMarketplace) {
         _loadMarketplaceReports();
       }
+    } else if (_tabController.index == 2) {
+      if (_userReports.isEmpty && !_isLoadingUser) {
+        _loadUserReportsFromApi();
+      }
     }
   }
 
   void _scrollListener() {
     final controller = _tabController.index == 0
         ? _newsScrollController
-        : _marketplaceScrollController;
+        : _tabController.index == 1
+        ? _marketplaceScrollController
+        : _userScrollController;
 
     if (controller.position.pixels >= controller.position.maxScrollExtent * 0.8) {
       if (_tabController.index == 0) {
@@ -386,6 +433,10 @@ class _ReportListViewState extends State<ReportListView>
       } else if (_tabController.index == 1) {
         if (!_isLoadingMarketplace && _hasMoreMarketplace) {
           _loadMarketplaceReports();
+        }
+      } else if (_tabController.index == 2) {
+        if (!_isLoadingUser && _hasMoreUser) {
+          _loadUserReportsFromApi();
         }
       }
     }
@@ -485,6 +536,60 @@ class _ReportListViewState extends State<ReportListView>
     } finally {
       if (mounted) {
         setState(() => _isLoadingNews = false);
+      }
+    }
+  }
+
+  Future<void> _loadUserReportsFromApi({bool isRefresh = false}) async {
+    if (_isLoadingUser && !isRefresh) return;
+
+    setState(() {
+      _isLoadingUser = true;
+      _userError = null;
+      if (isRefresh) {
+        _userPage = 1;
+        _hasMoreUser = true;
+        _userReports.clear();
+      }
+    });
+
+    try {
+      final response = await _apiServices.getUserReportList({
+        'page': _userPage.toString(),
+        'limit': _limit.toString(),
+      });
+
+      if (mounted) {
+        setState(() {
+          final newReports = (response.data.data ?? []).map((item) {
+            return ReportResponseModel(
+              id: item.id,
+              reportedUser: item.reportedUser,
+              reportedBy: item.reportedBy,
+              reason: item.reason,
+              message: item.message ?? '',
+              status: item.status,
+              createdAt: item.createdAt,
+              updatedAt: item.updatedAt,
+            );
+          }).toList();
+
+          if (isRefresh) _userReports.clear();
+          _userReports.addAll(newReports);
+          _hasMoreUser = newReports.length == _limit;
+          if (_hasMoreUser) _userPage++;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading user reports: $e');
+      if (mounted) {
+        setState(() {
+          _userError = 'Failed to load user reports.';
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingUser = false);
       }
     }
   }
@@ -632,6 +737,7 @@ class _ReportListViewState extends State<ReportListView>
         return ReportItemCard(
           report: reports[index],
           isNewsReport: isNews,
+          isUserReport: false,
           onRefreshNews: isNews ? () => _loadNewsReports(isRefresh: true) : null,
           onRefreshMarketplace: !isNews ? () => _loadMarketplaceReports(isRefresh: true) : null,
         );
@@ -664,6 +770,7 @@ class _ReportListViewState extends State<ReportListView>
         return ReportItemCard(
           report: reports[index],
           isNewsReport: isNews,
+          isUserReport: false,
           onRefreshNews: isNews ? () => _loadNewsReports(isRefresh: true) : null,
           onRefreshMarketplace: !isNews ? () => _loadMarketplaceReports(isRefresh: true) : null,
         );
@@ -673,138 +780,71 @@ class _ReportListViewState extends State<ReportListView>
 
   Widget _buildUserTab() {
     return RefreshIndicator(
-      onRefresh: () async {
-        await _loadUserReports();
-      },
-      child: _staticReportedUsers.isEmpty
-          ? _buildEmptyState(
-        "No user reports found",
-        Icons.person_off_outlined,
-      )
+      onRefresh: () => _loadUserReportsFromApi(isRefresh: true),
+      child: _userReports.isEmpty && _isLoadingUser
+          ? const Center(child: CircularProgressIndicator())
+          : _userReports.isEmpty && _userError == null
+          ? _buildEmptyState("No user reports found", Icons.person_off_outlined)
+          : _userError != null
+          ? _buildErrorState(_userError!, () => _loadUserReportsFromApi(isRefresh: true))
           : LayoutBuilder(
         builder: (context, constraints) {
           final isMobile = ResponsiveBreakpoints.isMobile(context);
           final padding = ResponsiveBreakpoints.getHorizontalPadding(context);
 
           if (isMobile) {
-            return _buildUserListMobile(padding);
+            return _buildUserReportListMobile(padding);
           } else {
-            return _buildUserListWeb(padding);
+            return _buildUserReportListWeb(padding);
           }
         },
       ),
     );
   }
 
-  Widget _buildUserListMobile(double padding) {
-    return ListView.separated(
+  Widget _buildUserReportListMobile(double padding) {
+    return ListView.builder(
+      controller: _userScrollController,
       padding: EdgeInsets.symmetric(vertical: 12, horizontal: padding),
-      itemCount: _staticReportedUsers.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 8),
+      itemCount: _userReports.length + (_hasMoreUser ? 1 : 0),
       itemBuilder: (context, index) {
-        final user = _staticReportedUsers[index];
-        return _buildUserCard(user);
+        if (index >= _userReports.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16.0),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        return ReportItemCard(
+          report: _userReports[index],
+          isNewsReport: false,
+          isUserReport: true,
+        );
       },
     );
   }
 
-  Widget _buildUserListWeb(double padding) {
+  Widget _buildUserReportListWeb(double padding) {
     return GridView.builder(
+      controller: _userScrollController,
       padding: EdgeInsets.all(padding),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: ResponsiveBreakpoints.isDesktop(context) ? 3 : 2,
+        crossAxisCount: ResponsiveBreakpoints.getReportGridColumns(context),
         mainAxisSpacing: 12,
         crossAxisSpacing: 16,
-        childAspectRatio: 4,
+        childAspectRatio: 2.9,
       ),
-      itemCount: _staticReportedUsers.length,
+      itemCount: _userReports.length + (_hasMoreUser ? 1 : 0),
       itemBuilder: (context, index) {
-        final user = _staticReportedUsers[index];
-        return _buildUserCard(user);
+        if (index >= _userReports.length) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        return ReportItemCard(
+          report: _userReports[index],
+          isNewsReport: false,
+          isUserReport: true,
+        );
       },
     );
-  }
-
-  Widget _buildUserCard(Map<String, String> user) {
-    final name = user['name'] ?? '';
-    final username = user['username'] ?? '';
-
-    return Card(
-      elevation: 1,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 24,
-              backgroundColor: AppColors.primary.withOpacity(0.1),
-              child: Text(
-                name.isNotEmpty ? name[0].toUpperCase() : '?',
-                style: AppTextStyles.h6.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    name,
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (username.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      '@$username',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _loadUserReports() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      const key = 'reported_users_static';
-
-      final stored = prefs.getStringList(key) ?? [];
-      final List<Map<String, String>> users = stored
-          .map((e) => jsonDecode(e) as Map<String, dynamic>)
-          .map((m) => <String, String>{
-        'id': (m['id'] ?? '').toString(),
-        'name': (m['name'] ?? '').toString(),
-        'username': (m['username'] ?? '').toString(),
-      })
-          .toList();
-
-      if (mounted) {
-        setState(() {
-          _staticReportedUsers = users;
-        });
-      }
-    } catch (_) {}
   }
 
   Widget _buildEmptyState(String message, IconData icon) {

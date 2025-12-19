@@ -1,4 +1,5 @@
 import 'package:bazzar_hub_app/presentation/services/models/report/report_response_item_model.dart';
+import 'package:bazzar_hub_app/presentation/services/models/user/user_model.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'report_response_model.g.dart';
@@ -14,8 +15,11 @@ class ReportResponseModel {
   @JsonKey(name: 'listing')
   final ReportItemModel? listing;
 
-  @JsonKey(name: 'reportedBy', defaultValue: '')
-  final String reportedBy;
+  @JsonKey(name: 'reportedUser')
+  final UserModel? reportedUser;
+
+  @JsonKey(name: 'reportedBy')
+  final dynamic reportedBy;
 
   @JsonKey(name: 'reason', defaultValue: '')
   final String reason;
@@ -36,7 +40,8 @@ class ReportResponseModel {
     this.id = '',
     this.news,
     this.listing,
-    this.reportedBy = '',
+    this.reportedUser,
+    this.reportedBy,
     this.reason = '',
     this.message = '',
     this.status = '',

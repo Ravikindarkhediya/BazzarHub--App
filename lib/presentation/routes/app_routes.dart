@@ -25,6 +25,7 @@ import 'package:get/get.dart';
 
 import '../modules/news/views/news_detail_view.dart';
 import '../notification/view/notification_page.dart';
+import '../modules/auth/views/forgot_password_view.dart';
 
 class AppPages {
   static final routes = [
@@ -63,6 +64,10 @@ class AppPages {
       },
     ),
     GetPage(name: AppRoutes.reportListView, page: () => const ReportListView()),
+    GetPage(
+      name: AppRoutes.forgotPassword,
+      page: () => const ForgotPasswordView(email: ''),
+    ),
 
     GetPage(
       name: ProductDetailPage.routeName,
@@ -118,5 +123,6 @@ class AppRoutes {
   static const newsView = '/newsView';
   static const newsDetail = '/news-detail';
   static const reportListView = '/reportList';
+  static const forgotPassword = '/forgot-password';
 
 }

@@ -52,6 +52,9 @@ class Endpoints {
   static const String MY_NEWS_REPORT = "/api/news/my-reports";
   static const String DELETE_NEWS_REPORT = "/api/news/report/delete";
   static const String DELETE_MARKETPLACE_REPORT = "/api/marketplace/report/delete";
+  
+  // User Report list
+  static const String USER_REPORT_LIST = "/user/report/list";
 
   // Common/Upload
   static const String UPLOAD_FILE = "/common/upload";

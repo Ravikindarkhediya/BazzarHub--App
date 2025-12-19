@@ -15,7 +15,10 @@ ReportResponseModel _$ReportResponseModelFromJson(Map<String, dynamic> json) =>
       listing: json['listing'] == null
           ? null
           : ReportItemModel.fromJson(json['listing'] as Map<String, dynamic>),
-      reportedBy: json['reportedBy'] as String? ?? '',
+      reportedUser: json['reportedUser'] == null
+          ? null
+          : UserModel.fromJson(json['reportedUser'] as Map<String, dynamic>),
+      reportedBy: json['reportedBy'],
       reason: json['reason'] as String? ?? '',
       message: json['message'] as String? ?? '',
       status: json['status'] as String? ?? '',
@@ -29,6 +32,7 @@ Map<String, dynamic> _$ReportResponseModelToJson(
   '_id': instance.id,
   'news': instance.news,
   'listing': instance.listing,
+  'reportedUser': instance.reportedUser,
   'reportedBy': instance.reportedBy,
   'reason': instance.reason,
   'message': instance.message,
