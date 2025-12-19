@@ -152,21 +152,6 @@ class LogManager {
     };
   }
 
-  static Future<void> trackMarketplaceView(String listingId) async {
-    try {
-      var services = await getApiClient();
-      final payload = await buildMarketplaceViewPayload(listingId);
-      var response = await services.trackMarketplaceView(payload);
-      if (response.data.status) {
-        debugPrint("View logged successfully");
-      }
-    } on DioException catch (e) {
-      debugPrint("Dio error: $e");
-    } catch (error) {
-      debugPrint("Error: $error");
-    }
-  }
-
   // -----------------------------------------------------
   // NEWS View Payload
   // -----------------------------------------------------
@@ -189,18 +174,4 @@ class LogManager {
     };
   }
 
-  static Future<void> recordNewsView(String newsId, int readTime) async {
-    try {
-      var services = await getApiClient();
-      final payload = await buildNewViewPayload(newsId, readTime);
-      var response = await services.trackNewsView(payload);
-      if (response.data.status) {
-        debugPrint("View logged successfully");
-      }
-    } on DioException catch (e) {
-      debugPrint("Dio error: $e");
-    } catch (error) {
-      debugPrint("Error: $error");
-    }
-  }
 }

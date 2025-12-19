@@ -327,7 +327,6 @@ class _AccountPageState extends State<AccountPage>
                               onChanged: (value) {
                                 // Optionally update _pushNotifications if needed elsewhere
                                 _pushNotifications = value;
-                                debugPrint('Push Notification toggle: $value');
                               },
                             ),
                             onTap: null, // disable tap on whole tile when toggle exists

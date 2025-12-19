@@ -43,7 +43,6 @@ class LocationController extends GetxController {
   //  Lifecycle - Called when controller is closed
   @override
   void onClose() {
-    debugPrint(' LocationController closed');
     super.onClose();
   }
 

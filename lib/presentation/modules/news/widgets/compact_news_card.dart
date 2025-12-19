@@ -161,7 +161,7 @@ class CompactNewsCard extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Container(
-        height: 240, // ✅ Fixed height - adjust as needed (220-260 range)
+        height: 240,
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),

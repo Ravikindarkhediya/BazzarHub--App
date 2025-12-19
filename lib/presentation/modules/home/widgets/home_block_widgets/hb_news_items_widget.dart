@@ -95,7 +95,7 @@ class _HBNewsItemsWidgetState extends State<HBNewsItemsWidget> {
   void dispose() {
     _scrollController?.removeListener(_updateArrowVisibility);
     _scrollController?.dispose();
-    _scrollController = null; // ✅ Set to null after dispose
+    _scrollController = null;
     super.dispose();
   }
 

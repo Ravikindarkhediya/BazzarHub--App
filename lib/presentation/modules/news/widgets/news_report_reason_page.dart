@@ -335,7 +335,6 @@ class CommonReportReasonsPage extends StatelessWidget {
 
                           if (success) {
                             if (type == 'news') {
-                              debugPrint('🔄 Refreshing NewsController');
                               if (Get.isRegistered<NewsController>()) {
                                 Get.find<NewsController>().refresh();
                               }
@@ -344,10 +343,8 @@ class CommonReportReasonsPage extends StatelessWidget {
                             final prefs = await SharedPreferences.getInstance();
 
                             if (type == 'marketplace') {
-                              debugPrint('🔄 Setting marketplace refresh flag');
                               await prefs.setBool('marketplace_refresh_needed', true);
                             } else if (type == 'news') {
-                              debugPrint('🔄 Setting news refresh flag');
                               await prefs.setBool('news_refresh_needed', true);
                             }
 

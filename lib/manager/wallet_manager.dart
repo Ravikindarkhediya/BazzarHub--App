@@ -14,19 +14,12 @@ class WalletManager {
 
   WalletManager._internal();
 
-  // -------------------------------------------------------------
-  //                    WALLET PEN BALANCE
-  // -------------------------------------------------------------
-
-
   Future<void> requestWalletPenBalance() async {
     try {
       var services = await getApiClient();
       var response = await services.getPenBalance();
       if (response.data.status) {
         SessionManager().setUserPenBalance(response.data.data?.balance ?? 0);
-      }else{
-        debugPrint("Pen balance not fetch");
       }
     } on DioException catch (e) {
       debugPrint("Dio error: $e");
@@ -46,8 +39,6 @@ class WalletManager {
       var response = await services.getCoinBalance();
       if (response.data.status) {
         SessionManager().setUserCoinBalance(response.data.data?.balance ?? 0);
-      }else{
-        debugPrint("Coin balance not fetch");
       }
     } on DioException catch (e) {
       debugPrint("Dio error: $e");

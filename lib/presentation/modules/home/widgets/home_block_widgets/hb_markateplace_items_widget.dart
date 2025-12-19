@@ -22,7 +22,6 @@ class HbMarkateplaceItemsWidget extends StatefulWidget {
 
   @override
   State<HbMarkateplaceItemsWidget> createState() {
-    debugPrint('🏭 Marketplace createState called');
     return _HbMarkateplaceItemsWidgetState();
   }
 }
@@ -35,47 +34,37 @@ class _HbMarkateplaceItemsWidgetState extends State<HbMarkateplaceItemsWidget> {
   @override
   void initState() {
     super.initState();
-    debugPrint('🔵 Marketplace initState - kIsWeb: $kIsWeb, products: ${widget.products.length}, loading: ${widget.isLoading}');
 
     if (kIsWeb && widget.products.isNotEmpty && !widget.isLoading) {
       _scrollController = ScrollController();
       _scrollController!.addListener(_updateArrowVisibility);
-      debugPrint('✅ ScrollController created and listener added');
 
       // Schedule arrow visibility check
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        debugPrint('📌 PostFrameCallback triggered for marketplace');
         _scheduleArrowChecks();
       });
-    } else {
-      debugPrint('⚠️ ScrollController NOT created - kIsWeb: $kIsWeb, isEmpty: ${widget.products.isEmpty}, loading: ${widget.isLoading}');
     }
   }
 
   void _scheduleArrowChecks() {
-    debugPrint('⏰ Scheduling arrow checks...');
-
     // Immediate check
     _updateArrowVisibility();
 
     // Delayed checks
     Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted) {
-        debugPrint('⏰ 100ms delayed check');
         _updateArrowVisibility();
       }
     });
 
     Future.delayed(const Duration(milliseconds: 300), () {
       if (mounted) {
-        debugPrint('⏰ 300ms delayed check');
         _updateArrowVisibility();
       }
     });
 
     Future.delayed(const Duration(milliseconds: 600), () {
       if (mounted) {
-        debugPrint('⏰ 600ms delayed check');
         _updateArrowVisibility();
       }
     });
@@ -83,17 +72,14 @@ class _HbMarkateplaceItemsWidgetState extends State<HbMarkateplaceItemsWidget> {
 
   void _updateArrowVisibility() {
     if (!mounted) {
-      debugPrint('❌ Not mounted, skipping arrow update');
       return;
     }
 
     if (_scrollController == null) {
-      debugPrint('❌ ScrollController is null');
       return;
     }
 
     if (!_scrollController!.hasClients) {
-      debugPrint('⚠️ ScrollController has no clients yet, scheduling retry...');
       Future.delayed(const Duration(milliseconds: 150), () {
         if (mounted) _updateArrowVisibility();
       });
@@ -104,16 +90,12 @@ class _HbMarkateplaceItemsWidgetState extends State<HbMarkateplaceItemsWidget> {
     final maxScroll = position.maxScrollExtent;
     final currentScroll = position.pixels;
 
-    debugPrint('📊 Scroll info - current: $currentScroll, max: $maxScroll');
-
     if (maxScroll <= 0) {
-      debugPrint('⚠️ No scrollable content (maxScroll: $maxScroll)');
       if (_showLeftArrow || _showRightArrow) {
         setState(() {
           _showLeftArrow = false;
           _showRightArrow = false;
         });
-        debugPrint('🔄 Arrows hidden (no content)');
       }
       return;
     }
@@ -121,26 +103,24 @@ class _HbMarkateplaceItemsWidgetState extends State<HbMarkateplaceItemsWidget> {
     final newShowLeft = currentScroll > 10;
     final newShowRight = currentScroll < maxScroll - 10;
 
-    debugPrint('🎯 Arrow states - Left: $newShowLeft (was $_showLeftArrow), Right: $newShowRight (was $_showRightArrow)');
-
     if (newShowLeft != _showLeftArrow || newShowRight != _showRightArrow) {
       setState(() {
         _showLeftArrow = newShowLeft;
         _showRightArrow = newShowRight;
       });
-      debugPrint('✅ Arrows updated! Left: $_showLeftArrow, Right: $_showRightArrow');
     }
   }
 
   void _scrollLeft() {
     if (_scrollController == null || !_scrollController!.hasClients) {
-      debugPrint('❌ Cannot scroll left - controller not ready');
       return;
     }
 
-    debugPrint('⬅️ Scrolling left by 400px');
     _scrollController!.animateTo(
-      (_scrollController!.offset - 400).clamp(0.0, _scrollController!.position.maxScrollExtent),
+      (_scrollController!.offset - 400).clamp(
+        0.0,
+        _scrollController!.position.maxScrollExtent,
+      ),
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
@@ -148,13 +128,14 @@ class _HbMarkateplaceItemsWidgetState extends State<HbMarkateplaceItemsWidget> {
 
   void _scrollRight() {
     if (_scrollController == null || !_scrollController!.hasClients) {
-      debugPrint('❌ Cannot scroll right - controller not ready');
       return;
     }
 
-    debugPrint('➡️ Scrolling right by 400px');
     _scrollController!.animateTo(
-      (_scrollController!.offset + 400).clamp(0.0, _scrollController!.position.maxScrollExtent),
+      (_scrollController!.offset + 400).clamp(
+        0.0,
+        _scrollController!.position.maxScrollExtent,
+      ),
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
@@ -162,7 +143,6 @@ class _HbMarkateplaceItemsWidgetState extends State<HbMarkateplaceItemsWidget> {
 
   @override
   void dispose() {
-    debugPrint('🔴 Marketplace dispose called');
     _scrollController?.removeListener(_updateArrowVisibility);
     _scrollController?.dispose();
     super.dispose();
@@ -170,17 +150,12 @@ class _HbMarkateplaceItemsWidgetState extends State<HbMarkateplaceItemsWidget> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('🏗️ Marketplace build - products: ${widget.products.length}, loading: ${widget.isLoading}, arrows: L=$_showLeftArrow R=$_showRightArrow');
-
     if (widget.products.isEmpty && !widget.isLoading) {
-      debugPrint('⚠️ Returning empty widget (no products)');
       return const SizedBox.shrink();
     }
 
     final screenWidth = MediaQuery.of(context).size.width;
     final isWebTabletOrDesktop = kIsWeb && screenWidth >= 600;
-
-    debugPrint('📱 Screen: ${screenWidth}px, isWeb: $isWebTabletOrDesktop');
 
     if (isWebTabletOrDesktop) {
       return _buildWebLayout(context);
@@ -191,8 +166,6 @@ class _HbMarkateplaceItemsWidgetState extends State<HbMarkateplaceItemsWidget> {
 
   // ========== WEB LAYOUT ==========
   Widget _buildWebLayout(BuildContext context) {
-    debugPrint('🌐 Building WEB layout');
-
     return Card(
       color: AppColors.white,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -251,8 +224,6 @@ class _HbMarkateplaceItemsWidgetState extends State<HbMarkateplaceItemsWidget> {
       cardWidth = 220;
     }
 
-    debugPrint('🎴 Card width: $cardWidth for screen: $screenWidth');
-
     return Stack(
       children: [
         // Main scrollable list
@@ -260,7 +231,6 @@ class _HbMarkateplaceItemsWidgetState extends State<HbMarkateplaceItemsWidget> {
           height: 320,
           child: NotificationListener<ScrollNotification>(
             onNotification: (notification) {
-              debugPrint('📜 Scroll notification received: ${notification.runtimeType}');
               return false;
             },
             child: ListView.builder(
@@ -310,7 +280,6 @@ class _HbMarkateplaceItemsWidgetState extends State<HbMarkateplaceItemsWidget> {
                 shadowColor: Colors.black.withOpacity(0.3),
                 child: InkWell(
                   onTap: () {
-                    debugPrint('👆 Left arrow clicked');
                     _scrollLeft();
                   },
                   borderRadius: BorderRadius.circular(4),
@@ -355,7 +324,6 @@ class _HbMarkateplaceItemsWidgetState extends State<HbMarkateplaceItemsWidget> {
                 shadowColor: Colors.black.withOpacity(0.3),
                 child: InkWell(
                   onTap: () {
-                    debugPrint('👆 Right arrow clicked');
                     _scrollRight();
                   },
                   borderRadius: BorderRadius.circular(4),
@@ -406,12 +374,12 @@ class _HbMarkateplaceItemsWidgetState extends State<HbMarkateplaceItemsWidget> {
               width: double.infinity,
               child: product.images.isNotEmpty
                   ? Image.network(
-                product.images[0],
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return _buildImagePlaceholder();
-                },
-              )
+                      product.images[0],
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return _buildImagePlaceholder();
+                      },
+                    )
                   : _buildImagePlaceholder(),
             ),
             Expanded(
@@ -443,14 +411,19 @@ class _HbMarkateplaceItemsWidgetState extends State<HbMarkateplaceItemsWidget> {
                     if (product.location?.village != null)
                       Row(
                         children: [
-                          const Icon(Icons.location_on_outlined,
-                              size: 14, color: Colors.grey),
+                          const Icon(
+                            Icons.location_on_outlined,
+                            size: 14,
+                            color: Colors.grey,
+                          ),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
                               product.location!.village!,
                               style: const TextStyle(
-                                  fontSize: 12, color: Colors.grey),
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -489,8 +462,9 @@ class _HbMarkateplaceItemsWidgetState extends State<HbMarkateplaceItemsWidget> {
                   height: 180,
                   decoration: const BoxDecoration(
                     color: AppColors.grey100,
-                    borderRadius:
-                    BorderRadius.vertical(top: Radius.circular(12)),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(12),
+                    ),
                   ),
                 ),
                 Padding(
@@ -536,13 +510,20 @@ class _HbMarkateplaceItemsWidgetState extends State<HbMarkateplaceItemsWidget> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(widget.title,
-                  style: AppTextStyles.h4
-                      .copyWith(fontSize: 22, fontWeight: FontWeight.bold)),
+              Text(
+                widget.title,
+                style: AppTextStyles.h4.copyWith(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               AppSpacing.verticalSpaceXS,
-              Text(widget.subtitle,
-                  style: AppTextStyles.bodyMedium
-                      .copyWith(color: AppColors.textSecondary)),
+              Text(
+                widget.subtitle,
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
             ],
           ),
         ),
@@ -574,7 +555,9 @@ class _HbMarkateplaceItemsWidgetState extends State<HbMarkateplaceItemsWidget> {
   }
 
   Widget _buildMobileProductCard(
-      BuildContext context, MarketplaceModel product) {
+    BuildContext context,
+    MarketplaceModel product,
+  ) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -603,11 +586,14 @@ class _HbMarkateplaceItemsWidgetState extends State<HbMarkateplaceItemsWidget> {
               flex: 3,
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(AppSpacing.radiusMD)),
+                  top: Radius.circular(AppSpacing.radiusMD),
+                ),
                 child: product.images.isNotEmpty
-                    ? Image.network(product.images[0],
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _buildImagePlaceholder())
+                    ? Image.network(
+                        product.images[0],
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _buildImagePlaceholder(),
+                      )
                     : _buildImagePlaceholder(),
               ),
             ),
@@ -618,29 +604,42 @@ class _HbMarkateplaceItemsWidgetState extends State<HbMarkateplaceItemsWidget> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(product.title,
-                        style: AppTextStyles.bodyMedium
-                            .copyWith(fontWeight: FontWeight.w600),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis),
+                    Text(
+                      product.title,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     AppSpacing.verticalSpaceXS,
-                    Text("₹${product.price}",
-                        style: AppTextStyles.bodySmall.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary)),
+                    Text(
+                      "₹${product.price}",
+                      style: AppTextStyles.bodySmall.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
+                    ),
                     const Spacer(),
                     if (product.location?.village != null)
                       Row(
                         children: [
-                          Icon(Icons.location_on_outlined,
-                              size: 12, color: AppColors.textHint),
+                          Icon(
+                            Icons.location_on_outlined,
+                            size: 12,
+                            color: AppColors.textHint,
+                          ),
                           const SizedBox(width: 2),
                           Expanded(
-                              child: Text(product.location!.village!,
-                                  style: AppTextStyles.overline
-                                      .copyWith(color: AppColors.textHint),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis)),
+                            child: Text(
+                              product.location!.village!,
+                              style: AppTextStyles.overline.copyWith(
+                                color: AppColors.textHint,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
                         ],
                       ),
                   ],
@@ -657,8 +656,12 @@ class _HbMarkateplaceItemsWidgetState extends State<HbMarkateplaceItemsWidget> {
     return Container(
       color: AppColors.grey100,
       child: const Center(
-          child: Icon(Icons.image_outlined,
-              size: AppSpacing.iconXL, color: AppColors.grey400)),
+        child: Icon(
+          Icons.image_outlined,
+          size: AppSpacing.iconXL,
+          color: AppColors.grey400,
+        ),
+      ),
     );
   }
 
@@ -672,18 +675,23 @@ class _HbMarkateplaceItemsWidgetState extends State<HbMarkateplaceItemsWidget> {
           width: 160,
           margin: const EdgeInsets.only(right: 12),
           decoration: BoxDecoration(
-              color: AppColors.white,
-              borderRadius: AppSpacing.borderRadiusMD,
-              border: Border.all(color: AppColors.borderLight)),
+            color: AppColors.white,
+            borderRadius: AppSpacing.borderRadiusMD,
+            border: Border.all(color: AppColors.borderLight),
+          ),
           child: Column(
             children: [
               Expanded(
-                  flex: 3,
-                  child: Container(
-                      decoration: const BoxDecoration(
-                          color: AppColors.grey100,
-                          borderRadius: BorderRadius.vertical(
-                              top: Radius.circular(AppSpacing.radiusMD))))),
+                flex: 3,
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: AppColors.grey100,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(AppSpacing.radiusMD),
+                    ),
+                  ),
+                ),
+              ),
               Expanded(
                 flex: 2,
                 child: Padding(
@@ -692,17 +700,21 @@ class _HbMarkateplaceItemsWidgetState extends State<HbMarkateplaceItemsWidget> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
-                          height: 12,
-                          decoration: BoxDecoration(
-                              color: AppColors.grey200,
-                              borderRadius: AppSpacing.borderRadiusXS)),
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: AppColors.grey200,
+                          borderRadius: AppSpacing.borderRadiusXS,
+                        ),
+                      ),
                       AppSpacing.verticalSpaceXS,
                       Container(
-                          height: 10,
-                          width: 60,
-                          decoration: BoxDecoration(
-                              color: AppColors.grey200,
-                              borderRadius: AppSpacing.borderRadiusXS)),
+                        height: 10,
+                        width: 60,
+                        decoration: BoxDecoration(
+                          color: AppColors.grey200,
+                          borderRadius: AppSpacing.borderRadiusXS,
+                        ),
+                      ),
                     ],
                   ),
                 ),

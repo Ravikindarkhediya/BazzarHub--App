@@ -59,7 +59,6 @@ class _NewsDetailViewState extends State<NewsDetailView>
         initialData: widget.initialData,
       ),
       tag: widget.newsId,
-      permanent: true,
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -77,9 +76,9 @@ class _NewsDetailViewState extends State<NewsDetailView>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    if (Get.isRegistered<NewsDetailController>(tag: widget.newsId)) {
-      Get.delete<NewsDetailController>(tag: widget.newsId);
-    }
+    // if (Get.isRegistered<NewsDetailController>(tag: widget.newsId)) {
+    //   Get.delete<NewsDetailController>(tag: widget.newsId);
+    // }
     super.dispose();
   }
 

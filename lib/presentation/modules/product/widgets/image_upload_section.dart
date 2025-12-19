@@ -19,8 +19,8 @@ class ProductImage {
   final String id;
 
   // Local image/video
-  final File? file;          // Android/iOS ke liye
-  final Uint8List? bytes;    // Web ke liye (local image/video bytes)
+  final File? file;
+  final Uint8List? bytes;
 
   // Network
   final String? networkUrl;
@@ -29,8 +29,8 @@ class ProductImage {
 
   // Video flags
   final bool isVideo;
-  final File? thumbnailFile;       // Android/iOS video thumbnail
-  final Uint8List? thumbnailBytes; // Web video thumbnail (future use / optional)
+  final File? thumbnailFile;
+  final Uint8List? thumbnailBytes;
 
   double uploadProgress;
   bool isCompressing;
@@ -445,11 +445,17 @@ class ImageUploadSection extends StatelessWidget {
             Image.file(
               image.thumbnailFile!,
               fit: BoxFit.cover,
+              cacheWidth: 512,
+              cacheHeight: 512,
+              filterQuality: FilterQuality.low,
             )
           else if (kIsWeb && image.thumbnailBytes != null)
               Image.memory(
                 image.thumbnailBytes!,
                 fit: BoxFit.cover,
+                cacheWidth: 512,
+                cacheHeight: 512,
+                filterQuality: FilterQuality.low,
               )
             else
             // IMPORTANT: yahan video bytes ko Image.memory se kabhi render nahi karna
@@ -493,6 +499,7 @@ class ImageUploadSection extends StatelessWidget {
           fit: BoxFit.cover,
           width: double.infinity,
           height: double.infinity,
+          memCacheWidth: 1024,
           placeholder: (_, __) =>
           const Center(child: CupertinoActivityIndicator()),
           errorWidget: (_, __, ___) =>
@@ -508,6 +515,9 @@ class ImageUploadSection extends StatelessWidget {
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
+        cacheWidth: 1024,
+        cacheHeight: 1024,
+        filterQuality: FilterQuality.low,
       );
     } else if (!kIsWeb && !image.isVideo && image.file != null) {
       return Image.file(
@@ -515,6 +525,9 @@ class ImageUploadSection extends StatelessWidget {
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
+        cacheWidth: 1024,
+        cacheHeight: 1024,
+        filterQuality: FilterQuality.low,
       );
     }
 

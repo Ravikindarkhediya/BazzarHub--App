@@ -41,9 +41,6 @@ class _HomeWrapperState extends State<HomeWrapper> {
     const AccountPage(),     // 3 - Profile
   ];
 
-  // Check if the app is running on web
-  bool get _isWeb => kIsWeb || Platform.isMacOS || Platform.isWindows || Platform.isLinux;
-
   @override
   void initState() {
     super.initState();
@@ -52,7 +49,6 @@ class _HomeWrapperState extends State<HomeWrapper> {
         ? Get.find<NewsController>()
         : Get.put(NewsController(), permanent: true);
 
-    // Handle initial tab argument
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final args = Get.arguments as Map<String, dynamic>?;
       final initialTab = args?['initialTab'];
@@ -60,7 +56,6 @@ class _HomeWrapperState extends State<HomeWrapper> {
       if (initialTab != null && initialTab is int) {
         _controller.currentIndex.value = initialTab;
 
-        // Refresh News tab if opening directly
         if (initialTab == 1) {
           _newsController.refresh();
         }
@@ -76,22 +71,7 @@ class _HomeWrapperState extends State<HomeWrapper> {
 
   void _onItemTapped(int index) {
     _controller.changeTab(index);
-    setState(() {}); // Trigger a rebuild to update the app bar title
-  }
-
-  String _getAppBarTitle(int index) {
-    switch (index) {
-      case 0:
-        return 'Home';
-      case 1:
-        return 'News';
-      case 2:
-        return 'Marketplace';
-      case 3:
-        return 'Profile';
-      default:
-        return 'Bazzar Hub';
-    }
+    setState(() {});
   }
 
   void _onSellTap() {
@@ -160,41 +140,55 @@ class _HomeWrapperState extends State<HomeWrapper> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // Check if web OR tablet (width >= 600)
+    final bool showWebLayout = kIsWeb || screenWidth >= 600;
+
+    debugPrint('HOME WRAPPER - Width: $screenWidth, Show Web Layout: $showWebLayout');
+
     return Scaffold(
-      extendBody: true, // Important for proper FAB positioning
-      appBar: _isWeb
+      extendBody: true,
+
+      // Show WebHeader for web OR tablet (>= 600px width)
+      appBar: showWebLayout
           ? PreferredSize(
-              preferredSize: const Size.fromHeight(60),
-              child: WebHeader(
-                currentIndex: _controller.currentIndex.value,
-                onItemTapped: _onItemTapped,
-              ),
-            ):null,
-          // : CustomAppBar(
-          //     title: _getAppBarTitle(_controller.currentIndex.value),
-          //     showLogo: true,
-          //     backgroundColor: Colors.white,
-          //   ),
+        preferredSize: const Size.fromHeight(70),
+        child: Obx(() => WebHeader(
+          currentIndex: _controller.currentIndex.value,
+          onItemTapped: _onItemTapped,
+        )),
+      )
+          : null, // No AppBar for mobile (< 600px) - HomeView handles it
+
       body: Obx(() => IndexedStack(
         index: _controller.currentIndex.value,
         children: _pages,
       )),
-      floatingActionButton: _isWeb ? FloatingActionButton(
+
+      // Floating Action Button for web/tablet
+      floatingActionButton: showWebLayout
+          ? FloatingActionButton(
         onPressed: _onSellTap,
         backgroundColor: AppColors.accent,
         elevation: 6,
         highlightElevation: 8,
         shape: const CircleBorder(),
         child: const Icon(Icons.add, color: AppColors.primary, size: 30),
-      ) : null,
-      floatingActionButtonLocation: _isWeb ? FloatingActionButtonLocation.startFloat : null,
-      bottomNavigationBar: _isWeb
+      )
+          : null,
+      floatingActionButtonLocation: showWebLayout
+          ? FloatingActionButtonLocation.startFloat
+          : null,
+
+      // Bottom Navigation Bar for mobile only
+      bottomNavigationBar: showWebLayout
           ? null
           : Obx(() => BottomNavBarWidget(
-                currentIndex: _controller.currentIndex.value,
-                onTap: _onItemTapped,
-                onSellTap: _onSellTap,
-              )),
+        currentIndex: _controller.currentIndex.value,
+        onTap: _onItemTapped,
+        onSellTap: _onSellTap,
+      )),
     );
   }
 }

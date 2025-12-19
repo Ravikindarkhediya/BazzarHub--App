@@ -914,6 +914,7 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
 
         final thumbnail = await _generateVideoThumbnail(pickedFile.path);
 
+        await Future.delayed(const Duration(milliseconds: 120));
         final index = images.indexWhere((img) => img.id == imageId);
         if (index != -1) {
           images[index] = images[index].copyWith(
@@ -952,6 +953,7 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
 
         final compressedFile = await _compressImage(File(pickedFile.path));
 
+        await Future.delayed(const Duration(milliseconds: 120));
         final index = images.indexWhere((img) => img.id == imageId);
         if (index != -1) {
           images[index] = images[index].copyWith(
@@ -977,16 +979,17 @@ class AddNewsController extends ChangeNotifier implements ImageUploadController 
   }
 
   Future<File?> _generateVideoThumbnail(String videoPath) async {
-    if (kIsWeb) return null;
-
     try {
       final thumbnailPath = await VideoThumbnail.thumbnailFile(
         video: videoPath,
         thumbnailPath: (await getTemporaryDirectory()).path,
         imageFormat: ImageFormat.JPEG,
+        maxWidth: 400,
         quality: 75,
       );
       return thumbnailPath != null ? File(thumbnailPath) : null;
+    } catch (e) {
+      return null;
     } catch (e) {
       return null;
     }

@@ -5,7 +5,7 @@ import 'package:bazzar_hub_app/presentation/services/models/news/news_model.dart
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart' show kIsWeb; // ✅ Add this import
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:dio/dio.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../app/core/utils/app_spacing.dart';
@@ -49,7 +49,7 @@ class _YourPostViewState extends State<YourPostView>
     super.dispose();
   }
 
-  // ✅ Helper: Get cross axis count for grid
+  // Get cross axis count for grid
   int _getCrossAxisCount(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     if (width >= 1200) return 3; // Desktop - 3 columns
@@ -57,12 +57,12 @@ class _YourPostViewState extends State<YourPostView>
     return 1; // Mobile - 1 column
   }
 
-  // ✅ Helper: Get card height for grid
+  // Get card height for grid
   double _getCardHeight(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
-    if (width >= 1200) return 240; // ✅ 280 se 240
-    if (width >= 600) return 220;  // ✅ 260 se 220
-    return 210; // ✅ 240 se 210
+    if (width >= 1200) return 240;
+    if (width >= 600) return 220;
+    return 210;
   }
 
   Future<void> _fetchMarketplace() async {
@@ -196,7 +196,7 @@ class _YourPostViewState extends State<YourPostView>
     }
   }
 
-  // ✅ New Method: Build News List/Grid based on platform
+  // Build News List/Grid based on platform
   Widget _buildNewsContent(BuildContext context) {
     // Check if web and tablet/desktop
     final isWebTabletOrDesktop = kIsWeb && MediaQuery.of(context).size.width >= 600;

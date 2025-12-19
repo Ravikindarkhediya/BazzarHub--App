@@ -158,6 +158,7 @@ class _CustomImageWidgetState extends State<CustomImageWidget> {
     if (widget.imageUrl.startsWith("http")) {
       return CachedNetworkImage(
         imageUrl: widget.imageUrl,
+        memCacheWidth: widget.width.isFinite ? widget.width.ceil() : 1024,
         placeholder: (_, __) => SkeletonLoader(
           width: widget.width,
           height: widget.height,
@@ -185,6 +186,9 @@ class _CustomImageWidgetState extends State<CustomImageWidget> {
         height: widget.height,
         width: widget.width,
         fit: widget.fit,
+        cacheWidth: widget.width.isFinite ? widget.width.ceil() : 1024,
+        cacheHeight: widget.height.isFinite ? widget.height.ceil() : null,
+        filterQuality: FilterQuality.low,
       );
     }
 
@@ -203,6 +207,9 @@ class _CustomImageWidgetState extends State<CustomImageWidget> {
         height: widget.height,
         width: widget.width,
         fit: widget.fit,
+        cacheWidth: widget.width.isFinite ? widget.width.ceil() : 512,
+        cacheHeight: widget.height.isFinite ? widget.height.ceil() : 512,
+        filterQuality: FilterQuality.low,
       );
     }
 

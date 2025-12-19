@@ -21,9 +21,7 @@ import '../../home/widgets/location_selection_bottom_sheet.dart';
 import '../../product/widgets/product_grid_widget.dart';
 import '../../product/views/product_detail_page.dart';
 
-// Global RouteObserver for marketplace
-final RouteObserver<PageRoute> marketplaceRouteObserver =
-    RouteObserver<PageRoute>();
+final RouteObserver<PageRoute> marketplaceRouteObserver = RouteObserver<PageRoute>();
 
 class MarketplaceView extends StatefulWidget {
   const MarketplaceView({super.key});
@@ -36,10 +34,8 @@ class _MarketplaceViewState extends State<MarketplaceView>
     with WidgetsBindingObserver, RouteAware {
   final LocationController _locationController = Get.put(LocationController());
 
-  // Global Query Params
   Map<String, dynamic> queryParams = {"page": 1, "limit": 50};
 
-  // State Variables
   List<String> _selectedCategoryIds = [];
   String? _currentLocation;
 
@@ -82,7 +78,6 @@ class _MarketplaceViewState extends State<MarketplaceView>
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    // Subscribe to route observer only once after dependencies are available
     if (!_routeObserverSubscribed) {
       final route = ModalRoute.of(context);
       if (route is PageRoute) {
@@ -103,19 +98,16 @@ class _MarketplaceViewState extends State<MarketplaceView>
     }
   }
 
-  // RouteAware methods
   @override
   void didPop() {
     _checkAndReloadData();
   }
 
   @override
-  void didPush() {
-  }
+  void didPush() {}
 
   @override
-  void didPushNext() {
-  }
+  void didPushNext() {}
 
   @override
   void didPopNext() {
@@ -123,9 +115,7 @@ class _MarketplaceViewState extends State<MarketplaceView>
   }
 
   Future<void> _checkAndReloadData() async {
-    if (_isRefreshing) {
-      return;
-    }
+    if (_isRefreshing) return;
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -133,15 +123,9 @@ class _MarketplaceViewState extends State<MarketplaceView>
 
       if (needsRefresh) {
         _isRefreshing = true;
-
-
-        // Clear the flag first to prevent multiple refreshes
         await prefs.remove('marketplace_refresh_needed');
-
-        // Add a small delay to ensure the flag is cleared before refresh
         await Future.delayed(const Duration(milliseconds: 300));
 
-        // Only refresh if we're still the current route
         if (mounted && ModalRoute.of(context)?.isCurrent == true) {
           await _refreshMarketplace();
         }
@@ -150,28 +134,18 @@ class _MarketplaceViewState extends State<MarketplaceView>
       }
     } catch (e) {
       _isRefreshing = false;
-      debugPrint(' Error in _checkAndReloadData: $e');
+      debugPrint('Error in _checkAndReloadData: $e');
     }
   }
 
   Future<void> _refreshMarketplace() async {
     try {
-      // 1️⃣ Reload location from controller
       await _locationController.loadUserLocation();
-
-      // 2️⃣ Sync location to query params
       _syncLocationFromController();
-
-      // 3️⃣ Build location display string
       _buildLocationFromMap();
-
-      // 4️⃣ Reload categories
       await _getCategory();
-
-      // 5️⃣ Fetch products with new location
       await _getMarketplace();
 
-      // 6️⃣ Force complete UI rebuild
       if (mounted) {
         setState(() {});
       }
@@ -181,52 +155,38 @@ class _MarketplaceViewState extends State<MarketplaceView>
   }
 
   void _syncLocationFromController() {
-    // Clear existing location params
     queryParams.remove("state");
     queryParams.remove("district");
     queryParams.remove("taluko");
     queryParams.remove("village");
 
-    // Get location from controller
     final locationData = _locationController.getLocationData();
 
-    // Add to query params
     if (locationData['state'] != null && locationData['state']!.isNotEmpty) {
       queryParams["state"] = locationData['state']!;
     }
-    if (locationData['district'] != null &&
-        locationData['district']!.isNotEmpty) {
+    if (locationData['district'] != null && locationData['district']!.isNotEmpty) {
       queryParams["district"] = locationData['district']!;
     }
     if (locationData['taluka'] != null && locationData['taluka']!.isNotEmpty) {
-      queryParams["taluko"] = locationData['taluka']!; // API uses 'taluko'
+      queryParams["taluko"] = locationData['taluka']!;
     }
-    if (locationData['village'] != null &&
-        locationData['village']!.isNotEmpty) {
+    if (locationData['village'] != null && locationData['village']!.isNotEmpty) {
       queryParams["village"] = locationData['village']!;
     }
   }
 
-  //  LOAD LOCATION FROM CONTROLLER AND FETCH
   Future<void> _loadLocationAndFetch() async {
     try {
-      // Load location via controller
       await _locationController.loadUserLocation();
-
-      // Sync to query params
       _syncLocationFromController();
-
-      // Build location string for display
       _buildLocationFromMap();
-
-      // Fetch products with updated location
       await _getMarketplace();
     } catch (e) {
-      debugPrint(' Error loading location: $e');
+      debugPrint('Error loading location: $e');
     }
   }
 
-  //  GET CATEGORIES
   Future<void> _getCategory() async {
     setState(() => _isLoading = true);
 
@@ -251,12 +211,10 @@ class _MarketplaceViewState extends State<MarketplaceView>
     }
   }
 
-  //  GET MARKETPLACE PRODUCTS
   Future<void> _getMarketplace() async {
     setState(() => _isLoadingProducts = true);
 
     try {
-      debugPrint('🛍️ Fetching products with params: $queryParams');
       var services = await getApiClient();
       var response = await services.getMarketplace(queryParams);
 
@@ -281,7 +239,6 @@ class _MarketplaceViewState extends State<MarketplaceView>
     }
   }
 
-  //  BUILD LOCATION STRING
   void _buildLocationFromMap() {
     const order = ["village", "taluko", "district", "state"];
     List<String> parts = [];
@@ -316,7 +273,6 @@ class _MarketplaceViewState extends State<MarketplaceView>
     _currentLocation = parts.join(", ");
   }
 
-  //  FILTER BY CATEGORY
   void _filterByCategory(String categoryId) {
     setState(() {
       if (_selectedCategoryIds.contains(categoryId)) {
@@ -331,7 +287,6 @@ class _MarketplaceViewState extends State<MarketplaceView>
     });
   }
 
-  // REORDER CATEGORIES
   void _reorderCategories() {
     if (_selectedCategoryIds.isEmpty) {
       _displayedCategories = List.from(_categories);
@@ -352,7 +307,6 @@ class _MarketplaceViewState extends State<MarketplaceView>
     _displayedCategories = [...selectedCategories, ...unselectedCategories];
   }
 
-  //  UPDATE QUERY PARAMS AND FETCH
   void _updateQueryParamsAndFetch() {
     if (_selectedCategoryIds.isNotEmpty) {
       queryParams["category"] = _selectedCategoryIds.join(',');
@@ -362,7 +316,6 @@ class _MarketplaceViewState extends State<MarketplaceView>
     _getMarketplace();
   }
 
-  // VIEW ALL CATEGORIES
   void _handleViewAllCategories() {
     CategorySelectionBottomSheet.show(
       context: context,
@@ -378,29 +331,22 @@ class _MarketplaceViewState extends State<MarketplaceView>
     );
   }
 
-  //  HANDLE CLEAR LOCATION
   Future<void> _handleClearLocation() async {
     try {
-      // Clear only the current location filter
       _currentLocation = null;
 
-      // Clear query parameters
       queryParams.remove("state");
       queryParams.remove("district");
       queryParams.remove("taluko");
       queryParams.remove("village");
 
-      // Refresh the marketplace with no location filter
       await _getMarketplace();
-
-      // Clear button will be hidden automatically by the UI logic
     } catch (e) {
       debugPrint('Error resetting to default location: $e');
       AppToast.showError('Error resetting location');
     }
   }
 
-  // FILTER LOCATION
   void _handleFilterLocation() {
     LocationSelectionBottomSheet.show(
       context: context,
@@ -414,15 +360,12 @@ class _MarketplaceViewState extends State<MarketplaceView>
           _buildLocationFromMap();
         });
 
-        //  Save via LocationController
         try {
           if (selectedLocations.containsKey('state')) {
             await _locationController.selectState(selectedLocations['state']);
           }
           if (selectedLocations.containsKey('district')) {
-            await _locationController.selectDistrict(
-              selectedLocations['district'],
-            );
+            await _locationController.selectDistrict(selectedLocations['district']);
           }
           if (selectedLocations.containsKey('taluko')) {
             await _locationController.selectTaluka(selectedLocations['taluko']);
@@ -431,7 +374,6 @@ class _MarketplaceViewState extends State<MarketplaceView>
             _locationController.selectVillage(selectedLocations['village']);
           }
 
-          // Save to SharedPreferences
           await _locationController.saveUserLocation();
         } catch (e) {
           debugPrint('Error saving location: $e');
@@ -442,7 +384,6 @@ class _MarketplaceViewState extends State<MarketplaceView>
     );
   }
 
-  //  HANDLE PRODUCT TAP
   Future<void> _handleProductTap(MarketplaceModel product) async {
     try {
       final productId = product.id;
@@ -478,7 +419,7 @@ class _MarketplaceViewState extends State<MarketplaceView>
             if (updatedProduct != null) {
               setState(() {
                 final index = _displayedProducts.indexWhere(
-                  (p) => p.id == updatedProduct.id,
+                      (p) => p.id == updatedProduct.id,
                 );
                 if (index != -1) {
                   _displayedProducts[index] = updatedProduct;
@@ -489,7 +430,6 @@ class _MarketplaceViewState extends State<MarketplaceView>
 
           case 'viewed':
           default:
-            // Do nothing — no refresh needed!
             break;
         }
       }
@@ -501,6 +441,9 @@ class _MarketplaceViewState extends State<MarketplaceView>
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final bool showWebLayout = kIsWeb || screenWidth >= 600;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: GestureDetector(
@@ -509,27 +452,27 @@ class _MarketplaceViewState extends State<MarketplaceView>
         },
         child: Column(
           children: [
-            if (!kIsWeb) HeaderWidget(),
+            // Fixed HeaderWidget for mobile only (not scrollable)
+            if (!showWebLayout) HeaderWidget(),
 
-            //  REACTIVE LOCATION BAR WITH OBX
-            Obx(() {
-              final controllerLocation = _locationController.getFullAddress();
-              final displayLocation = _currentLocation ?? controllerLocation;
+            // Fixed LocationBarWidget for mobile only (not scrollable)
+            if (!showWebLayout)
+              Obx(() {
+                final controllerLocation = _locationController.getFullAddress();
+                final displayLocation = _currentLocation ?? controllerLocation;
 
-              // Show clear button only when there's a custom location filter applied
-              // (not showing when using default location)
-              final showClearButton =
-                  _currentLocation != null &&
-                  _currentLocation!.isNotEmpty &&
-                  _currentLocation != controllerLocation;
+                final showClearButton = _currentLocation != null &&
+                    _currentLocation!.isNotEmpty &&
+                    _currentLocation != controllerLocation;
 
-              return LocationBarWidget(
-                onLocationTap: _handleFilterLocation,
-                onClearLocation: showClearButton ? _handleClearLocation : null,
-                location: displayLocation,
-              );
-            }),
+                return LocationBarWidget(
+                  onLocationTap: _handleFilterLocation,
+                  onClearLocation: showClearButton ? _handleClearLocation : null,
+                  location: displayLocation,
+                );
+              }),
 
+            // Scrollable content
             Expanded(
               child: RefreshIndicator(
                 onRefresh: () async {
@@ -538,6 +481,25 @@ class _MarketplaceViewState extends State<MarketplaceView>
                 color: AppColors.primary,
                 child: CustomScrollView(
                   slivers: [
+                    // LocationBarWidget for web/tablet (inside scroll)
+                    if (showWebLayout)
+                      SliverToBoxAdapter(
+                        child: Obx(() {
+                          final controllerLocation = _locationController.getFullAddress();
+                          final displayLocation = _currentLocation ?? controllerLocation;
+
+                          final showClearButton = _currentLocation != null &&
+                              _currentLocation!.isNotEmpty &&
+                              _currentLocation != controllerLocation;
+
+                          return LocationBarWidget(
+                            onLocationTap: _handleFilterLocation,
+                            onClearLocation: showClearButton ? _handleClearLocation : null,
+                            location: displayLocation,
+                          );
+                        }),
+                      ),
+
                     SliverToBoxAdapter(
                       child: Column(
                         children: [
@@ -552,6 +514,7 @@ class _MarketplaceViewState extends State<MarketplaceView>
                         ],
                       ),
                     ),
+
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: AppSpacing.horizontalMD,
@@ -578,34 +541,33 @@ class _MarketplaceViewState extends State<MarketplaceView>
                         ),
                       ),
                     ),
+
                     SliverToBoxAdapter(
                       child: ProductGridWidget(
                         products: _displayedProducts,
                         isLoading: _isLoadingProducts,
                         onProductTap: _handleProductTap,
-                        onFavoriteToggle:
-                            (MarketplaceModel product, bool isFavorite) {
-                              setState(() {
-                                final idx = _displayedProducts.indexWhere(
+                        onFavoriteToggle: (MarketplaceModel product, bool isFavorite) {
+                          setState(() {
+                            final idx = _displayedProducts.indexWhere(
                                   (p) => p.id == product.id,
-                                );
-                                if (idx != -1) {
-                                  final current = _displayedProducts[idx];
-                                  final nextCount = isFavorite
-                                      ? current.favoritesCount + 1
-                                      : current.favoritesCount - 1;
-                                  _displayedProducts[idx] = current.copyWith(
-                                    favoritesCount: nextCount < 0
-                                        ? 0
-                                        : nextCount,
-                                    favorites: isFavorite ? 1 : 0,
-                                  );
-                                }
-                              });
-                            },
+                            );
+                            if (idx != -1) {
+                              final current = _displayedProducts[idx];
+                              final nextCount = isFavorite
+                                  ? current.favoritesCount + 1
+                                  : current.favoritesCount - 1;
+                              _displayedProducts[idx] = current.copyWith(
+                                favoritesCount: nextCount < 0 ? 0 : nextCount,
+                                favorites: isFavorite ? 1 : 0,
+                              );
+                            }
+                          });
+                        },
                         showHeartIcon: true,
                       ),
                     ),
+
                     const SliverToBoxAdapter(child: SizedBox(height: 100)),
                   ],
                 ),

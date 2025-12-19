@@ -31,16 +31,13 @@ class WebPageWrapper extends StatelessWidget {
     this.resizeToAvoidBottomInset = true,
   }) : super(key: key);
 
-  // Check if the app is running on web
-  bool get _isWeb => kIsWeb || Platform.isMacOS || Platform.isWindows || Platform.isLinux;
-
   @override
   Widget build(BuildContext context) {
     // Initialize RouteController if not already done
     if (!Get.isRegistered<RouteController>()) {
       Get.put(RouteController(), permanent: true);
     }
-    
+
     // Update current route when widget builds
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (Get.isRegistered<RouteController>()) {
@@ -48,12 +45,18 @@ class WebPageWrapper extends StatelessWidget {
       }
     });
 
-    if (!_isWeb) {
-      // Return the child as-is for mobile platforms
+    // ✅ FIXED: Check screen width instead of platform
+    final screenWidth = MediaQuery.of(context).size.width;
+    final bool showWebLayout = kIsWeb || screenWidth >= 600; // Web OR tablet/desktop size
+
+    debugPrint('🌐 WebPageWrapper - Width: ${screenWidth.toStringAsFixed(1)}px, Show Web Layout: $showWebLayout');
+
+    if (!showWebLayout) {
+      // Return the child as-is for mobile
       return child;
     }
 
-    // For web platforms, wrap with Scaffold and WebHeader
+    // For web/tablet/desktop, wrap with Scaffold and WebHeader
     return Scaffold(
       backgroundColor: backgroundColor,
       extendBodyBehindAppBar: extendBodyBehindAppBar,

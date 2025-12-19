@@ -63,10 +63,6 @@ class NewsController extends GetxController {
         newsList.refresh();
         update(); // Global update for GetBuilder
         update(['news_list']); // Specific update for GetBuilder with ID
-
-        if (newsList.isNotEmpty) {
-          debugPrint('First news: ${newsList.first.title}');
-        }
       }
     } catch (e, s) {
       errorMessage('Failed to refresh news');

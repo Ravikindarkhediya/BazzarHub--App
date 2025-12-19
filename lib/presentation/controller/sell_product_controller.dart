@@ -1,24 +1,21 @@
 import 'dart:io';
-import 'dart:typed_data'; // ADD THIS
+import 'dart:typed_data';
 import 'package:bazzar_hub_app/presentation/controller/location_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart' show kIsWeb; // ADD kIsWeb
-import 'package:get/get.dart' hide MultipartFile;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:image_picker/image_picker.dart';
-import 'package:file_picker/file_picker.dart'; // ADD THIS
+import 'package:file_picker/file_picker.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:dio/dio.dart';
-import 'package:geolocator/geolocator.dart';
-
 import '../commons/dialogs/app_toasts.dart';
 import '../modules/product/widgets/image_upload_section.dart';
-import '../routes/app_routes.dart';
 import '../services/api_service.dart';
 import '../services/models/categorie/categorie_model.dart';
 import '../services/models/Common/coordinates_model.dart';
 import '../services/models/marketplace/marketplace_model.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 /// Sell Product Controller with Edit Mode Support + Web Support
 class SellProductController extends ChangeNotifier
@@ -337,7 +334,6 @@ class SellProductController extends ChangeNotifier
 
       // Web: Fallback to gallery
       if (kIsWeb) {
-        debugPrint('⚠️ Camera not supported on web, using gallery');
         return pickFromGallery(context, mediaType: mediaType);
       }
 
@@ -384,8 +380,6 @@ class SellProductController extends ChangeNotifier
 
       // WEB: Use file_picker
       if (kIsWeb) {
-        debugPrint(' Web: Opening file picker...');
-
         final result = await FilePicker.platform.pickFiles(
           allowMultiple: true,
           type: FileType.custom,
@@ -402,23 +396,16 @@ class SellProductController extends ChangeNotifier
         );
 
         if (result != null && result.files.isNotEmpty) {
-          debugPrint('Files picked: ${result.files.length}');
-
           final slots = maxImages - _images.length;
           final toAdd = result.files.take(slots);
 
           for (var file in toAdd) {
             final bytes = file.bytes;
             if (bytes == null) {
-              debugPrint('⚠️ Skipping file (no bytes): ${file.name}');
               continue;
             }
 
             final isVideo = _isVideoExtension(file.extension ?? '');
-            debugPrint(
-              '📁 Adding: ${file.name} (${bytes.length} bytes) - Video: $isVideo',
-            );
-
             await _addImageWeb(bytes, file.name, context, isVideo: isVideo);
           }
 
@@ -428,8 +415,6 @@ class SellProductController extends ChangeNotifier
               'Only first $slots items added (max $maxImages)',
             );
           }
-        } else {
-          debugPrint('⚠️ No files selected');
         }
         return;
       }
@@ -507,22 +492,18 @@ class SellProductController extends ChangeNotifier
   }) async {
     final imageId = DateTime.now().millisecondsSinceEpoch.toString();
 
-    debugPrint('📦 Creating ProductImage for web: $fileName');
-
     final productImage = ProductImage(
       id: imageId,
-      bytes: bytes, // Web uses bytes
+      bytes: bytes,
       isVideo: isVideo,
-      isCompressing: false, // No compression for web
+      isCompressing: false,
     );
 
     _images.add(productImage);
-    debugPrint('Image added. Total: ${_images.length}');
     safeNotifyListeners();
-    debugPrint('🔔 notifyListeners() called');
   }
 
-  // EXISTING: Add image for Mobile (with File)
+  // Add image for Mobile (with File)
   Future<void> _addImage(
     File file,
     BuildContext context, {
@@ -548,9 +529,30 @@ class SellProductController extends ChangeNotifier
       }
     }
 
+    File finalFile = file;
+    if (!isVideo) {
+      try {
+        final dir = await getTemporaryDirectory();
+        final targetPath =
+            '${dir.path}/${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final result = await FlutterImageCompress.compressAndGetFile(
+          file.absolute.path,
+          targetPath,
+          quality: 70,
+          minWidth: 1024,
+          minHeight: 1024,
+        );
+        if (result != null) {
+          finalFile = File(result.path);
+        }
+      } catch (e) {
+        debugPrint('Error compressing image: $e');
+      }
+    }
+
     final productImage = ProductImage(
       id: imageId,
-      file: file,
+      file: finalFile,
       isVideo: isVideo,
       thumbnailFile: thumbnailFile,
       isCompressing: true,
@@ -559,7 +561,7 @@ class SellProductController extends ChangeNotifier
     _images.add(productImage);
     safeNotifyListeners();
 
-    await Future.delayed(const Duration(milliseconds: 800));
+    await Future.delayed(const Duration(milliseconds: 400));
 
     final index = _images.indexWhere((img) => img.id == imageId);
     if (index != -1) {
@@ -594,7 +596,6 @@ class SellProductController extends ChangeNotifier
 
         // WEB: Upload from bytes
         if (kIsWeb && productImage.bytes != null) {
-          debugPrint('Uploading from bytes (web)...');
           final fileName =
               'upload_${DateTime.now().millisecondsSinceEpoch}.${productImage.isVideo ? "mp4" : "jpg"}';
           multipartFile = MultipartFile.fromBytes(
@@ -604,7 +605,6 @@ class SellProductController extends ChangeNotifier
         }
         // MOBILE: Upload from file
         else if (productImage.file != null) {
-          debugPrint('📱 Uploading from file (mobile)...');
           final fileName = productImage.file!.path.split('/').last;
           multipartFile = await MultipartFile.fromFile(
             productImage.file!.path,

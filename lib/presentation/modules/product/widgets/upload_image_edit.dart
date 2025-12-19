@@ -120,6 +120,7 @@ class ImageUploadSectionGeneric<T extends ProductImageController>
                 fit: BoxFit.cover,
                 width: double.infinity,
                 height: double.infinity,
+                memCacheWidth: 1024,
                 placeholder: (context, url) =>
                     Center(child: CupertinoActivityIndicator()),
                 errorWidget: (context, url, error) => Center(
@@ -186,26 +187,27 @@ class ImageUploadSectionGeneric<T extends ProductImageController>
   }
 
   Widget _buildNewImageTile(
-    BuildContext context,
-    ProductImage image,
-    double size,
-  ) {
+      BuildContext context,
+      ProductImage image,
+      double size,
+      ) {
     final isFirst =
         controller.existingImageUrls.isEmpty &&
-        controller.images.isNotEmpty &&
-        controller.images.first.id == image.id;
+            controller.images.isNotEmpty &&
+            controller.images.first.id == image.id;
 
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) =>
-                FullScreenNetworkImageViewer(imageUrl: image.toString()),
+            builder: (_) => FullScreenNetworkImageViewer(
+              imageUrl: image.toString(),
+            ),
           ),
         );
       },
-      child: Container(
+      child: SizedBox(
         width: size,
         height: size,
         key: ValueKey(image.id),
@@ -215,40 +217,47 @@ class ImageUploadSectionGeneric<T extends ProductImageController>
               borderRadius: BorderRadius.circular(12),
               child: image.isVideo
                   ? Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        if (image.thumbnailFile != null)
-                          Image.file(
-                            image.thumbnailFile!,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
-                          )
-                        else
-                          Container(color: Colors.black87),
-                        Center(
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.black54,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              CupertinoIcons.play_fill,
-                              size: 32,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
-                    )
-                  : Image.file(
-                      image.file!,
+                fit: StackFit.expand,
+                children: [
+                  if (image.thumbnailFile != null)
+                    Image.file(
+                      image.thumbnailFile!,
                       fit: BoxFit.cover,
                       width: double.infinity,
                       height: double.infinity,
+                      cacheWidth: 512,
+                      cacheHeight: 512,
+                      filterQuality: FilterQuality.low,
+                    )
+                  else
+                    Container(color: Colors.black87),
+
+                  // ▶ Play icon overlay
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: const BoxDecoration(
+                        color: Colors.black54,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        CupertinoIcons.play_fill,
+                        size: 32,
+                        color: Colors.white,
+                      ),
                     ),
+                  ),
+                ],
+              )
+                  : Image.file(
+                image.file!,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+              ),
             ),
+
+            // Compressing overlay
             if (image.isCompressing)
               Positioned.fill(
                 child: Container(
@@ -276,6 +285,8 @@ class ImageUploadSectionGeneric<T extends ProductImageController>
                   ),
                 ),
               ),
+
+            // Upload progress bar
             if (!image.isCompressing && !image.isUploaded)
               Positioned(
                 left: 0,
@@ -303,6 +314,8 @@ class ImageUploadSectionGeneric<T extends ProductImageController>
                   ),
                 ),
               ),
+
+            // Remove button
             Positioned(
               top: 4,
               right: 4,
@@ -326,6 +339,8 @@ class ImageUploadSectionGeneric<T extends ProductImageController>
                 ),
               ),
             ),
+
+            // COVER badge
             if (isFirst)
               Positioned(
                 top: 4,

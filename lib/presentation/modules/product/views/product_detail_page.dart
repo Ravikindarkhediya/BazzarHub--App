@@ -102,7 +102,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('marketplace_refresh_needed');
-      debugPrint('Cleared marketplace refresh flag');
     } catch (e) {
       debugPrint('Error clearing refresh flag: $e');
     }
@@ -505,7 +504,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         child: _buildAppbarIcon(
           icon: Icons.arrow_back_rounded,
           onTap: () async {
-            LogManager.trackMarketplaceView(widget.productId);
             if (widget.onFavoriteChanged != null &&
                 _controller?.isFavorite !=
                     (_controller?.product.favorites == 1)) {
@@ -571,7 +569,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           child: _buildAppbarIcon(
             icon: Icons.arrow_back_rounded,
             onTap: () async {
-              LogManager.trackMarketplaceView(widget.productId);
               if (widget.onFavoriteChanged != null &&
                   _controller?.isFavorite !=
                       (_controller?.product.favorites == 1)) {

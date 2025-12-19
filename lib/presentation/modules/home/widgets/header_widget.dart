@@ -25,6 +25,9 @@ class HeaderWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final bool showWebLayout = kIsWeb || screenWidth >= 600;
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.white,
@@ -40,65 +43,67 @@ class HeaderWidget extends StatelessWidget {
         bottom: false,
         child: Column(
           children: [
+            /// Top Row - App Name, Location, Actions
+            /// Show ONLY on mobile (< 600px)
+            if (!showWebLayout)
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
+                ),
+                child: Row(
+                  children: [
+                    /// App Logo & Name
+                    _buildAppBranding(),
+                    AppSpacing.horizontalSpaceSM,
 
-            /// 🎯 Top Row - App Name, Location, Actions
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md, vertical: AppSpacing.sm
+                    Spacer(),
+
+                    /// Search Icon
+                    _buildIconButton(
+                      icon: Icons.search,
+                      onTap: () {},
+                      hasBadge: false,
+                    ),
+
+                    AppSpacing.horizontalSpaceSM,
+
+                    /// Notification Icon
+                    _buildIconButton(
+                      icon: Icons.notifications_outlined,
+                      onTap: () {},
+                      hasBadge: true,
+                    ),
+                  ],
+                ),
               ),
-              child: Row(
-                children: [
 
-                  /// App Logo & Name - Hidden on web
-                  if (!kIsWeb) _buildAppBranding(),
-                  if (!kIsWeb) AppSpacing.horizontalSpaceSM,
-
-                  Spacer(),
-
-                  /// Search Icon
-                  if (!kIsWeb) _buildIconButton(
-                    icon: Icons.search,
-                    onTap:(){
-
-                    },
-                    hasBadge: false,
-                  ),
-
-                  if (!kIsWeb) AppSpacing.horizontalSpaceSM,
-
-                  /// Notification Icon
-                  if (!kIsWeb) _buildIconButton(
-                    icon: Icons.notifications_outlined,
-                    onTap: (){
-
-                    },
-                    hasBadge: true,
-                  ),
-                ],
-              ),
-            ),
-
-            // Tab Bar
-            if(isFromNewsTab)
+            /// Tab Bar (for News Tab)
+            /// Show on ALL devices when isFromNewsTab = true
+            if (isFromNewsTab)
               Container(
-              color: Colors.white,
-              child: Padding(
-                padding: EdgeInsetsGeometry.symmetric(horizontal: 5),
-                child: TabBar(
-                  dividerColor: Colors.transparent,
-                  controller: tabController,
-                  isScrollable: true,
-                  tabAlignment: TabAlignment.start,
-                  labelPadding: EdgeInsets.zero,
-                  labelColor: AppColors.primary,
-                  unselectedLabelColor: AppColors.textSecondary,
-                  indicator: RoundedTabIndicator(
-                    color: AppColors.primary.withOpacity(0.15),
-                    radius: 25,
+                color: Colors.white,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: showWebLayout ? 16 : 5,
+                    vertical: showWebLayout ? 8 : 0,
                   ),
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  tabs: Utils.newsLocationCategories.map((category) =>
-                      Tab(
+                  child: TabBar(
+                    dividerColor: Colors.transparent,
+                    controller: tabController,
+                    isScrollable: true,
+                    tabAlignment: TabAlignment.start,
+                    labelPadding: EdgeInsets.zero,
+                    labelColor: AppColors.primary,
+                    unselectedLabelColor: AppColors.textSecondary,
+                    indicator: RoundedTabIndicator(
+                      color: AppColors.primary.withOpacity(0.15),
+                      radius: 25,
+                    ),
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    tabs: Utils.newsLocationCategories
+                        .map(
+                          (category) => Tab(
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 15),
                           child: Row(
@@ -114,16 +119,16 @@ class HeaderWidget extends StatelessWidget {
                           ),
                         ),
                       ),
-                  ).toList(),
-
-                  onTap: (index) {
-                    if (onTabSelect != null) {
-                      onTabSelect!(index);
-                    }
-                  },
+                    )
+                        .toList(),
+                    onTap: (index) {
+                      if (onTabSelect != null) {
+                        onTabSelect!(index);
+                      }
+                    },
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),

@@ -124,7 +124,6 @@ class OtherUserProfileController extends GetxController {
 
   Future<void> toggleBlockUser() async {
     if (isBlockingInProgress.value) {
-      debugPrint('Block/Unblock already in progress');
       return;
     }
 
@@ -195,7 +194,6 @@ class OtherUserProfileController extends GetxController {
 
   @override
   void onClose() {
-    debugPrint('Disposing OtherUserProfileController for user: $userId');
     super.onClose();
   }
 }

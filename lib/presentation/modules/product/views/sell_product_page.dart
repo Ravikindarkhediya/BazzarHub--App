@@ -551,7 +551,6 @@ class _SellProductPageState extends State<SellProductPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Mobile: Show title/subtitle
               if (!isWeb) ...[
                 Text(
                   'Choose Category',
@@ -566,6 +565,7 @@ class _SellProductPageState extends State<SellProductPage> {
                 ),
                 const SizedBox(height: 24),
               ],
+
               if (controller.categories.isEmpty)
                 const Center(
                   child: Padding(
@@ -578,263 +578,202 @@ class _SellProductPageState extends State<SellProductPage> {
                   builder: (context, constraints) {
                     final screenWidth = constraints.maxWidth;
 
-                    // MOBILE: Original GridView
-                    if (!isWeb) {
+                    // ✅ MOBILE - Screen width < 600 (Not platform check)
+                    if (screenWidth < 600) {
                       return GridView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 3,
-                              mainAxisSpacing: AppSpacing.sm,
-                              crossAxisSpacing: AppSpacing.sm,
-                              childAspectRatio: 0.82,
-                            ),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          mainAxisSpacing: AppSpacing.sm,
+                          crossAxisSpacing: AppSpacing.sm,
+                          childAspectRatio: 0.82,
+                        ),
                         itemCount: controller.categories.length,
                         itemBuilder: (context, index) {
                           final category = controller.categories[index];
-                          final isSelected =
-                              controller.selectedCategoryId == category.id;
+                          final isSelected = controller.selectedCategoryId == category.id;
 
                           return InkWell(
-                                onTap: () {
-                                  HapticFeedback.selectionClick();
-                                  controller.selectCategory(category.id);
-                                },
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              controller.selectCategory(category.id!);
+                            },
+                            borderRadius: AppSpacing.borderRadiusMD,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 250),
+                              padding: const EdgeInsets.all(AppSpacing.xs),
+                              decoration: BoxDecoration(
+                                color: AppColors.white,
                                 borderRadius: AppSpacing.borderRadiusMD,
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 250),
-                                  padding: const EdgeInsets.all(AppSpacing.xs),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.white,
-                                    borderRadius: AppSpacing.borderRadiusMD,
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? AppColors.primary
-                                          : AppColors.borderLight,
-                                      width: isSelected ? 2.5 : 1,
+                                border: Border.all(
+                                  color: isSelected ? AppColors.primary : AppColors.borderLight,
+                                  width: isSelected ? 2.5 : 1,
+                                ),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                      margin: const EdgeInsets.only(top: 8, bottom: 8),
+                                      constraints: const BoxConstraints(
+                                        maxHeight: 80,
+                                        maxWidth: 80,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withOpacity(0.1),
+                                        borderRadius: AppSpacing.borderRadiusSM,
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius: AppSpacing.borderRadiusSM,
+                                        child: AspectRatioImage(
+                                          imageUrl: category.icon ?? '',
+                                          aspectRatio: 1 / 1,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Expanded(
-                                        child: Container(
-                                          margin: const EdgeInsets.only(
-                                            top: 8,
-                                            bottom: 8,
-                                          ),
-                                          constraints: const BoxConstraints(
-                                            maxHeight: 80,
-                                            maxWidth: 80,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.primary
-                                                .withOpacity(0.1),
-                                            borderRadius:
-                                                AppSpacing.borderRadiusSM,
-                                          ),
-                                          child: ClipRRect(
-                                            borderRadius:
-                                                AppSpacing.borderRadiusSM,
-                                            child: AspectRatioImage(
-                                              imageUrl: category.icon ?? "",
-                                              aspectRatio: 1 / 1,
-                                            ),
-                                          ),
-                                        ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                                    child: Text(
+                                      AppLanguage.getText(category.name),
+                                      style: AppTextStyles.caption.copyWith(
+                                        color: AppColors.textPrimary,
+                                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                        height: 1.3,
+                                        fontSize: 11,
                                       ),
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 4,
-                                        ),
-                                        child: Text(
-                                          AppLanguage.getText(category.name),
-                                          style: AppTextStyles.caption.copyWith(
-                                            color: AppColors.textPrimary,
-                                            fontWeight: isSelected
-                                                ? FontWeight.w600
-                                                : FontWeight.w500,
-                                            height: 1.3,
-                                            fontSize: 11,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
-                                ),
-                              )
-                              .animate()
+                                ],
+                              ),
+                            ),
+                          ).animate()
                               .fadeIn(duration: 400.ms, delay: (50 * index).ms)
                               .scale(
-                                begin: const Offset(0.8, 0.8),
-                                end: const Offset(1, 1),
-                              );
+                            begin: const Offset(0.8, 0.8),
+                            end: const Offset(1, 1),
+                          );
                         },
                       );
                     }
 
-                    // WEB: Wrap Layout
+                    // ✅ TABLET/WEB - Screen width >= 600
                     int crossAxisCount;
                     double iconSize;
                     double fontSize;
+                    double spacing;
 
-                    if (screenWidth >= 900) {
+                    if (screenWidth >= 1200) {
                       crossAxisCount = 6;
-                      iconSize = 70;
-                      fontSize = 13;
-                    } else if (screenWidth >= 700) {
+                      iconSize = 56;
+                      fontSize = 14;
+                      spacing = 20;
+                    } else if (screenWidth >= 900) {
                       crossAxisCount = 5;
-                      iconSize = 65;
-                      fontSize = 12.5;
-                    } else if (screenWidth >= 500) {
+                      iconSize = 52;
+                      fontSize = 13;
+                      spacing = 16;
+                    } else if (screenWidth >= 600) {
+                      // Your Samsung Tab T865
                       crossAxisCount = 4;
-                      iconSize = 60;
-                      fontSize = 12;
-                    } else if (screenWidth >= 400) {
-                      crossAxisCount = 3;
-                      iconSize = 55;
-                      fontSize = 11.5;
+                      iconSize = 48;
+                      fontSize = 12.5;
+                      spacing = 16;
                     } else {
-                      crossAxisCount = 2;
-                      iconSize = 50;
-                      fontSize = 11;
+                      crossAxisCount = 3;
+                      iconSize = 44;
+                      fontSize = 12;
+                      spacing = 12;
                     }
 
-                    final spacing = screenWidth >= 700 ? 16.0 : 12.0;
+                    return GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        mainAxisSpacing: spacing,
+                        crossAxisSpacing: spacing,
+                        childAspectRatio: 0.85,
+                      ),
+                      itemCount: controller.categories.length,
+                      itemBuilder: (context, index) {
+                        final category = controller.categories[index];
+                        final isSelected = controller.selectedCategoryId == category.id;
 
-                    return Wrap(
-                      spacing: spacing,
-                      runSpacing: spacing,
-                      children: controller.categories.asMap().entries.map((
-                        entry,
-                      ) {
-                        final index = entry.key;
-                        final category = entry.value;
-                        final isSelected =
-                            controller.selectedCategoryId == category.id;
-
-                        return LayoutBuilder(
-                              builder: (context, itemConstraints) {
-                                final itemWidth =
-                                    (screenWidth -
-                                        (crossAxisCount - 1) * spacing) /
-                                    crossAxisCount;
-
-                                return SizedBox(
-                                  width: itemWidth,
-                                  child: InkWell(
-                                    onTap: () {
-                                      HapticFeedback.selectionClick();
-                                      controller.selectCategory(category.id);
-                                    },
-                                    borderRadius: BorderRadius.circular(14),
-                                    child: AnimatedContainer(
-                                      duration: const Duration(
-                                        milliseconds: 300,
-                                      ),
-                                      padding: EdgeInsets.all(
-                                        screenWidth >= 700 ? 14 : 10,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isSelected
-                                            ? AppColors.primary.withOpacity(
-                                                0.08,
-                                              )
-                                            : Colors.white,
-                                        borderRadius: BorderRadius.circular(14),
-                                        border: Border.all(
-                                          color: isSelected
-                                              ? AppColors.primary
-                                              : AppColors.grey300,
-                                          width: isSelected ? 2 : 1.5,
-                                        ),
-                                        boxShadow: isSelected
-                                            ? [
-                                                BoxShadow(
-                                                  color: AppColors.primary
-                                                      .withOpacity(0.2),
-                                                  blurRadius: 12,
-                                                  offset: const Offset(0, 4),
-                                                ),
-                                              ]
-                                            : [
-                                                BoxShadow(
-                                                  color: Colors.black
-                                                      .withOpacity(0.05),
-                                                  blurRadius: 8,
-                                                  offset: const Offset(0, 2),
-                                                ),
-                                              ],
-                                      ),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Container(
-                                            width: iconSize,
-                                            height: iconSize,
-                                            padding: EdgeInsets.all(
-                                              screenWidth >= 700 ? 10 : 8,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: isSelected
-                                                  ? Colors.white
-                                                  : AppColors.grey100,
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                              border: Border.all(
-                                                color: isSelected
-                                                    ? AppColors.primary
-                                                          .withOpacity(0.2)
-                                                    : AppColors.grey300,
-                                                width: 1,
-                                              ),
-                                            ),
-                                            child: ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                              child: AspectRatioImage(
-                                                imageUrl: category.icon ?? "",
-                                                aspectRatio: 1 / 1,
-                                              ),
-                                            ),
-                                          ),
-                                          SizedBox(
-                                            height: screenWidth >= 700 ? 10 : 8,
-                                          ),
-                                          Text(
-                                            AppLanguage.getText(category.name),
-                                            style: TextStyle(
-                                              fontSize: fontSize,
-                                              fontWeight: isSelected
-                                                  ? FontWeight.w700
-                                                  : FontWeight.w600,
-                                              color: isSelected
-                                                  ? AppColors.primary
-                                                  : AppColors.textPrimary,
-                                              height: 1.2,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                            maxLines: 2,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
+                        return InkWell(
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            controller.selectCategory(category.id!);
+                          },
+                          borderRadius: BorderRadius.circular(16),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.primary.withOpacity(0.1)
+                                  : Colors.grey.shade50,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : Colors.grey.shade300,
+                                width: isSelected ? 2.5 : 1.5,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                // Icon Container
+                                Container(
+                                  width: iconSize,
+                                  height: iconSize,
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                );
-                              },
-                            )
-                            .animate()
-                            .fadeIn(duration: 400.ms, delay: (40 * index).ms)
+                                  child: AspectRatioImage(
+                                    imageUrl: category.icon ?? '',
+                                    aspectRatio: 1 / 1,
+                                  ),
+                                ),
+
+                                const SizedBox(height: 12),
+
+                                // Category Name
+                                Text(
+                                  AppLanguage.getText(category.name),
+                                  style: TextStyle(
+                                    fontSize: fontSize,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w600
+                                        : FontWeight.w500,
+                                    color: isSelected
+                                        ? AppColors.primary
+                                        : Colors.black87,
+                                    height: 1.2,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ).animate()
+                            .fadeIn(duration: 400.ms, delay: (30 * index).ms)
                             .scale(
-                              begin: const Offset(0.9, 0.9),
-                              end: const Offset(1, 1),
-                            );
-                      }).toList(),
+                          begin: const Offset(0.95, 0.95),
+                          end: const Offset(1, 1),
+                        );
+                      },
                     );
                   },
                 ),

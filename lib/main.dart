@@ -5,13 +5,21 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:flutter/painting.dart';
 import 'app/core/manager/log_manager.dart';
 import 'presentation/services/api_service.dart';
 import 'firebase_options.dart';
 
 
 Future<void> main() async {
+
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    debugPrint(details.toString());
+  };
   WidgetsFlutterBinding.ensureInitialized();
+  PaintingBinding.instance.imageCache.maximumSize = 200;
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 60 * 1024 * 1024;
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
