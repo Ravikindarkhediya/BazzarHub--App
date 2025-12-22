@@ -63,7 +63,6 @@ class _WebHeaderState extends State<WebHeader> {
         });
       }
 
-      debugPrint('🔐 WebHeader - User loaded: ${user?.id}, Logged In: $isLoggedIn, Token: ${token?.substring(0, 10)}...');
     } catch (e) {
       debugPrint('❌ WebHeader - Error loading user: $e');
       if (mounted) {
@@ -89,19 +88,6 @@ class _WebHeaderState extends State<WebHeader> {
     bool isMobile = screenWidth < 600;
     bool isTablet = screenWidth >= 600 && screenWidth < 1200;
     bool isDesktop = screenWidth >= 1200;
-
-    // Debug print
-    debugPrint('═══════════════════════════════════════════════════');
-    debugPrint('📱 Screen Width: ${screenWidth.toStringAsFixed(1)}px');
-    debugPrint('📱 Screen Height: ${screenHeight.toStringAsFixed(1)}px');
-    debugPrint('📱 Device Pixel Ratio: $devicePixelRatio');
-    debugPrint('📱 isMobile: $isMobile');
-    debugPrint('📱 isTablet: $isTablet');
-    debugPrint('📱 isDesktop: $isDesktop');
-    debugPrint('📱 isLoggedIn: $_isLoggedIn');
-    debugPrint('📱 isLoading: $_isLoading');
-    debugPrint('📱 User ID: ${_user?.id ?? "null"}');
-    debugPrint('═══════════════════════════════════════════════════');
 
     return Container(
       height: 70,

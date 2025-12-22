@@ -47,7 +47,6 @@ class _NewsViewState extends State<NewsView>
     );
     _tabController.addListener(_handleTabSelection);
 
-    // Initialize ScrollController
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
   }
@@ -60,10 +59,10 @@ class _NewsViewState extends State<NewsView>
     }
   }
 
-  // Scroll Listener - Only for Web
+  // Scroll Listener - For Tablet/Desktop (width >= 600)
   void _onScroll() {
-    // Skip if not web or mobile size
-    if (!kIsWeb || MediaQuery.of(context).size.width < 600) return;
+    // ✅ Check screen width instead of platform
+    if (MediaQuery.of(context).size.width < 600) return;
 
     final currentOffset = _scrollController.offset;
 
@@ -100,7 +99,7 @@ class _NewsViewState extends State<NewsView>
     if (width >= 1200) {
       return 3; // Desktop/Monitor - 3 columns
     } else if (width >= 600) {
-      return 2; // Tablet - 2 columns
+      return 2; // Tablet (Android + Web) - 2 columns
     }
     return 1; // Mobile - 1 column (list view)
   }
@@ -109,14 +108,15 @@ class _NewsViewState extends State<NewsView>
   Widget build(BuildContext context) {
     super.build(context);
 
-    final isWebTabletOrDesktop = kIsWeb && MediaQuery.of(context).size.width >= 600;
+    // ✅ Use screen width instead of kIsWeb
+    final isTabletOrDesktop = MediaQuery.of(context).size.width >= 600;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-          // ========== HEADER WIDGET (with Animation for Web) ==========
-          if (isWebTabletOrDesktop)
+          // ========== HEADER WIDGET (with Animation for Tablet/Desktop) ==========
+          if (isTabletOrDesktop)
             AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
@@ -157,8 +157,8 @@ class _NewsViewState extends State<NewsView>
           Expanded(
             child: Column(
               children: [
-                // ========== CATEGORY SELECTOR (with Animation for Web) ==========
-                if (isWebTabletOrDesktop)
+                // ========== CATEGORY SELECTOR (with Animation for Tablet/Desktop) ==========
+                if (isTabletOrDesktop)
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
                     curve: Curves.easeInOut,
@@ -262,27 +262,27 @@ class _NewsViewState extends State<NewsView>
               ],
             ),
           ),
-          SizedBox(height: 70),
+          const SizedBox(height: 70),
         ],
       ),
     );
   }
 
   Widget _buildNewsContent(BuildContext context, NewsController controller) {
-    // Check if web and tablet/desktop size
-    final isWebTabletOrDesktop = kIsWeb && MediaQuery.of(context).size.width >= 600;
+    // ✅ Check screen width instead of platform
+    final isTabletOrDesktop = MediaQuery.of(context).size.width >= 600;
 
-    if (isWebTabletOrDesktop) {
+    if (isTabletOrDesktop) {
       return _buildGridView(context, controller);
     } else {
       return _buildListView(context, controller);
     }
   }
 
-  // Original ListView for Mobile and Android
+  // Original ListView for Mobile (width < 600)
   Widget _buildListView(BuildContext context, NewsController controller) {
     return ListView.builder(
-      controller: _scrollController, // Attach ScrollController
+      controller: _scrollController,
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(
         horizontal: 16,
@@ -344,7 +344,7 @@ class _NewsViewState extends State<NewsView>
     );
   }
 
-  // GridView for Web Tablet and Desktop
+  // GridView for Tablet (Android + Web) and Desktop
   Widget _buildGridView(BuildContext context, NewsController controller) {
     final crossAxisCount = _getCrossAxisCount(context);
     final screenWidth = MediaQuery.of(context).size.width;
@@ -353,7 +353,7 @@ class _NewsViewState extends State<NewsView>
     final horizontalPadding = screenWidth >= 1200 ? 32.0 : 16.0;
 
     return CustomScrollView(
-      controller: _scrollController, // Attach ScrollController
+      controller: _scrollController,
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
         // Featured News Card (Full Width)

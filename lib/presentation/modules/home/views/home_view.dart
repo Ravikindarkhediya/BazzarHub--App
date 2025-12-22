@@ -27,7 +27,6 @@ class _HomeViewState extends State<HomeView> {
   @override
   void initState() {
     super.initState();
-    debugPrint('HomeView initState');
     _initializeControllers();
   }
 
@@ -36,14 +35,10 @@ class _HomeViewState extends State<HomeView> {
         ? Get.find<NewsController>()
         : Get.put(NewsController(), permanent: true);
 
-    debugPrint('HomeView - NewsController registered: ${Get.isRegistered<NewsController>()}');
-    debugPrint('HomeView - Platform: ${kIsWeb ? "Web" : "Mobile"}');
-
     if (kIsWeb) {
       await Future.delayed(const Duration(milliseconds: 150));
 
       if (newsController.newsList.isEmpty && !newsController.isLoading.value) {
-        debugPrint('HomeView - Force fetching news for web...');
         await newsController.fetchNews();
       }
     }
@@ -52,8 +47,6 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Future<void> _fetchMarketplaceProducts() async {
-    debugPrint('Fetching marketplace products...');
-
     if (mounted) {
       setState(() => _isLoadingMarketplace = true);
     }
@@ -62,11 +55,8 @@ class _HomeViewState extends State<HomeView> {
       var services = await getApiClient();
       var response = await services.getMarketplace({"page": 1, "limit": 10});
 
-      debugPrint('API Response status: ${response.data.status}');
-
       if (response.data.status) {
         final products = response.data.data ?? [];
-        debugPrint('Products received: ${products.length}');
 
         if (mounted) {
           setState(() {
@@ -74,10 +64,7 @@ class _HomeViewState extends State<HomeView> {
             _isLoadingMarketplace = false;
           });
         }
-
-        debugPrint('Marketplace loaded - Count: ${_marketplaceProducts.length}');
       } else {
-        debugPrint('API returned status false');
         if (mounted) {
           setState(() => _isLoadingMarketplace = false);
         }
@@ -93,8 +80,6 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('HomeView build - Marketplace products: ${_marketplaceProducts.length}, loading: $_isLoadingMarketplace');
-
     final screenWidth = MediaQuery.of(context).size.width;
     final bool showWebLayout = kIsWeb || screenWidth >= 600;
 
@@ -121,19 +106,21 @@ class _HomeViewState extends State<HomeView> {
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                      ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           // News Section
                           Obx(() {
-                            debugPrint('HomeView Obx - Loading: ${newsController.isLoading.value}, Count: ${newsController.newsList.length}, Error: ${newsController.errorMessage.value}');
-
                             if (newsController.isLoading.value &&
                                 newsController.newsList.isEmpty) {
                               return const Padding(
                                 padding: EdgeInsets.symmetric(vertical: 20.0),
-                                child: Center(child: CircularProgressIndicator()),
+                                child: Center(
+                                  child: CircularProgressIndicator(),
+                                ),
                               );
                             }
 
@@ -149,9 +136,10 @@ class _HomeViewState extends State<HomeView> {
                                 ),
                                 child: Column(
                                   children: [
-                                    Icon(Icons.error_outline,
-                                        size: 48,
-                                        color: Colors.red[800]
+                                    Icon(
+                                      Icons.error_outline,
+                                      size: 48,
+                                      color: Colors.red[800],
                                     ),
                                     const SizedBox(height: 12),
                                     Text(
@@ -180,11 +168,11 @@ class _HomeViewState extends State<HomeView> {
                                         backgroundColor: Colors.red[600],
                                         foregroundColor: Colors.white,
                                         padding: const EdgeInsets.symmetric(
-                                            horizontal: 24,
-                                            vertical: 12
+                                          horizontal: 24,
+                                          vertical: 12,
                                         ),
                                       ),
-                                    )
+                                    ),
                                   ],
                                 ),
                               );
@@ -193,8 +181,8 @@ class _HomeViewState extends State<HomeView> {
                             if (newsController.newsList.isEmpty) {
                               return Container(
                                 margin: const EdgeInsets.symmetric(
-                                    vertical: 20,
-                                    horizontal: 16
+                                  vertical: 20,
+                                  horizontal: 16,
                                 ),
                                 padding: const EdgeInsets.all(32),
                                 decoration: BoxDecoration(
@@ -204,9 +192,9 @@ class _HomeViewState extends State<HomeView> {
                                 child: Column(
                                   children: [
                                     Icon(
-                                        Icons.article_outlined,
-                                        size: 48,
-                                        color: Colors.grey[600]
+                                      Icons.article_outlined,
+                                      size: 48,
+                                      color: Colors.grey[600],
                                     ),
                                     const SizedBox(height: 12),
                                     Text(
@@ -241,12 +229,15 @@ class _HomeViewState extends State<HomeView> {
                               children: [
                                 const SizedBox(height: 16),
                                 HBNewsItemsWidget(
-                                  newsItems: newsController.newsList.take(5).toList(),
+                                  newsItems: newsController.newsList
+                                      .take(5)
+                                      .toList(),
                                   title: "Latest News",
-                                  subtitle: "Stay updated with the latest happenings",
+                                  subtitle:
+                                      "Stay updated with the latest happenings",
                                   onNewsTap: (news) {
                                     Get.to(
-                                          () => NewsDetailView(
+                                      () => NewsDetailView(
                                         newsId: news.id,
                                         initialData: news.toJson(),
                                       ),
@@ -261,7 +252,9 @@ class _HomeViewState extends State<HomeView> {
                           }),
 
                           HbMarkateplaceItemsWidget(
-                            key: ValueKey('marketplace_${_marketplaceProducts.length}_$_isLoadingMarketplace'),
+                            key: ValueKey(
+                              'marketplace_${_marketplaceProducts.length}_$_isLoadingMarketplace',
+                            ),
                             products: _marketplaceProducts,
                             isLoading: _isLoadingMarketplace,
                           ),
@@ -272,7 +265,8 @@ class _HomeViewState extends State<HomeView> {
                             temperature: "30°C",
                             feelsLike: "33°C",
                             weatherDescription: "Partly Cloudy",
-                            iconUrl: "https://openweathermap.org/img/wn/02d@2x.png",
+                            iconUrl:
+                                "https://openweathermap.org/img/wn/02d@2x.png",
                             minTemp: "26°C",
                             maxTemp: "34°C",
                             humidity: "62%",

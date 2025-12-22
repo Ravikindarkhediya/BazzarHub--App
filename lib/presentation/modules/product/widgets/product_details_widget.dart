@@ -30,12 +30,11 @@ class ProductDetailsWidget extends StatelessWidget {
 
   // Platform Detection
   bool _isWebDesktop(BuildContext context) =>
-      kIsWeb && MediaQuery.of(context).size.width >= 1200;
+      MediaQuery.of(context).size.width >= 1200;
 
   bool _isTablet(BuildContext context) =>
-      kIsWeb &&
-          MediaQuery.of(context).size.width >= 768 &&
-          MediaQuery.of(context).size.width < 1200;
+      MediaQuery.of(context).size.width >= 600 &&
+      MediaQuery.of(context).size.width < 1200;
 
   @override
   Widget build(BuildContext context) {
@@ -134,11 +133,13 @@ class ProductDetailsWidget extends StatelessWidget {
                                       // MediaCarousel with stable key
                                       RepaintBoundary(
                                         child: MediaCarousel(
-                                          key: ValueKey('carousel_${product.id}'),
+                                          key: ValueKey(
+                                            'carousel_${product.id}',
+                                          ),
                                           mediaUrls: controller.images,
                                           height: 520,
-                                          onPageChanged: (index) =>
-                                              controller.updateImageIndex(index),
+                                          onPageChanged: (index) => controller
+                                              .updateImageIndex(index),
                                         ),
                                       ),
 
@@ -457,28 +458,6 @@ class ProductDetailsWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildWebMetaItem({
-    required IconData icon,
-    required String label,
-    Color? color,
-  }) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 16, color: color ?? AppColors.textSecondary),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildWebDescriptionSection(MarketplaceModel product) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -588,11 +567,7 @@ class ProductDetailsWidget extends StatelessWidget {
                   height: 56,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: const LinearGradient(
-                      colors: [AppColors.primary, Color(0xFF8B5CF6)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    color: AppColors.primary,
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.primary.withOpacity(0.3),
@@ -651,46 +626,46 @@ class ProductDetailsWidget extends StatelessWidget {
                       onTap: product.sellerPhone == null
                           ? null
                           : () async {
-                        final Uri dialUri = Uri(
-                          scheme: 'tel',
-                          path: product.sellerPhone,
-                        );
-                        if (!await launchUrl(
-                          dialUri,
-                          mode: LaunchMode.externalApplication,
-                        )) {
-                          throw 'Could not open dialer';
-                        }
-                      },
+                              final Uri dialUri = Uri(
+                                scheme: 'tel',
+                                path: product.sellerPhone,
+                              );
+                              if (!await launchUrl(
+                                dialUri,
+                                mode: LaunchMode.externalApplication,
+                              )) {
+                                throw 'Could not open dialer';
+                              }
+                            },
                     ),
                     const SizedBox(width: 20),
                     _buildCompactContactButton(
                       icon: Icons.email_rounded,
                       onTap:
-                      (product.contactInfo?.email?.isNotEmpty == true ||
-                          product.createdBy?.email != null)
+                          (product.contactInfo?.email?.isNotEmpty == true ||
+                              product.createdBy?.email != null)
                           ? () async {
-                        final email =
-                        product.contactInfo?.email?.isNotEmpty == true
-                            ? product.contactInfo!.email!.first
-                            : product.createdBy!.email!;
-                        final Uri emailUri = Uri(
-                          scheme: 'mailto',
-                          path: email,
-                          queryParameters: {
-                            'subject':
-                            'Regarding your product: ${product.title}',
-                            'body':
-                            'Hello ${product.sellerName},\n\nI am interested in your product: ${product.title}\n\n',
-                          },
-                        );
-                        if (!await launchUrl(
-                          emailUri,
-                          mode: LaunchMode.externalApplication,
-                        )) {
-                          throw 'Could not open email';
-                        }
-                      }
+                              final email =
+                                  product.contactInfo?.email?.isNotEmpty == true
+                                  ? product.contactInfo!.email!.first
+                                  : product.createdBy!.email!;
+                              final Uri emailUri = Uri(
+                                scheme: 'mailto',
+                                path: email,
+                                queryParameters: {
+                                  'subject':
+                                      'Regarding your product: ${product.title}',
+                                  'body':
+                                      'Hello ${product.sellerName},\n\nI am interested in your product: ${product.title}\n\n',
+                                },
+                              );
+                              if (!await launchUrl(
+                                emailUri,
+                                mode: LaunchMode.externalApplication,
+                              )) {
+                                throw 'Could not open email';
+                              }
+                            }
                           : null,
                     ),
                   ],
@@ -742,9 +717,7 @@ class ProductDetailsWidget extends StatelessWidget {
             child: Icon(
               icon,
               size: 20,
-              color: isEnabled
-                  ? AppColors.primary
-                  : Colors.grey[400],
+              color: isEnabled ? AppColors.primary : Colors.grey[400],
             ),
           ),
         ),
@@ -754,9 +727,9 @@ class ProductDetailsWidget extends StatelessWidget {
 
   // Sticky Related Products (Web Sidebar)
   Widget _buildStickyRelatedProducts(
-      MarketplaceModel product,
-      BuildContext context,
-      ) {
+    MarketplaceModel product,
+    BuildContext context,
+  ) {
     if (product.list == null || product.list!.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -805,9 +778,9 @@ class ProductDetailsWidget extends StatelessWidget {
   }
 
   Widget _buildCompactProductCard(
-      MarketplaceModel product,
-      BuildContext context,
-      ) {
+    MarketplaceModel product,
+    BuildContext context,
+  ) {
     return InkWell(
       onTap: () {
         if (product.id.isEmpty) {
@@ -843,62 +816,62 @@ class ProductDetailsWidget extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               child: product.images.isNotEmpty
                   ? Image.network(
-                product.images.first,
-                width: double.infinity,
-                height: 140,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    width: double.infinity,
-                    height: 140,
-                    color: Colors.grey[200],
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.shopping_bag_outlined,
-                          size: 40,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'No Image',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[500],
+                      product.images.first,
+                      width: double.infinity,
+                      height: 140,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: double.infinity,
+                          height: 140,
+                          color: Colors.grey[200],
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.shopping_bag_outlined,
+                                size: 40,
+                                color: Colors.grey[400],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'No Image',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[500],
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              )
+                        );
+                      },
+                    )
                   : Container(
-                width: double.infinity,
-                height: 140,
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.shopping_bag_outlined,
-                      size: 40,
-                      color: Colors.grey[400],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'No Image',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[500],
+                      width: double.infinity,
+                      height: 140,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.shopping_bag_outlined,
+                            size: 40,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'No Image',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
             ),
 
             const SizedBox(height: 12),
@@ -994,10 +967,10 @@ class ProductDetailsWidget extends StatelessWidget {
   }
 
   Widget _buildRelatedProductsSection(
-      MarketplaceModel product,
-      BuildContext context, {
-        required int crossAxisCount,
-      }) {
+    MarketplaceModel product,
+    BuildContext context, {
+    required int crossAxisCount,
+  }) {
     if (product.list == null || product.list!.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -1023,6 +996,7 @@ class ProductDetailsWidget extends StatelessWidget {
             style: AppTextStyles.h6.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 20),
+
           ProductGridWidget(
             products: product.list!,
             onProductTap: (selectedProduct) {
@@ -1290,46 +1264,46 @@ class ProductDetailsWidget extends StatelessWidget {
                       onTap: product.sellerPhone == null
                           ? null
                           : () async {
-                        final Uri dialUri = Uri(
-                          scheme: 'tel',
-                          path: product.sellerPhone,
-                        );
-                        if (!await launchUrl(
-                          dialUri,
-                          mode: LaunchMode.externalApplication,
-                        )) {
-                          throw 'Could not open dialer';
-                        }
-                      },
+                              final Uri dialUri = Uri(
+                                scheme: 'tel',
+                                path: product.sellerPhone,
+                              );
+                              if (!await launchUrl(
+                                dialUri,
+                                mode: LaunchMode.externalApplication,
+                              )) {
+                                throw 'Could not open dialer';
+                              }
+                            },
                     ),
                     AppSpacing.verticalSpaceSM,
                     _buildContactButton(
                       icon: Icons.email,
                       onTap:
-                      (product.contactInfo?.email?.isNotEmpty == true ||
-                          product.createdBy?.email != null)
+                          (product.contactInfo?.email?.isNotEmpty == true ||
+                              product.createdBy?.email != null)
                           ? () async {
-                        final email =
-                        product.contactInfo?.email?.isNotEmpty == true
-                            ? product.contactInfo!.email!.first
-                            : product.createdBy!.email!;
-                        final Uri emailUri = Uri(
-                          scheme: 'mailto',
-                          path: email,
-                          queryParameters: {
-                            'subject':
-                            'Regarding your product: ${product.title}',
-                            'body':
-                            'Hello ${product.sellerName},\n\nI am interested in your product: ${product.title}\n\n',
-                          },
-                        );
-                        if (!await launchUrl(
-                          emailUri,
-                          mode: LaunchMode.externalApplication,
-                        )) {
-                          throw 'Could not open email';
-                        }
-                      }
+                              final email =
+                                  product.contactInfo?.email?.isNotEmpty == true
+                                  ? product.contactInfo!.email!.first
+                                  : product.createdBy!.email!;
+                              final Uri emailUri = Uri(
+                                scheme: 'mailto',
+                                path: email,
+                                queryParameters: {
+                                  'subject':
+                                      'Regarding your product: ${product.title}',
+                                  'body':
+                                      'Hello ${product.sellerName},\n\nI am interested in your product: ${product.title}\n\n',
+                                },
+                              );
+                              if (!await launchUrl(
+                                emailUri,
+                                mode: LaunchMode.externalApplication,
+                              )) {
+                                throw 'Could not open email';
+                              }
+                            }
                           : null,
                     ),
                   ],
@@ -1364,9 +1338,7 @@ class ProductDetailsWidget extends StatelessWidget {
 class _LikeCounterOverlay extends StatefulWidget {
   final ProductController controller;
 
-  const _LikeCounterOverlay({
-    required this.controller,
-  });
+  const _LikeCounterOverlay({required this.controller});
 
   @override
   State<_LikeCounterOverlay> createState() => _LikeCounterOverlayState();
@@ -1400,10 +1372,7 @@ class _LikeCounterOverlayState extends State<_LikeCounterOverlay> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 8,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.6),
         borderRadius: BorderRadius.circular(20),
@@ -1418,11 +1387,7 @@ class _LikeCounterOverlayState extends State<_LikeCounterOverlay> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.favorite_rounded,
-            size: 18,
-            color: Colors.redAccent,
-          ),
+          const Icon(Icons.favorite_rounded, size: 18, color: Colors.redAccent),
           const SizedBox(width: 6),
           Text(
             '$_likeCount',

@@ -1,7 +1,6 @@
 import 'package:bazzar_hub_app/app/core/utils/app_language.dart';
 import 'package:bazzar_hub_app/presentation/modules/product/widgets/custom_image_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../../../app/core/utils/responsive_size.dart';
 import '../../../../app/core/utils/utils.dart';
 import '../../../../app/data/constants/app_colors.dart';
@@ -29,11 +28,11 @@ class CompactNewsCard extends StatelessWidget {
     final createdAt = newsData.createdAt;
     final String? villageName = newsData.location?.district;
 
-    // Check if web and tablet/desktop
-    final isWebTabletOrDesktop = kIsWeb && MediaQuery.of(context).size.width >= 600;
+    // ✅ Check screen width instead of kIsWeb
+    final isTabletOrDesktop = MediaQuery.of(context).size.width >= 600;
 
-    if (isWebTabletOrDesktop) {
-      return _buildWebGridCard(
+    if (isTabletOrDesktop) {
+      return _buildGridCard(
         context,
         title,
         imageUrl,
@@ -55,7 +54,7 @@ class CompactNewsCard extends StatelessWidget {
     }
   }
 
-  // Original Mobile/Android Layout (Horizontal)
+  // Original Mobile/Android Layout (Horizontal List)
   Widget _buildMobileCard(
       BuildContext context,
       String title,
@@ -147,9 +146,8 @@ class CompactNewsCard extends StatelessWidget {
     );
   }
 
-  // Web Grid Layout (Vertical Card)
-  // Web Grid Layout (Vertical Card) - Fixed Height Version
-  Widget _buildWebGridCard(
+  // Grid Layout (Tablet Android + Web + Desktop)
+  Widget _buildGridCard(
       BuildContext context,
       String title,
       String imageUrl,
@@ -296,7 +294,6 @@ class CompactNewsCard extends StatelessWidget {
       ),
     );
   }
-
 
   // Build thumbnail (for mobile)
   Widget _buildThumbnail(String imageUrl, bool isVideo, double width, double height) {

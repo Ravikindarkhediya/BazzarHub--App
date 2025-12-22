@@ -1,5 +1,4 @@
 import 'dart:ui';
-import 'package:bazzar_hub_app/app/core/manager/log_manager.dart';
 import 'package:bazzar_hub_app/presentation/commons/dialogs/app_toasts.dart';
 import 'package:bazzar_hub_app/presentation/commons/widgets/report_bottom_sheet.dart';
 import 'package:bazzar_hub_app/presentation/modules/product/views/sell_product_page.dart';
@@ -70,13 +69,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   String? _errorMessage;
   SessionManager sessionManager = SessionManager();
 
-  // Platform Detection
-  bool get _isWebDesktop => kIsWeb && MediaQuery.of(context).size.width >= 1200;
+  // Platform Detection based on screen width
+  bool get _isWebDesktop => MediaQuery.of(context).size.width >= 1200;
   bool get _isTablet =>
-      kIsWeb &&
-      MediaQuery.of(context).size.width >= 768 &&
+      MediaQuery.of(context).size.width >= 600 &&
       MediaQuery.of(context).size.width < 1200;
-  bool get _isMobile => MediaQuery.of(context).size.width < 768;
+  bool get _isMobile => MediaQuery.of(context).size.width < 600;
 
   @override
   void initState() {
@@ -147,7 +145,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         _errorMessage = error.toString();
       });
     } finally {
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
       setState(() {
         _isLoading = false;
       });

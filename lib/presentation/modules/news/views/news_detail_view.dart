@@ -41,12 +41,11 @@ class _NewsDetailViewState extends State<NewsDetailView>
   Map<String, dynamic>? _reportInfo;
 
   // Platform Detection
-  bool get _isWebDesktop => kIsWeb && MediaQuery.of(context).size.width >= 1200;
+  bool get _isWebDesktop => MediaQuery.of(context).size.width >= 1200;
   bool get _isTablet =>
-      kIsWeb &&
-      MediaQuery.of(context).size.width >= 768 &&
-      MediaQuery.of(context).size.width < 1200;
-  bool get _isMobile => MediaQuery.of(context).size.width < 768;
+      MediaQuery.of(context).size.width >= 600 &&
+          MediaQuery.of(context).size.width < 1200;
+  bool get _isMobile => MediaQuery.of(context).size.width < 600;
 
   @override
   void initState() {
@@ -709,11 +708,7 @@ class _NewsDetailViewState extends State<NewsDetailView>
               height: _isWebDesktop ? 56 : 48,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  colors: [AppColors.primary, Color(0xFF8B5CF6)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: AppColors.primary,
                 boxShadow: [
                   BoxShadow(
                     color: AppColors.primary.withOpacity(0.3),
@@ -979,9 +974,9 @@ class _NewsDetailViewState extends State<NewsDetailView>
 
   // RELATED NEWS SECTION (Tablet Grid)
   Widget _buildRelatedNewsSection(
-    List<NewsModel> relatedNews, {
-    required int crossAxisCount,
-  }) {
+      List<NewsModel> relatedNews, {
+        required int crossAxisCount,
+      }) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -1007,14 +1002,17 @@ class _NewsDetailViewState extends State<NewsDetailView>
             ),
           ),
           const SizedBox(height: 20),
+
+          // ✅ Use GridView instead of ListView for tablet
           GridView.builder(
             physics: const NeverScrollableScrollPhysics(),
             shrinkWrap: true,
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: crossAxisCount,
-              mainAxisExtent: 240,
+              mainAxisExtent: 240, // Fixed height like in news_view
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
+              childAspectRatio: 0.95,
             ),
             itemCount: relatedNews.length > 6 ? 6 : relatedNews.length,
             itemBuilder: (context, index) {
@@ -1029,6 +1027,7 @@ class _NewsDetailViewState extends State<NewsDetailView>
       ),
     );
   }
+
 
   // MOBILE RELATED NEWS (Original)
   Widget _buildMobileRelatedNews(List<NewsModel> relatedNews) {
