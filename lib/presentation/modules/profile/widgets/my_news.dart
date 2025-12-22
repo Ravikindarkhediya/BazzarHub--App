@@ -2,7 +2,6 @@ import 'package:bazzar_hub_app/presentation/modules/news/views/add_news_view.dar
 import 'package:bazzar_hub_app/presentation/modules/product/widgets/custom_image_widget.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:get/get.dart';
 import '../../../../app/core/utils/app_language.dart';
 import '../../../../app/core/utils/app_spacing.dart';
@@ -29,10 +28,9 @@ class MyNews extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<NewsController>();
-
-    // Check if web and tablet/desktop
-    final isWebTabletOrDesktop = kIsWeb && MediaQuery.of(context).size.width >= 600;
+    // ✅ Tablet/Desktop detection based only on width
+    final width = MediaQuery.of(context).size.width;
+    final isTabletOrDesktop = width >= 600; // 600+ = tablet/web, <600 = mobile
 
     return GetBuilder<NewsController>(
       id: 'news_list',
@@ -49,7 +47,8 @@ class MyNews extends StatelessWidget {
         final String newsCategory = AppLanguage.getText(currentNews.category?.name);
         final String? villageName = currentNews.location?.district;
 
-        if (isWebTabletOrDesktop) {
+        if (isTabletOrDesktop) {
+          // ✅ Tablet + Web dono pe ye grid-card UI
           return _buildWebGridCard(
             context,
             currentNews,
@@ -61,6 +60,7 @@ class MyNews extends StatelessWidget {
             createdAt,
           );
         } else {
+          // ✅ Mobile pe same old list card
           return _buildMobileCard(
             context,
             currentNews,

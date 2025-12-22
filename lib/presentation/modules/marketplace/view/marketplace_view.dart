@@ -10,7 +10,6 @@ import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../commons/dialogs/app_toasts.dart';
 import '../../../commons/widgets/location_bar_widget.dart';
-import '../../../commons/widgets/web_page_wrapper.dart';
 import '../../../services/api_service.dart';
 import '../../../services/models/categorie/categorie_model.dart';
 import '../../../services/models/marketplace/marketplace_model.dart';

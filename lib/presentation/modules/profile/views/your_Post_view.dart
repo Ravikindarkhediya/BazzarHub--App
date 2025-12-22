@@ -198,16 +198,18 @@ class _YourPostViewState extends State<YourPostView>
 
   // Build News List/Grid based on platform
   Widget _buildNewsContent(BuildContext context) {
-    // Check if web and tablet/desktop
-    final isWebTabletOrDesktop = kIsWeb && MediaQuery.of(context).size.width >= 600;
+    final width = MediaQuery.of(context).size.width;
 
-    if (isWebTabletOrDesktop) {
-      // Web Grid View
+    // ✅ 600+ = tablet / web => grid
+    final isTabletOrDesktop = width >= 600;
+
+    if (isTabletOrDesktop) {
+      // Grid View (Web + Android Tablet)
       return GridView.builder(
         padding: const EdgeInsets.all(16),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: _getCrossAxisCount(context),
-          mainAxisExtent: _getCardHeight(context),
+          crossAxisCount: _getCrossAxisCount(context), // 2 tablet, 3 desktop
+          mainAxisExtent: _getCardHeight(context),     // same helper as before
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
         ),
@@ -215,14 +217,12 @@ class _YourPostViewState extends State<YourPostView>
         itemBuilder: (context, index) {
           return MyNews(
             newsData: _displayMyNews[index],
-            onTapdDelete: (id) {
-              _deleteMyNews(id);
-            },
+            onTapdDelete: (id) => _deleteMyNews(id),
           );
         },
       );
     } else {
-      // Mobile List View
+      // Mobile List View (unchanged)
       return ListView.separated(
         padding: AppSpacing.horizontalMD,
         itemCount: _displayMyNews.length,
@@ -236,9 +236,7 @@ class _YourPostViewState extends State<YourPostView>
         itemBuilder: (context, index) {
           return MyNews(
             newsData: _displayMyNews[index],
-            onTapdDelete: (id) {
-              _deleteMyNews(id);
-            },
+            onTapdDelete: (id) => _deleteMyNews(id),
           );
         },
       );
