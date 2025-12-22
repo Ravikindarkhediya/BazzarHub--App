@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -271,7 +273,7 @@ class CommonReportReasonsPage extends StatelessWidget {
                             final prefs =
                             await SharedPreferences.getInstance();
 
-                            if (type == 'news') {
+                            if (type.toLowerCase() == 'news') {
                               prefs.setBool(
                                   'news_refresh_needed', true);
                               if (Get.isRegistered<NewsController>()) {
@@ -279,7 +281,7 @@ class CommonReportReasonsPage extends StatelessWidget {
                               }
                             }
 
-                            if (type == 'marketplace') {
+                            if (type.toLowerCase() == 'marketplace') {
                               prefs.setBool(
                                   'marketplace_refresh_needed', true);
                             }
@@ -288,8 +290,8 @@ class CommonReportReasonsPage extends StatelessWidget {
                             Navigator.pop(context); // bottom sheet
                             Navigator.pop(context); // reason page
 
-                            if (type == 'news' ||
-                                type == 'marketplace') {
+                            if (type.toLowerCase() == 'news' ||
+                                type.toLowerCase() == 'marketplace') {
                               Navigator.pop(context); // detail page
                             }
 
@@ -343,6 +345,12 @@ class CommonReportReasonsPage extends StatelessWidget {
     required String message,
   }) async {
     try {
+      // Validate itemId before making the API call
+      if (itemId.isEmpty) {
+        AppToast.showError('Invalid item ID');
+        return false;
+      }
+
       final services = await getApiClient();
 
       final body = {
@@ -350,14 +358,20 @@ class CommonReportReasonsPage extends StatelessWidget {
         if (message.isNotEmpty) 'message': message,
       };
 
+      debugPrint('Submitting report for $type item: $itemId');
+      debugPrint('Report body: $body');
+
       final response = type == 'news'
           ? await services.reportNews(itemId, body)
-          : type == 'user'
+          : type.toLowerCase() == 'user'
           ? await services.reportUser({
         ...body,
         'reportedUserId': itemId,
       })
           : await services.reportMarketPlace(itemId, body);
+
+      debugPrint('Report response status: ${response.data.status}');
+      debugPrint('Report response message: ${response.data.message}');
 
       if (response.data.status) {
         if (isUserReport && (reportedUserName?.isNotEmpty ?? false)) {
@@ -366,10 +380,57 @@ class CommonReportReasonsPage extends StatelessWidget {
         return true;
       }
 
-      AppToast.showError(response.data.message ?? 'Failed to submit report');
+      // Handle specific error cases
+      final errorMessage = response.data.message ?? '';
+      if (errorMessage.toLowerCase().contains('not found')) {
+        if (type.toLowerCase() == 'marketplace') {
+          AppToast.showError('This listing is no longer available or has been removed');
+        } else if (type.toLowerCase() == 'news') {
+          AppToast.showError('This news article is no longer available or has been removed');
+        } else if (type.toLowerCase() == 'user') {
+          AppToast.showError('');
+        } else {
+          AppToast.showError('');
+        }
+      } else {
+        AppToast.showError(errorMessage);
+      }
       return false;
     } catch (e) {
-      AppToast.showError('User Report Successfully');
+      debugPrint('Error submitting report: $e');
+
+      // Handle DioException specifically to get proper error messages
+      if (e is DioException) {
+        if (e.response?.data != null) {
+          final responseData = e.response!.data;
+          String errorMessage = '';
+
+          // Extract error message from response
+          if (responseData is Map<String, dynamic>) {
+            errorMessage = responseData['message'] ?? errorMessage;
+            if (responseData['success'] == false && errorMessage.isNotEmpty) {
+              // Handle specific cases
+              if (errorMessage.toLowerCase().contains('already reported')) {
+                if (type.toLowerCase() == 'user') {
+                  AppToast.showError('You have already reported this user');
+                } else if (type.toLowerCase() == 'marketplace') {
+                  AppToast.showError('You have already reported this listing');
+                } else if (type.toLowerCase() == 'news') {
+                  AppToast.showError('You have already reported this news article');
+                } else {
+                  AppToast.showError('You have already reported this item');
+                }
+                return false;
+              }
+            }
+          }
+          AppToast.showError(errorMessage);
+        } else {
+          AppToast.showError('Network error: ${e.message}');
+        }
+      } else {
+        AppToast.showError('User Report Successfully');
+      }
       return false;
     }
   }
