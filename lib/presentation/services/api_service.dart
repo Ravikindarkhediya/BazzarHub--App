@@ -277,7 +277,12 @@ abstract class ApiServices {
     @Body() Map<String, dynamic> body,
   );
 
-  // Other user profile
+
+  @POST(Endpoints.USER_REPORT)
+  Future<HttpResponse<BaseModel<dynamic>>> reportUser(
+    @Body() Map<String, dynamic> body,
+  );
+
 
   @GET("${Endpoints.OTHER_USER_PROFILE}/{id}")
   Future<HttpResponse<BaseModel<UserModel>>> getOtherUserProfile(

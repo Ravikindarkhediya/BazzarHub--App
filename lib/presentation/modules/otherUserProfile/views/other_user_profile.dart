@@ -472,7 +472,7 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                   CommonReportReasonsPage.show(
                     context: context,
                     itemId: widget.userId,
-                    type: 'marketplace',
+                    type: 'User',
                   );
                 },
                 isDestructiveAction: true,

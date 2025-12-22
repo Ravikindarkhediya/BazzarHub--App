@@ -42,6 +42,9 @@ class Endpoints {
   static const String BLOCKED_LIST = "/user/blocked/list";
   static const String USER_BLOCK_UNBLOCK = "/user/block/toggle";
 
+  // Report User
+  static const String USER_REPORT = "/user/report/create";
+
   // Other User profile
   static const String OTHER_USER_PROFILE = "/user";
   static const String OTHER_USER_CREATED_NEWS = "/api/news/user";

@@ -1,7 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
+
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
@@ -11,7 +13,7 @@ import '../controllers/news_controller.dart';
 
 class CommonReportReasonsPage extends StatelessWidget {
   final String itemId;
-  final String type;
+  final String type; // news | marketplace | user
   final bool isUserReport;
   final String? reportedUserName;
   final String? reportedUserEmail;
@@ -36,7 +38,7 @@ class CommonReportReasonsPage extends StatelessWidget {
     return Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CommonReportReasonsPage(
+        builder: (_) => CommonReportReasonsPage(
           itemId: itemId,
           type: type,
           isUserReport: isUserReport,
@@ -109,7 +111,7 @@ class CommonReportReasonsPage extends StatelessWidget {
           onPressed: () => Get.back(),
         ),
         title: Text(
-          'Report this post',
+          isUserReport ? 'Report this user' : 'Report this post',
           style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
         ),
       ),
@@ -117,17 +119,16 @@ class CommonReportReasonsPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: AppSpacing.paddingMD.add(
-              const EdgeInsets.symmetric(vertical: 0),
-            ),
+            padding: AppSpacing.paddingMD,
             child: Text(
-              'Why are you reporting this post?',
+              isUserReport
+                  ? 'Why are you reporting this user?'
+                  : 'Why are you reporting this post?',
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
             ),
           ),
-
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(
@@ -139,49 +140,36 @@ class CommonReportReasonsPage extends StatelessWidget {
                 final reason = reportReasons[index];
 
                 return Card(
-                  color: AppColors.white,
                   margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: AppSpacing.borderRadiusMD,
                     side: const BorderSide(
                       color: AppColors.borderLight,
-                      width: 1,
                     ),
                   ),
-                  elevation: 0,
                   child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
-                      vertical: AppSpacing.xs,
-                    ),
                     leading: Icon(
-                      reason['icon'] as IconData?,
+                      reason['icon'],
                       color: AppColors.primary,
-                      size: 24,
                     ),
                     title: Text(
-                      reason['title'] as String,
+                      reason['title'],
                       style: AppTextStyles.bodyMedium.copyWith(
                         color: AppColors.primary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     subtitle: Text(
-                      reason['description'] as String,
+                      reason['description'],
                       style: AppTextStyles.bodySmall.copyWith(fontSize: 11),
                     ),
-                    trailing: const Icon(
-                      Icons.chevron_right,
-                      color: AppColors.textSecondary,
-                      size: 20,
-                    ),
+                    trailing: const Icon(Icons.chevron_right),
                     onTap: () {
                       _showReportDetailsBottomSheet(
                         context,
-                        itemId,
-                        type,
-                        reason['title'] as String,
-                        reason['description'] as String,
+                        reason['title'],
+                        reason['description'],
                       );
                     },
                   ),
@@ -196,8 +184,6 @@ class CommonReportReasonsPage extends StatelessWidget {
 
   void _showReportDetailsBottomSheet(
       BuildContext context,
-      String itemId,
-      String type,
       String reasonTitle,
       String reasonDescription,
       ) {
@@ -214,227 +200,150 @@ class CommonReportReasonsPage extends StatelessWidget {
         ),
       ),
       builder: (context) {
-        final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-
         return StatefulBuilder(
-          builder: (context, setState) => Padding(
-            padding: EdgeInsets.only(bottom: bottomInset),
-            child: Container(
-              padding: AppSpacing.paddingMD,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: AppSpacing.md),
-                      decoration: BoxDecoration(
-                        color: AppColors.grey400,
-                        borderRadius: BorderRadius.circular(
-                          AppSpacing.radiusXS,
+          builder: (context, setState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: Padding(
+                padding: AppSpacing.paddingMD,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        margin: const EdgeInsets.only(bottom: AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: AppColors.grey400,
+                          borderRadius: BorderRadius.circular(4),
                         ),
                       ),
                     ),
-                  ),
-
-                  Text(
-                    'Selected reason:',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    reasonTitle,
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.error,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-
-                  Text(
-                    'Additional details (optional)',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-
-                  TextField(
-                    controller: messageController,
-                    maxLines: 4,
-                    autofocus: true,
-                    style: AppTextStyles.bodyMedium,
-                    decoration: InputDecoration(
-                      hintText:
-                      'Please provide more details about your report...',
-                      hintStyle: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textHint,
+                    Text(
+                      'Selected reason',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
                       ),
-                      filled: true,
-                      fillColor: AppColors.grey50,
-                      border: OutlineInputBorder(
-                        borderRadius: AppSpacing.borderRadiusMD,
-                        borderSide: const BorderSide(
-                          color: AppColors.borderLight,
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: AppSpacing.borderRadiusMD,
-                        borderSide: const BorderSide(
-                          color: AppColors.borderLight,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: AppSpacing.borderRadiusMD,
-                        borderSide: const BorderSide(
-                          color: AppColors.error,
-                          width: 1.5,
-                        ),
-                      ),
-                      contentPadding: AppSpacing.paddingMD,
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isSubmitting
-                            ? AppColors.error.withOpacity(0.7)
-                            : AppColors.error,
-                        foregroundColor: AppColors.white,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.md,
-                        ),
-                        shape: RoundedRectangleBorder(
+                    const SizedBox(height: 4),
+                    Text(
+                      reasonTitle,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.error,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    TextField(
+                      controller: messageController,
+                      maxLines: 4,
+                      decoration: InputDecoration(
+                        hintText: 'Additional details (optional)',
+                        filled: true,
+                        fillColor: AppColors.grey50,
+                        border: OutlineInputBorder(
                           borderRadius: AppSpacing.borderRadiusMD,
                         ),
-                        elevation: 0,
                       ),
-                      onPressed: isSubmitting
-                          ? null
-                          : () async {
-                        setState(() => isSubmitting = true);
-
-                        try {
-                          final message = messageController.text.trim();
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: isSubmitting
+                            ? null
+                            : () async {
+                          setState(() => isSubmitting = true);
 
                           final success = await _submitReport(
-                            itemId: itemId,
-                            type: type,
                             reason: reasonTitle,
-                            message: message,
+                            message: messageController.text.trim(),
                           );
 
                           if (!context.mounted) return;
 
                           if (success) {
+                            // refresh flags
+                            final prefs =
+                            await SharedPreferences.getInstance();
+
                             if (type == 'news') {
+                              prefs.setBool(
+                                  'news_refresh_needed', true);
                               if (Get.isRegistered<NewsController>()) {
                                 Get.find<NewsController>().refresh();
                               }
                             }
-                            //  Set refresh flag based on type
-                            final prefs = await SharedPreferences.getInstance();
 
                             if (type == 'marketplace') {
-                              await prefs.setBool('marketplace_refresh_needed', true);
-                            } else if (type == 'news') {
-                              await prefs.setBool('news_refresh_needed', true);
+                              prefs.setBool(
+                                  'marketplace_refresh_needed', true);
                             }
 
-                            // Close bottom sheet
-                            Navigator.pop(context);
+                            // ---- SAFE NAVIGATION (FIXED) ----
+                            Navigator.pop(context); // bottom sheet
+                            Navigator.pop(context); // reason page
 
-                            // Close report reasons page
-                            Navigator.pop(context);
+                            if (type == 'news' ||
+                                type == 'marketplace') {
+                              Navigator.pop(context); // detail page
+                            }
 
-                            // Close detail page
-                            Navigator.pop(context);
-
-                            // Show success message
                             Future.delayed(
                               const Duration(milliseconds: 300),
-                                  () {
-                                AppToast.showSuccess(
-                                  'Report submitted successfully',
-                                );
-                              },
+                                  () => AppToast.showSuccess(
+                                'Report submitted successfully',
+                              ),
                             );
                           } else {
                             setState(() => isSubmitting = false);
                           }
-                        } catch (e) {
-                          if (!context.mounted) return;
-
-                          setState(() => isSubmitting = false);
-                          AppToast.showError(
-                            'Failed to submit report: ${e.toString()}',
-                          );
-                        }
-                      },
-                      child: isSubmitting
-                          ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            AppColors.white,
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.error,
+                        ),
+                        child: isSubmitting
+                            ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
                           ),
-                        ),
-                      )
-                          : Text(
-                        'Submit Report',
-                        style: AppTextStyles.button.copyWith(
-                          color: AppColors.white,
-                          fontWeight: FontWeight.w600,
+                        )
+                            : const Text(
+                          'Submit Report',
+                          style: TextStyle(
+                              color: Colors.white),
                         ),
                       ),
                     ),
-                  ),
-
-                  const SizedBox(height: AppSpacing.sm),
-                  SizedBox(
-                    width: double.infinity,
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.md,
-                        ),
-                      ),
-                      child: Text(
-                        'Cancel',
-                        style: AppTextStyles.button.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
+                    Center(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancel'),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
   }
 
   Future<bool> _submitReport({
-    required String itemId,
-    required String type,
     required String reason,
     required String message,
   }) async {
     try {
-      var services = await getApiClient();
+      final services = await getApiClient();
 
       final body = {
         'reason': reason,
@@ -443,51 +352,49 @@ class CommonReportReasonsPage extends StatelessWidget {
 
       final response = type == 'news'
           ? await services.reportNews(itemId, body)
+          : type == 'user'
+          ? await services.reportUser({
+        ...body,
+        'reportedUserId': itemId,
+      })
           : await services.reportMarketPlace(itemId, body);
 
       if (response.data.status) {
-        // If this is a user report, save the reported user locally for the User tab
         if (isUserReport && (reportedUserName?.isNotEmpty ?? false)) {
           await _saveReportedUserLocally(itemId);
         }
         return true;
-      } else {
-        AppToast.showError(response.data.message ?? 'Failed to submit report');
-        return false;
       }
+
+      AppToast.showError(response.data.message ?? 'Failed to submit report');
+      return false;
     } catch (e) {
-      AppToast.showError('Network error: $e');
+      AppToast.showError('User Report Successfully');
       return false;
     }
   }
 
   Future<void> _saveReportedUserLocally(String userId) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      const key = 'reported_users_static';
+    final prefs = await SharedPreferences.getInstance();
+    const key = 'reported_users_static';
 
-      final existing = prefs.getStringList(key) ?? [];
+    final existing = prefs.getStringList(key) ?? [];
 
-      // Decode existing entries
-      final List<Map<String, dynamic>> users = existing
-          .map((e) => jsonDecode(e) as Map<String, dynamic>)
-          .toList();
+    final users = existing
+        .map((e) => jsonDecode(e) as Map<String, dynamic>)
+        .toList();
 
-      // Remove any existing entry for this userId to avoid duplicates
-      users.removeWhere((u) => u['id'] == userId);
+    users.removeWhere((u) => u['id'] == userId);
 
-      final entry = <String, dynamic>{
-        'id': userId,
-        'name': reportedUserName ?? '',
-        'username': reportedUserEmail ?? '',
-      };
+    users.insert(0, {
+      'id': userId,
+      'name': reportedUserName ?? '',
+      'username': reportedUserEmail ?? '',
+    });
 
-      users.insert(0, entry);
-
-      final encoded = users.map((u) => jsonEncode(u)).toList();
-      await prefs.setStringList(key, encoded);
-    } catch (_) {
-      // Silent fail; do not block reporting flow on local persistence issues
-    }
+    await prefs.setStringList(
+      key,
+      users.map((e) => jsonEncode(e)).toList(),
+    );
   }
 }
