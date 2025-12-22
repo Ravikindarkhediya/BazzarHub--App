@@ -10,11 +10,13 @@ import '../../../commons/dialogs/appDialog.dart';
 import '../../product/widgets/product_grid_widget.dart';
 import '../../product/views/product_detail_page.dart';
 import '../../profile/widgets/my_news.dart';
+import '../../profile/widgets/report_info_banner.dart';
 
 class OtherUserProfile extends StatefulWidget {
   final String userId;
+  final Map<String, dynamic>? reportInfo;
 
-  const OtherUserProfile({Key? key, required this.userId}) : super(key: key);
+  const OtherUserProfile({Key? key, required this.userId, this.reportInfo}) : super(key: key);
 
   @override
   State<OtherUserProfile> createState() => _OtherUserProfileState();
@@ -293,6 +295,18 @@ class _OtherUserProfileState extends State<OtherUserProfile>
                               overflow: TextOverflow.ellipsis,
                             ),
                           const SizedBox(height: 20),
+                          // Add ReportInfoBanner if reportInfo is provided
+                          if (widget.reportInfo != null)
+                            ReportInfoBanner(
+                              info: widget.reportInfo!,
+                              title: 'Reported User',
+                              reportId: widget.reportInfo!['reportId']?.toString(),
+                              reportType: ReportType.user,
+                              onDelete: () {
+                                // Navigate back to report list after deletion
+                                Get.back(result: true);
+                              },
+                            ),
                         ],
                       );
                     }),

@@ -55,6 +55,7 @@ class Endpoints {
   
   // User Report list
   static const String USER_REPORT_LIST = "/user/report/list";
+  static const String DELETE_USER_REPORT = "/user/report";
 
   // Common/Upload
   static const String UPLOAD_FILE = "/common/upload";

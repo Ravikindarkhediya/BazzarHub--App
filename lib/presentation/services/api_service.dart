@@ -26,7 +26,7 @@ class AppConfig {
   static String getBaseUrl() {
     return const String.fromEnvironment(
       'BASE_URL',
-      defaultValue: 'http://192.168.2.210:3000',
+      defaultValue: 'http://192.168.2.211:3000',
     );
   }
 
@@ -313,6 +313,10 @@ abstract class ApiServices {
   );
   @DELETE("${Endpoints.DELETE_MARKETPLACE_REPORT}/{id}")
   Future<HttpResponse<BaseModel<dynamic>>> deleteMarketplaceReport(
+    @Path("id") String reportId,
+  );
+  @DELETE("${Endpoints.DELETE_USER_REPORT}/{id}")
+  Future<HttpResponse<BaseModel<dynamic>>> deleteUserReport(
     @Path("id") String reportId,
   );
 

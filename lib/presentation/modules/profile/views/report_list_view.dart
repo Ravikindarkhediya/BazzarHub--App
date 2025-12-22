@@ -183,32 +183,26 @@ class ReportItemCard extends StatelessWidget {
     if (item == null) return;
 
     if (isUserReport) {
-      // For user reports, show user details in a dialog
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text('User Report Details'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Reported User: ${item.name ?? 'Unknown'}'),
-              if (item.email?.isNotEmpty == true) 
-                Text('Email: ${item.email}'),
-              Text('Reason: ${_formatReason(report.reason)}'),
-              if (report.message.isNotEmpty) 
-                Text('Message: ${report.message}'),
-              Text('Status: ${report.status.toUpperCase()}'),
-              Text('Reported on: ${_formatDate(report.createdAt)}'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('Close'),
-            ),
-          ],
-        ),
+      // For user reports, navigate to OtherUserProfile with report info
+      if (item.id == null || item.id.toString().isEmpty) {
+        // Show error if user ID is missing
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User ID not found')),
+        );
+        return;
+      }
+      
+      final reportPayload = {
+        'userId': item.id,
+        'reason': report.reason,
+        'status': report.status,
+        'message': report.message,
+        'reportId': report.id,
+      };
+      
+      Get.toNamed(
+        '/other-user-profile',
+        arguments: reportPayload,
       );
       return;
     }

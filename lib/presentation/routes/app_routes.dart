@@ -6,6 +6,7 @@ import 'package:bazzar_hub_app/presentation/modules/otherUserProfile/views/other
 import 'package:bazzar_hub_app/presentation/modules/profile/views/report_list_view.dart';
 import 'package:bazzar_hub_app/presentation/modules/profile/views/your_Post_view.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 import '../modules/auth/views/sign_in.dart';
 import '../modules/auth/views/signup_page.dart';
@@ -68,7 +69,26 @@ class AppPages {
       name: AppRoutes.forgotPassword,
       page: () => const ForgotPasswordView(email: ''),
     ),
-
+    GetPage(
+      name: AppRoutes.otherUserProfile,
+      page: () {
+        final args = Get.arguments as Map<String, dynamic>?;
+        if (args == null) {
+          // Return empty widget or handle error
+          return const Scaffold(body: Center(child: Text('Invalid navigation')));
+        }
+        final userId = args['userId']?.toString() ?? '';
+        if (userId.isEmpty) {
+          return const Scaffold(body: Center(child: Text('User ID not found')));
+        }
+        
+        // Extract report info (remove userId from the map)
+        final reportInfo = Map<String, dynamic>.from(args);
+        reportInfo.remove('userId');
+        
+        return OtherUserProfile(userId: userId, reportInfo: reportInfo.isNotEmpty ? reportInfo : null);
+      },
+    ),
     GetPage(
       name: ProductDetailPage.routeName,
       page: () {
@@ -124,5 +144,6 @@ class AppRoutes {
   static const newsDetail = '/news-detail';
   static const reportListView = '/reportList';
   static const forgotPassword = '/forgot-password';
+  static const otherUserProfile = '/other-user-profile';
 
 }

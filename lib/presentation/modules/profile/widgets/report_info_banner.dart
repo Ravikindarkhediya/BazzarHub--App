@@ -51,9 +51,8 @@ class _ReportInfoBannerState extends State<ReportInfoBanner> {
           response = await services.deleteMarketplaceReport(reportId);
           break;
         case ReportType.user:
-          AppToast.showError('User report deletion not implemented yet');
-          setState(() => _isDeleting = false);
-          return;
+          response = await services.deleteUserReport(reportId);
+          break;
       }
 
 
