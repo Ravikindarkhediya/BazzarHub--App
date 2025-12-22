@@ -124,7 +124,7 @@ class _AccountPageState extends State<AccountPage>
                   left: horizontalPadding,
                   right: horizontalPadding,
                   top: statusBarHeight + 60,
-                  bottom: AppSpacing.md,
+                    bottom: 45,
                 ),
                 child: FadeTransition(
                   opacity: _fadeAnimation,
