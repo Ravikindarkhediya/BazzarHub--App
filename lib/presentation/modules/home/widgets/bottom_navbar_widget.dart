@@ -9,12 +9,14 @@ class BottomNavBarWidget extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
   final VoidCallback onSellTap;
+  final VoidCallback? onProfileTap;
 
   const BottomNavBarWidget({
     super.key,
     required this.currentIndex,
     required this.onTap,
     required this.onSellTap,
+    this.onProfileTap,
   });
 
   @override
@@ -75,10 +77,22 @@ class BottomNavBarWidget extends StatelessWidget {
 
                   Expanded(
                     child: _buildNavItem(
-                      icon: Icons.person_rounded,
-                      label: 'Profile',
+                      icon: Icons.location_city,
+                      label: 'My Village',
                       index: 3,
                       isSelected: currentIndex == 3,
+                    ),
+                  ),
+
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: onProfileTap ?? () => onTap(4),
+                      child: _buildNavItem(
+                        icon: Icons.person_rounded,
+                        label: 'Profile',
+                        index: 4,
+                        isSelected: currentIndex == 4,
+                      ),
                     ),
                   ),
                 ],

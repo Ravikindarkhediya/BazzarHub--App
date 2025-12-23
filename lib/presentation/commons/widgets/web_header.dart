@@ -132,6 +132,7 @@ class _WebHeaderState extends State<WebHeader> {
             _buildNavItem('Home', 0, isCompact: isTablet),
             _buildNavItem('News', 1, isCompact: isTablet),
             _buildNavItem('Marketplace', 2, isCompact: isTablet),
+            _buildNavItem('My Village', 3, isCompact: isTablet),
           ],
 
           const Spacer(),
@@ -267,8 +268,9 @@ class _WebHeaderState extends State<WebHeader> {
   /// ----------------------- NAV ITEM -------------------------
   Widget _buildNavItem(String label, int index, {bool isCompact = false}) {
     final isSelected = widget.currentIndex == index;
-
-    if (index == 3) return const SizedBox.shrink();
+    
+    // Hide the profile tab from the navigation since it's shown as an avatar
+    if (index == 4) return const SizedBox.shrink();
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: isCompact ? 6 : 10),

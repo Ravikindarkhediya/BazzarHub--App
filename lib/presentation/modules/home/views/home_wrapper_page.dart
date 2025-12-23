@@ -1,19 +1,22 @@
 import 'dart:io' show Platform;
-import 'package:bazzar_hub_app/app/core/manager/location_manager.dart';
-import 'package:bazzar_hub_app/manager/wallet_manager.dart';
-import 'package:bazzar_hub_app/presentation/modules/marketplace/view/marketplace_view.dart';
+import 'package:bazzar_hub_app/presentation/modules/home/views/home_view.dart';
+import 'package:bazzar_hub_app/presentation/modules/news/views/news_view.dart';
+import 'package:bazzar_hub_app/presentation/modules/village/views/village_view.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:bazzar_hub_app/presentation/routes/app_routes.dart';
+import '../../../../app/core/manager/location_manager.dart';
 import '../../../../app/core/utils/app_spacing.dart';
+import '../../../../manager/wallet_manager.dart';
 import '../../../commons/widgets/custom_app_bar.dart';
 import '../../../commons/widgets/web_header.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
 import '../../../../manager/firebase_manager.dart';
 import '../../../routes/app_routes.dart';
+import '../../marketplace/view/marketplace_view.dart';
 import '../../news/controllers/news_controller.dart';
 import '../../news/views/news_view.dart';
 import '../../profile/views/account_page.dart';
@@ -38,7 +41,8 @@ class _HomeWrapperState extends State<HomeWrapper> {
     const HomeView(),        // 0 - Home
     const NewsView(),        // 1 - News
     const MarketplaceView(), // 2 - Marketplace
-    const AccountPage(),     // 3 - Profile
+    const VillageView(),     // 3 - My Village
+    const AccountPage(),     // 4 - Profile
   ];
 
   @override
@@ -214,5 +218,9 @@ class HomeWrapperController extends GetxController {
 
   void goToMarketplace() {
     currentIndex.value = 2;
+  }
+
+  void goToMyVillage() {
+    currentIndex.value = 3;
   }
 }

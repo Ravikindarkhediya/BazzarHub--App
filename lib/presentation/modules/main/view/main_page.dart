@@ -26,6 +26,13 @@ class _MainScreenState extends State<MainScreen> {
     AccountPage(),
   ];
 
+  void _onProfileTap() {
+    if (_currentIndex != 4) {
+      setState(() => _currentIndex = 4);
+    }
+    // If already on profile tab, do nothing or refresh if needed
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -33,15 +40,19 @@ class _MainScreenState extends State<MainScreen> {
         index: _currentIndex,
         children: _pages,
       ),
-
       bottomNavigationBar: BottomNavBarWidget(
         currentIndex: _currentIndex,
         onTap: (index) {
-          setState(() => _currentIndex = index);
+          if (index == 4) {
+            _onProfileTap();
+          } else {
+            setState(() => _currentIndex = index);
+          }
         },
         onSellTap: () {
           Get.toNamed(AppRoutes.sellProductPage);
         },
+        onProfileTap: _onProfileTap,
       ),
     );
   }
