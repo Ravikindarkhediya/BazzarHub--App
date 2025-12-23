@@ -12,6 +12,7 @@ import '../../../../app/core/utils/app_language.dart';
 import '../../../../app/core/utils/app_spacing.dart';
 import '../../../../app/data/constants/app_colors.dart';
 import '../../../../app/data/constants/app_text_style.dart';
+import '../../../services/models/categorie/categorie_model.dart';
 import '../../../services/models/news/news_model.dart';
 import '../../home/widgets/auto_fit_image_widget.dart';
 import '../../product/widgets/image_upload_section.dart';
@@ -550,16 +551,18 @@ class _AddNewsViewState extends State<AddNewsView> {
 
   Widget _buildCategoryStep() {
     return Consumer<AddNewsController>(
-      builder: (context, controller, _) {
+      builder: (context, controller, child) {
         return Align(
           alignment: AlignmentDirectional.topStart,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Mobile header only
               if (!isWeb) ...[
                 Text(
                   'Choose Category',
-                  style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
+                  style:
+                  AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -575,20 +578,23 @@ class _AddNewsViewState extends State<AddNewsView> {
                 const Center(
                   child: Padding(
                     padding: EdgeInsets.all(40),
-                    child: CircularProgressIndicator(color: AppColors.primary),
+                    child:
+                    CircularProgressIndicator(color: AppColors.primary),
                   ),
                 )
               else
                 LayoutBuilder(
                   builder: (context, constraints) {
                     final screenWidth = constraints.maxWidth;
+                    print('screenWidth => $screenWidth');
 
-                    // MOBILE - Original GridView (No changes)
-                    if (!isWeb && screenWidth < 600) {
+                    // ✅ ANDROID MOBILE – original layout (no change)
+                    if (screenWidth < 600) {
                       return GridView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 3,
                           mainAxisSpacing: AppSpacing.sm,
                           crossAxisSpacing: AppSpacing.sm,
@@ -597,102 +603,54 @@ class _AddNewsViewState extends State<AddNewsView> {
                         itemCount: controller.categories.length,
                         itemBuilder: (context, index) {
                           final category = controller.categories[index];
-                          final isSelected = controller.selectedCategoryId == category.id;
+                          final isSelected =
+                              controller.selectedCategoryId == category.id;
 
-                          return InkWell(
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              controller.selectCategory(category.id!);
-                            },
-                            borderRadius: AppSpacing.borderRadiusMD,
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 250),
-                              padding: const EdgeInsets.all(AppSpacing.xs),
-                              decoration: BoxDecoration(
-                                color: AppColors.white,
-                                borderRadius: AppSpacing.borderRadiusMD,
-                                border: Border.all(
-                                  color: isSelected ? AppColors.primary : AppColors.borderLight,
-                                  width: isSelected ? 2.5 : 1,
-                                ),
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Expanded(
-                                    child: Container(
-                                      margin: const EdgeInsets.only(top: 8, bottom: 8),
-                                      constraints: const BoxConstraints(
-                                        maxHeight: 80,
-                                        maxWidth: 80,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.primary.withOpacity(0.1),
-                                        borderRadius: AppSpacing.borderRadiusSM,
-                                      ),
-                                      child: ClipRRect(
-                                        borderRadius: AppSpacing.borderRadiusSM,
-                                        child: AspectRatioImage(
-                                          imageUrl: category.icon ?? '',
-                                          aspectRatio: 1 / 1,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                                    child: Text(
-                                      AppLanguage.getText(category.name),
-                                      style: AppTextStyles.caption.copyWith(
-                                        color: AppColors.textPrimary,
-                                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                                        height: 1.3,
-                                        fontSize: 11,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ).animate()
-                              .fadeIn(duration: 400.ms, delay: (50 * index).ms)
-                              .scale(
-                            begin: const Offset(0.8, 0.8),
-                            end: const Offset(1, 1),
+                          return _buildCategoryCard(
+                            context,
+                            category,
+                            isSelected,
+                            index,
+                            90,  // imageContainerSize
+                            56,  // iconSize
+                            13,  // fontSize
                           );
                         },
                       );
                     }
 
-                    // ✅ WEB/TABLET - New Clean UI (Like Screenshot)
+                    // ✅ WEB + ANDROID TABLET – vertical == horizontal spacing
                     int crossAxisCount;
+                    double imageContainerSize;
                     double iconSize;
                     double fontSize;
-                    double spacing;
+                    double spacing; // same for main + cross
 
-                    if (screenWidth >= 1200) {
-                      crossAxisCount = 6;
-                      iconSize = 56;
-                      fontSize = 14;
+                    if (screenWidth >= 1400) {
+                      crossAxisCount = 7;
+                      imageContainerSize = 110;
+                      iconSize = 70;
+                      fontSize = 15;
                       spacing = 20;
+                    } else if (screenWidth >= 1200) {
+                      crossAxisCount = 6;
+                      imageContainerSize = 110;
+                      iconSize = 70;
+                      fontSize = 15;
+                      spacing = 18;
                     } else if (screenWidth >= 900) {
                       crossAxisCount = 5;
-                      iconSize = 52;
-                      fontSize = 13;
-                      spacing = 16;
-                    } else if (screenWidth >= 600) {
-                      crossAxisCount = 4;
-                      iconSize = 48;
-                      fontSize = 12.5;
+                      imageContainerSize = 100;
+                      iconSize = 64;
+                      fontSize = 14;
                       spacing = 16;
                     } else {
-                      crossAxisCount = 3;
-                      iconSize = 44;
-                      fontSize = 12;
-                      spacing = 12;
+                      // 600–899 (tablet)
+                      crossAxisCount = 4;
+                      imageContainerSize = 95;
+                      iconSize = 60;
+                      fontSize = 13.5;
+                      spacing = 14;
                     }
 
                     return GridView.builder(
@@ -702,80 +660,22 @@ class _AddNewsViewState extends State<AddNewsView> {
                         crossAxisCount: crossAxisCount,
                         mainAxisSpacing: spacing,
                         crossAxisSpacing: spacing,
-                        childAspectRatio: 0.85,
+                        childAspectRatio: 1.5,
                       ),
                       itemCount: controller.categories.length,
                       itemBuilder: (context, index) {
                         final category = controller.categories[index];
-                        final isSelected = controller.selectedCategoryId == category.id;
+                        final isSelected =
+                            controller.selectedCategoryId == category.id;
 
-                        return InkWell(
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            controller.selectCategory(category.id!);
-                          },
-                          borderRadius: BorderRadius.circular(16),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 300),
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? AppColors.primary.withOpacity(0.1)
-                                  : Colors.grey.shade50,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: isSelected
-                                    ? AppColors.primary
-                                    : Colors.grey.shade300,
-                                width: isSelected ? 2.5 : 1.5,
-                              ),
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                // Icon Container
-                                Container(
-                                  width: iconSize,
-                                  height: iconSize,
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: AspectRatioImage(
-                                    imageUrl: category.icon ?? '',
-                                    aspectRatio: 1 / 1,
-                                  ),
-                                ),
-
-                                const SizedBox(height: 12),
-
-                                // Category Name
-                                Text(
-                                  AppLanguage.getText(category.name),
-                                  style: TextStyle(
-                                    fontSize: fontSize,
-                                    fontWeight: isSelected
-                                        ? FontWeight.w600
-                                        : FontWeight.w500,
-                                    color: isSelected
-                                        ? AppColors.primary
-                                        : Colors.black87,
-                                    height: 1.2,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ).animate()
-                            .fadeIn(duration: 400.ms, delay: (30 * index).ms)
-                            .scale(
-                          begin: const Offset(0.95, 0.95),
-                          end: const Offset(1, 1),
+                        return _buildCategoryCard(
+                          context,
+                          category,
+                          isSelected,
+                          index,
+                          imageContainerSize,
+                          iconSize,
+                          fontSize,
                         );
                       },
                     );
@@ -787,6 +687,73 @@ class _AddNewsViewState extends State<AddNewsView> {
       },
     );
   }
+
+  Widget _buildCategoryCard(
+      BuildContext context,
+      CategoryModel category,
+      bool isSelected,
+      int index,
+      double imageContainerSize,
+      double iconSize,
+      double fontSize,
+      ) {
+    return InkWell(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        _controller.selectCategory(category.id!);
+      },
+      borderRadius: BorderRadius.circular(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: imageContainerSize,
+            height: imageContainerSize,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isSelected
+                    ? AppColors.primary
+                    : Colors.transparent,
+                width: isSelected ? 1.2 : 0,
+              ),
+            ),
+            child: Center(
+              child: SizedBox(
+                width: iconSize,
+                height: iconSize,
+                child: AspectRatioImage(
+                  imageUrl: category.icon ?? "",
+                  aspectRatio: 1,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Text(
+              AppLanguage.getText(category.name),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: fontSize,
+                fontWeight:
+                isSelected ? FontWeight.w700 : FontWeight.w600,
+                color: isSelected
+                    ? AppColors.primary
+                    : AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
 
   Widget _buildImageStep() {
     // Mobile: Column wrapper WITHOUT title/subtitle (ImageUploadSection will handle it)

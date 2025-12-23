@@ -1,7 +1,4 @@
-// lib/features/home/widgets/category_list_widget.dart (Complete Updated)
-
 import 'package:bazzar_hub_app/app/core/utils/app_language.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../app/core/utils/responsive_size.dart';
@@ -38,9 +35,7 @@ class CategoryListWidget extends StatelessWidget {
             children: [
               Text(
                 'Categories',
-                style: AppTextStyles.h5.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
               ),
               TextButton(
                 onPressed: onViewAllTap,
@@ -62,29 +57,18 @@ class CategoryListWidget extends StatelessWidget {
           ),
         ),
 
-        AppSpacing.verticalSpaceSM,
-
         /// Category List with Fixed Height
         SizedBox(
           height: _getCategoryCardHeight(context),
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            padding: AppSpacing.horizontalMD,
+            padding: AppSpacing.horizontalSM,
             itemCount: categories.length,
             physics: const BouncingScrollPhysics(),
             itemBuilder: (context, index) {
               final category = categories[index];
               final isSelected = selectedCategoryIds.contains(category.id);
-
-              return Padding(
-                padding: const EdgeInsets.only(right: AppSpacing.sm),
-                child: _buildCategoryCard(
-                  context,
-                  category,
-                  isSelected,
-                  index,
-                ),
-              );
+              return _buildCategoryCard(context, category, isSelected, index);
             },
           ),
         ),
@@ -92,139 +76,132 @@ class CategoryListWidget extends StatelessWidget {
     ).animate().fadeIn(duration: 600.ms).slideX(begin: -0.2, end: 0);
   }
 
-  /// Get Dynamic Category Card Height based on screen size
-  double _getCategoryCardHeight(BuildContext context) {
-    if (AppResponsiveSize.isMobile(context)) {
-      return 120; // Mobile: More height for 2-line text
-    } else if (AppResponsiveSize.isTablet(context)) {
-      return 140; // Tablet
-    } else {
-      return 150; // Desktop
-    }
-  }
-
   /// Build Individual Category Card
   Widget _buildCategoryCard(
-      BuildContext context,
-      CategoryModel category,
-      bool isSelected,
-      int index,
-      ) {
-
+    BuildContext context,
+    CategoryModel category,
+    bool isSelected,
+    int index,
+  ) {
     final cardWidth = _getCategoryCardWidth(context);
-    final imageSize = _getCategoryImageSize(context);
+    final imageContainerSize = _getCategoryImageContainerSize(context);
+    final iconSize = _getCategoryIconSize(context);
 
     return InkWell(
-      onTap: () => onCategorySelected(category.id ?? ''),
-      borderRadius: AppSpacing.borderRadiusMD,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-        width: cardWidth,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.xs,
-          vertical: AppSpacing.sm,
-        ),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: AppSpacing.borderRadiusMD,
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.borderLight,
-            width: 1,
-          ),
-          boxShadow: isSelected
-              ? [
-            BoxShadow(
-              color: AppColors.primary.withOpacity(0.3),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            )
-          ]
-              : null,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            /// Fixed Image Container (Same for all cards)
-            Container(
-              width: imageSize,
-              height: imageSize,
-              decoration: BoxDecoration(
-                // color: isSelected
-                //     ? AppColors.white.withOpacity(0.9)
-                //     : color.withOpacity(0.1),
-                color: AppColors.white.withOpacity(0.9),
-                borderRadius: AppSpacing.borderRadiusSM,
-              ),
-              child: ClipRRect(
-                borderRadius: AppSpacing.borderRadiusSM,
-                child: AspectRatioImage(
-                  imageUrl: category.icon ?? "",
-                  aspectRatio: 1 / 1,
+          onTap: () => onCategorySelected(category.id ?? ''),
+          borderRadius: BorderRadius.circular(18),
+          child: SizedBox(
+            width: cardWidth,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: imageContainerSize,
+                  height: imageContainerSize,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.06),
+                        blurRadius: 10,
+                        spreadRadius: 1,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                    border: Border.all(
+                      color: isSelected
+                          ? AppColors.primary
+                          : Colors.transparent,
+                      width: isSelected ? 1.2 : 0,
+                    ),
+                  ),
+                  child: Center(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: SizedBox(
+                        width: iconSize,
+                        height: iconSize,
+                        child: AspectRatioImage(
+                          imageUrl: category.icon ?? "",
+                          aspectRatio: 1 / 1,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
 
-            const SizedBox(height: 8),
+                const SizedBox(height: 8),
 
-            /// Category Name with 2-line Support (Responsive)
-            Expanded(
-              child: Align(
-                alignment: Alignment.center,
-                child: Text(
+                Text(
                   AppLanguage.getText(category.name),
                   style: _getCategoryTextStyle(context, isSelected),
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
-    )
+          ),
+        )
         .animate()
         .fadeIn(duration: 600.ms, delay: (100 * index).ms)
         .slideX(begin: 0.3, end: 0);
   }
 
-  /// Get Category Card Width based on screen size
+  double _getCategoryCardHeight(BuildContext context) {
+    if (AppResponsiveSize.isMobile(context)) {
+      return 140;
+    } else if (AppResponsiveSize.isTablet(context)) {
+      return 155;
+    } else {
+      return 165;
+    }
+  }
+
   double _getCategoryCardWidth(BuildContext context) {
     if (AppResponsiveSize.isMobile(context)) {
-      return 95; // Mobile
+      return 110;
     } else if (AppResponsiveSize.isTablet(context)) {
-      return 115; // Tablet
+      return 125;
     } else {
-      return 130; // Desktop
+      return 140;
     }
   }
 
-  /// Get Category Image Size based on screen size
-  double _getCategoryImageSize(BuildContext context) {
+  double _getCategoryImageContainerSize(BuildContext context) {
     if (AppResponsiveSize.isMobile(context)) {
-      return 60; // Mobile: Fixed 50x50
+      return 90; // pehle se bada
     } else if (AppResponsiveSize.isTablet(context)) {
-      return 70; // Tablet: Fixed 60x60
+      return 105;
     } else {
-      return 80; // Desktop: Fixed 70x70
+      return 115;
     }
   }
 
-  /// Get Category Text Style based on screen size and selection
+  double _getCategoryIconSize(BuildContext context) {
+    if (AppResponsiveSize.isMobile(context)) {
+      return 56;
+    } else if (AppResponsiveSize.isTablet(context)) {
+      return 64;
+    } else {
+      return 72;
+    }
+  }
+
   TextStyle _getCategoryTextStyle(BuildContext context, bool isSelected) {
     final baseStyle = AppTextStyles.caption.copyWith(
       color: AppColors.textPrimary,
-      fontWeight: FontWeight.w500,
-      height: 1.3,
+      fontWeight: FontWeight.w600,
+      height: 1.2,
     );
 
     if (AppResponsiveSize.isMobile(context)) {
-      return baseStyle.copyWith(fontSize: 11);
-    } else if (AppResponsiveSize.isTablet(context)) {
-      return baseStyle.copyWith(fontSize: 12);
-    } else {
       return baseStyle.copyWith(fontSize: 13);
+    } else if (AppResponsiveSize.isTablet(context)) {
+      return baseStyle.copyWith(fontSize: 14);
+    } else {
+      return baseStyle.copyWith(fontSize: 15);
     }
   }
 }
