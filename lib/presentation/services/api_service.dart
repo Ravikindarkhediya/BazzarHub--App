@@ -26,7 +26,7 @@ class AppConfig {
   static String getBaseUrl() {
     return const String.fromEnvironment(
       'BASE_URL',
-      defaultValue: 'http://192.168.2.211:3000',
+      defaultValue: 'http://192.168.2.212:3000',
     );
   }
 

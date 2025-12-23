@@ -33,16 +33,15 @@ class ReportInfoBanner extends StatefulWidget {
 class _ReportInfoBannerState extends State<ReportInfoBanner> {
   bool _isDeleting = false;
 
-  ///  Dynamic delete method based on report type
+  /// Dynamic delete method based on report type
   Future<void> _deleteReport(String reportId) async {
-
     setState(() => _isDeleting = true);
 
     try {
       var services = await getApiClient();
-
-      // Call appropriate API based on report type
       var response;
+      
+      // Call appropriate API based on report type
       switch (widget.reportType) {
         case ReportType.news:
           response = await services.deleteNewsReport(reportId);
@@ -55,13 +54,11 @@ class _ReportInfoBannerState extends State<ReportInfoBanner> {
           break;
       }
 
-
       if (response.data.status) {
         AppToast.showSuccess('Report deleted successfully');
-
-        // Only navigate back once with result
+        // Return true to indicate successful deletion
         if (mounted) {
-          Get.back(result: true);
+          Get.back(result: {'success': true, 'reportId': reportId, 'reportType': widget.reportType});
         }
       } else {
         AppToast.showError(
