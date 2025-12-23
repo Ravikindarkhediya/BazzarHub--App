@@ -10,7 +10,7 @@ BaseModel<T> _$BaseModelFromJson<T>(
   Map<String, dynamic> json,
   T Function(Object? json) fromJsonT,
 ) => BaseModel<T>(
-  status: json['status'] as bool,
+  status: BaseModel._statusFromJson(json['status']),
   data: _$nullableGenericFromJson(json['data'], fromJsonT),
   message: json['message'] as String?,
 );
