@@ -37,6 +37,7 @@ class VillageView extends StatelessWidget {
             _buildPanchayatSection(),
             const SizedBox(height: AppSpacing.xl),
             _buildRecentActivity(),
+            const SizedBox(height: 80),
           ],
         ),
       ),
