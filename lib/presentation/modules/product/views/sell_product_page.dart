@@ -202,8 +202,8 @@ class _SellProductPageState extends State<SellProductPage> {
           ),
           body: !_isInitialized
               ? const Center(
-            child: CircularProgressIndicator(color: AppColors.primary),
-          )
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                )
               : isWeb
               ? _buildWebLayout()
               : _buildMobileLayout(),
@@ -245,7 +245,7 @@ class _SellProductPageState extends State<SellProductPage> {
                       step: '1',
                       title: 'Choose Category',
                       subtitle:
-                      'Select the category that best describes your product',
+                          'Select the category that best describes your product',
                       child: _buildCategoryStep(),
                     ),
 
@@ -256,7 +256,7 @@ class _SellProductPageState extends State<SellProductPage> {
                       step: '2',
                       title: 'Upload Images',
                       subtitle:
-                      'Add up to 6 photos/videos. First will be cover.',
+                          'Add up to 6 photos/videos. First will be cover.',
                       child: _buildImageStep(),
                       removeTopPadding: true,
                     ),
@@ -288,7 +288,7 @@ class _SellProductPageState extends State<SellProductPage> {
                       step: '5',
                       title: 'Contact Information',
                       subtitle:
-                      'Buyers will use this information to contact you',
+                          'Buyers will use this information to contact you',
                       child: _buildContactStep(),
                     ),
 
@@ -426,49 +426,49 @@ class _SellProductPageState extends State<SellProductPage> {
             ),
             child: controller.isLoading || controller.isUploading
                 ? Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    color: AppColors.white,
-                    strokeWidth: 2.5,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Text(
-                  controller.isUploading
-                      ? 'Uploading Images...'
-                      : (isEditMode
-                      ? 'Updating Product...'
-                      : 'Submitting Product...'),
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ],
-            )
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          color: AppColors.white,
+                          strokeWidth: 2.5,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Text(
+                        controller.isUploading
+                            ? 'Uploading Images...'
+                            : (isEditMode
+                                  ? 'Updating Product...'
+                                  : 'Submitting Product...'),
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
+                  )
                 : Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  isEditMode ? Icons.check_circle_outline : Icons.publish,
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  isEditMode ? 'Update Product' : 'Publish Product',
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 0.3,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        isEditMode ? Icons.check_circle_outline : Icons.publish,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        isEditMode ? 'Update Product' : 'Publish Product',
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
           ),
         );
       },
@@ -579,7 +579,7 @@ class _SellProductPageState extends State<SellProductPage> {
                   builder: (context, constraints) {
                     final screenWidth = constraints.maxWidth;
 
-                    // 🔹 ANDROID MOBILE – original layout
+                    // ANDROID MOBILE
                     if (screenWidth < 600) {
                       return GridView.builder(
                         shrinkWrap: true,
@@ -597,17 +597,21 @@ class _SellProductPageState extends State<SellProductPage> {
                           final isSelected =
                               controller.selectedCategoryId == category.id;
 
-                          return _buildCategoryCardMobile(
-                            context,
-                            category,
-                            isSelected,
-                            index,
+                          return _buildSellCategoryCard(
+                              context,
+                              category,
+                              isSelected,
+                              index,
+                              90, // imageContainerSize
+                              56, // iconSize
+                              13, // fontSize
+                              isWebLayout: false
                           );
                         },
                       );
                     }
 
-                    //  WEB / ANDROID TABLET
+                    // WEB + ANDROID TABLET
                     int crossAxisCount;
                     double iconSize;
                     double fontSize;
@@ -615,30 +619,30 @@ class _SellProductPageState extends State<SellProductPage> {
                     double aspectRatio;
 
                     if (screenWidth >= 1400) {
-                      crossAxisCount = 6;
-                      iconSize = 88;
-                      fontSize = 14;
-                      spacing = 20;
-                      aspectRatio = 1.25;
-                    } else if (screenWidth >= 1100) {
-                      crossAxisCount = 5;
-                      iconSize = 80;
-                      fontSize = 13.5;
+                      crossAxisCount = 7;
+                      iconSize = 110;
+                      fontSize = 15;
                       spacing = 18;
-                      aspectRatio = 1.25;
-                    } else if (screenWidth >= 900) {
-                      crossAxisCount = 5;
-                      iconSize = 76;
-                      fontSize = 13;
+                      aspectRatio = 1.15;
+                    } else if (screenWidth >= 1200) {
+                      crossAxisCount = 6;
+                      iconSize = 105;
+                      fontSize = 14.5;
                       spacing = 16;
-                      aspectRatio = 1.3;
-                    } else {
-                      // 600–899 (tablet)
-                      crossAxisCount = 4;
-                      iconSize = 72;
-                      fontSize = 12.5;
+                      aspectRatio = 1.15;
+                    } else if (screenWidth >= 900) {
+                      crossAxisCount = 6;
+                      iconSize = 100;
+                      fontSize = 14;
                       spacing = 14;
-                      aspectRatio = 1.3;
+                      aspectRatio = 1.15;
+                    } else {
+                      // 600–899 tablet
+                      crossAxisCount = 5;
+                      iconSize = 100;
+                      fontSize = 15;
+                      spacing = 12;
+                      aspectRatio = 1.1;
                     }
 
                     return GridView.builder(
@@ -674,89 +678,6 @@ class _SellProductPageState extends State<SellProductPage> {
       },
     );
   }
-
-  Widget _buildCategoryCardMobile(
-      BuildContext context,
-      dynamic category,
-      bool isSelected,
-      int index,
-      ) {
-    return InkWell(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        _controller.selectCategory(category.id!);
-      },
-      borderRadius: AppSpacing.borderRadiusMD,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        padding: const EdgeInsets.all(AppSpacing.xs),
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: AppSpacing.borderRadiusMD,
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.borderLight,
-            width: isSelected ? 2.5 : 1,
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min, // ✅ overflow safe
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 8, bottom: 4),
-              constraints: const BoxConstraints(
-                maxHeight: 80,
-                maxWidth: 80,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.05),
-                borderRadius: AppSpacing.borderRadiusSM,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 10,
-                    spreadRadius: 1,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: AppSpacing.borderRadiusSM,
-                child: AspectRatioImage(
-                  imageUrl: category.icon ?? '',
-                  aspectRatio: 1 / 1,
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Text(
-                AppLanguage.getText(category.name),
-                style: AppTextStyles.caption.copyWith(
-                  color: isSelected
-                      ? AppColors.primary
-                      : AppColors.textPrimary,
-                  fontWeight: isSelected
-                      ? FontWeight.w600
-                      : FontWeight.w500,
-                  height: 1.2,
-                  fontSize: 11,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(height: 2),
-          ],
-        ),
-      ),
-    )
-        .animate()
-        .fadeIn(duration: 400.ms, delay: (50 * index).ms)
-        .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1));
-  }
-
   Widget _buildCategoryCardWebTablet(
       BuildContext context,
       dynamic category,
@@ -765,8 +686,7 @@ class _SellProductPageState extends State<SellProductPage> {
       double iconSize,
       double fontSize,
       ) {
-    // Outer width = inner size + small padding
-    final double outerSize = iconSize + 12; // 6 px each side
+    final double outerSize = iconSize + 8;
 
     return InkWell(
       onTap: () {
@@ -778,60 +698,44 @@ class _SellProductPageState extends State<SellProductPage> {
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // 🔹 OUTER WHITE CONTAINER (reduced but visible)
           Container(
-            width: outerSize,
-            height: outerSize,
-            padding: const EdgeInsets.all(4),        // thin border space
+            width: iconSize,
             decoration: BoxDecoration(
-              color: AppColors.white,               // outer white
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Container(
-              width: iconSize,                      // inner primary
-              height: iconSize,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 10,
-                    spreadRadius: 1,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-                border: Border.all(
-                  color: isSelected ? AppColors.primary : Colors.transparent,
-                  width: isSelected ? 1.2 : 0,
+              color: AppColors.primary.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 10,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 4),
                 ),
+              ],
+              border: Border.all(
+                color: isSelected ? AppColors.primary : Colors.transparent,
+                width: isSelected ? 1.2 : 0,
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: AspectRatioImage(
-                  imageUrl: category.icon ?? '',
-                  aspectRatio: 1 / 1,
-                ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: AspectRatioImage(
+                imageUrl: category.icon ?? '',
+                aspectRatio: 1 / 1,
               ),
             ),
           ),
-
-          const SizedBox(height: 8),
-          SizedBox(
-            width: outerSize,
-            child: Text(
-              AppLanguage.getText(category.name),
-              style: TextStyle(
-                fontSize: fontSize,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                color:
-                isSelected ? AppColors.primary : AppColors.textPrimary,
-                height: 1.2,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+          const SizedBox(height: 6),
+          Text(
+            AppLanguage.getText(category.name),
+            style: TextStyle(
+              fontSize: fontSize,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+              color: isSelected ? AppColors.primary : AppColors.textPrimary,
+              height: 1.2,
             ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -841,6 +745,136 @@ class _SellProductPageState extends State<SellProductPage> {
         .scale(begin: const Offset(0.95, 0.95), end: const Offset(1, 1));
   }
 
+  Widget _buildSellCategoryCard(
+      BuildContext context,
+      dynamic category,
+      bool isSelected,
+      int index,
+      double imageContainerSize,
+      double iconSize,
+      double fontSize, {
+        required bool isWebLayout,
+      }) {
+    final double outerSize =
+    isWebLayout ? imageContainerSize + 24 : double.infinity;
+    final EdgeInsets outerPadding =
+    isWebLayout ? const EdgeInsets.all(8) : EdgeInsets.zero;
+
+    if (!isWebLayout) {
+      return InkWell(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          _controller.selectCategory(category.id!);
+        },
+        borderRadius: BorderRadius.circular(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: imageContainerSize,
+              height: imageContainerSize,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: isSelected ? AppColors.primary : Colors.transparent,
+                  width: isSelected ? 1.2 : 0,
+                ),
+              ),
+              child: Center(
+                child: SizedBox(
+                  width: iconSize,
+                  height: iconSize,
+                  child: AspectRatioImage(
+                    imageUrl: category.icon ?? "",
+                    aspectRatio: 1,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text(
+                AppLanguage.getText(category.name),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight:
+                  isSelected ? FontWeight.w700 : FontWeight.w600,
+                  color: isSelected
+                      ? AppColors.primary
+                      : AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Center(
+      child: Container(
+        width: outerSize,
+        height: outerSize + 40,
+        padding: outerPadding,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            _controller.selectCategory(category.id!);
+          },
+          borderRadius: BorderRadius.circular(18),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: imageContainerSize,
+                height: imageContainerSize,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isSelected ? AppColors.primary : Colors.transparent,
+                    width: isSelected ? 1.2 : 0,
+                  ),
+                ),
+                child: Center(
+                  child: SizedBox(
+                    width: iconSize,
+                    height: iconSize,
+                    child: AspectRatioImage(
+                      imageUrl: category.icon ?? "",
+                      aspectRatio: 1,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Text(
+                  AppLanguage.getText(category.name),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: fontSize,
+                    fontWeight:
+                    isSelected ? FontWeight.w700 : FontWeight.w600,
+                    color: isSelected
+                        ? AppColors.primary
+                        : AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _buildImageStep() {
     // Mobile: ImageUploadSection with title
@@ -953,20 +987,20 @@ class _SellProductPageState extends State<SellProductPage> {
               duration: const Duration(milliseconds: 250),
               child: controller.showSubDistrict
                   ? Column(
-                key: const ValueKey('sub-district'),
-                children: [
-                  const SizedBox(height: 16),
-                  SearchableDropdown(
-                    label: 'Sub-District (Taluko)',
-                    hint: 'Select sub-district',
-                    items: controller.subDistrictsList,
-                    selectedValue: controller.selectedSubDistrict,
-                    onChanged: (v) => controller.selectSubDistrict(v),
-                    enabled: controller.canSelectSubDistrict,
-                    icon: Icons.map,
-                  ),
-                ],
-              )
+                      key: const ValueKey('sub-district'),
+                      children: [
+                        const SizedBox(height: 16),
+                        SearchableDropdown(
+                          label: 'Sub-District (Taluko)',
+                          hint: 'Select sub-district',
+                          items: controller.subDistrictsList,
+                          selectedValue: controller.selectedSubDistrict,
+                          onChanged: (v) => controller.selectSubDistrict(v),
+                          enabled: controller.canSelectSubDistrict,
+                          icon: Icons.map,
+                        ),
+                      ],
+                    )
                   : const SizedBox(key: ValueKey('empty')),
             ),
             const SizedBox(height: 16),
@@ -1107,11 +1141,11 @@ class _SellProductPageState extends State<SellProductPage> {
             ),
             children: required
                 ? [
-              const TextSpan(
-                text: ' *',
-                style: TextStyle(color: Colors.red),
-              ),
-            ]
+                    const TextSpan(
+                      text: ' *',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ]
                 : [],
           ),
         ),
@@ -1270,13 +1304,13 @@ class _SellProductPageState extends State<SellProductPage> {
   }
 
   void _showIOSPicker(
-      BuildContext context,
-      SellProductController controller, {
-        required String title,
-        required List<String> items,
-        required String? selectedValue,
-        required Function(String) onSelect,
-      }) {
+    BuildContext context,
+    SellProductController controller, {
+    required String title,
+    required List<String> items,
+    required String? selectedValue,
+    required Function(String) onSelect,
+  }) {
     int initialIndex = selectedValue != null && items.contains(selectedValue)
         ? items.indexOf(selectedValue)
         : 0;
@@ -1357,15 +1391,15 @@ class _SellProductPageState extends State<SellProductPage> {
                   children: items
                       .map(
                         (v) => Center(
-                      child: Text(
-                        v,
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w500,
+                          child: Text(
+                            v,
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  )
+                      )
                       .toList(),
                 ),
               ),
@@ -1471,7 +1505,7 @@ class _SellProductPageState extends State<SellProductPage> {
                       height: AppSpacing.buttonHeightMD,
                       child: ElevatedButton(
                         onPressed:
-                        controller.isLoading || controller.isUploading
+                            controller.isLoading || controller.isUploading
                             ? null
                             : submitForm,
                         style: ElevatedButton.styleFrom(
@@ -1484,37 +1518,37 @@ class _SellProductPageState extends State<SellProductPage> {
                         ),
                         child: controller.isLoading || controller.isUploading
                             ? Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                color: AppColors.white,
-                                strokeWidth: 2,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              controller.isUploading
-                                  ? 'Uploading...'
-                                  : (isEditMode
-                                  ? 'Updating...'
-                                  : 'Submitting...'),
-                              style: AppTextStyles.button.copyWith(
-                                color: AppColors.white,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
-                        )
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      color: AppColors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    controller.isUploading
+                                        ? 'Uploading...'
+                                        : (isEditMode
+                                              ? 'Updating...'
+                                              : 'Submitting...'),
+                                    style: AppTextStyles.button.copyWith(
+                                      color: AppColors.white,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              )
                             : Text(
-                          isEditMode ? 'Update' : 'Submit',
-                          style: AppTextStyles.button.copyWith(
-                            color: AppColors.white,
-                            fontSize: 16,
-                          ),
-                        ),
+                                isEditMode ? 'Update' : 'Submit',
+                                style: AppTextStyles.button.copyWith(
+                                  color: AppColors.white,
+                                  fontSize: 16,
+                                ),
+                              ),
                       ),
                     ),
                   )
@@ -1525,7 +1559,7 @@ class _SellProductPageState extends State<SellProductPage> {
                       height: AppSpacing.buttonHeightMD,
                       child: ElevatedButton(
                         onPressed:
-                        controller.isLoading || controller.isUploading
+                            controller.isLoading || controller.isUploading
                             ? null
                             : _nextStep,
                         style: ElevatedButton.styleFrom(

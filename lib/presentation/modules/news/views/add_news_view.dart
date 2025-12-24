@@ -561,8 +561,7 @@ class _AddNewsViewState extends State<AddNewsView> {
               if (!isWeb) ...[
                 Text(
                   'Choose Category',
-                  style:
-                  AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
+                  style: AppTextStyles.h5.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -586,9 +585,8 @@ class _AddNewsViewState extends State<AddNewsView> {
                 LayoutBuilder(
                   builder: (context, constraints) {
                     final screenWidth = constraints.maxWidth;
-                    print('screenWidth => $screenWidth');
 
-                    // ✅ ANDROID MOBILE – original layout (no change)
+                    // ANDROID MOBILE
                     if (screenWidth < 600) {
                       return GridView.builder(
                         shrinkWrap: true,
@@ -614,43 +612,44 @@ class _AddNewsViewState extends State<AddNewsView> {
                             90,  // imageContainerSize
                             56,  // iconSize
                             13,  // fontSize
+                            isWebLayout: false,
                           );
                         },
                       );
                     }
 
-                    // ✅ WEB + ANDROID TABLET – vertical == horizontal spacing
+                    //WEB + ANDROID TABLET
                     int crossAxisCount;
-                    double imageContainerSize;
                     double iconSize;
                     double fontSize;
-                    double spacing; // same for main + cross
+                    double spacing;
+                    double aspectRatio;
 
                     if (screenWidth >= 1400) {
                       crossAxisCount = 7;
-                      imageContainerSize = 110;
-                      iconSize = 70;
-                      fontSize = 15;
-                      spacing = 20;
-                    } else if (screenWidth >= 1200) {
-                      crossAxisCount = 6;
-                      imageContainerSize = 110;
-                      iconSize = 70;
+                      iconSize = 110;
                       fontSize = 15;
                       spacing = 18;
-                    } else if (screenWidth >= 900) {
-                      crossAxisCount = 5;
-                      imageContainerSize = 100;
-                      iconSize = 64;
-                      fontSize = 14;
+                      aspectRatio = 1.15;
+                    } else if (screenWidth >= 1200) {
+                      crossAxisCount = 6;
+                      iconSize = 105;
+                      fontSize = 14.5;
                       spacing = 16;
-                    } else {
-                      // 600–899 (tablet)
-                      crossAxisCount = 4;
-                      imageContainerSize = 95;
-                      iconSize = 60;
-                      fontSize = 13.5;
+                      aspectRatio = 1.15;
+                    } else if (screenWidth >= 900) {
+                      crossAxisCount = 6;
+                      iconSize = 100;
+                      fontSize = 14;
                       spacing = 14;
+                      aspectRatio = 1.15;
+                    } else {
+                      // 600–899 tablet
+                      crossAxisCount = 5;
+                      iconSize = 100;
+                      fontSize = 15;
+                      spacing = 12;
+                      aspectRatio = 1.1;
                     }
 
                     return GridView.builder(
@@ -660,7 +659,7 @@ class _AddNewsViewState extends State<AddNewsView> {
                         crossAxisCount: crossAxisCount,
                         mainAxisSpacing: spacing,
                         crossAxisSpacing: spacing,
-                        childAspectRatio: 1.5,
+                        childAspectRatio: aspectRatio,
                       ),
                       itemCount: controller.categories.length,
                       itemBuilder: (context, index) {
@@ -673,9 +672,11 @@ class _AddNewsViewState extends State<AddNewsView> {
                           category,
                           isSelected,
                           index,
-                          imageContainerSize,
+                          // imageContainerSize = iconSize + padding wala outer
+                          iconSize + 8,  // outer size SellProduct pattern ke hisab se
                           iconSize,
                           fontSize,
+                          isWebLayout: true,
                         );
                       },
                     );
@@ -693,25 +694,90 @@ class _AddNewsViewState extends State<AddNewsView> {
       CategoryModel category,
       bool isSelected,
       int index,
-      double imageContainerSize,
+      double imageContainerSize, // mobile: direct outer, web: outerSize
       double iconSize,
-      double fontSize,
-      ) {
+      double fontSize, {
+        bool isWebLayout = false,
+      }) {
+    // MOBILE: purana behaviour
+    if (!isWebLayout) {
+      return InkWell(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          _controller.selectCategory(category.id!);
+        },
+        borderRadius: BorderRadius.circular(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: imageContainerSize,
+              height: imageContainerSize,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: isSelected ? AppColors.primary : Colors.transparent,
+                  width: isSelected ? 1.2 : 0,
+                ),
+              ),
+              child: Center(
+                child: SizedBox(
+                  width: iconSize,
+                  height: iconSize,
+                  child: AspectRatioImage(
+                    imageUrl: category.icon ?? "",
+                    aspectRatio: 1,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text(
+                AppLanguage.getText(category.name),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight:
+                  isSelected ? FontWeight.w700 : FontWeight.w600,
+                  color: isSelected
+                      ? AppColors.primary
+                      : AppColors.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return InkWell(
       onTap: () {
         HapticFeedback.selectionClick();
         _controller.selectCategory(category.id!);
       },
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            width: imageContainerSize,
-            height: imageContainerSize,
+            height: iconSize,
             decoration: BoxDecoration(
               color: AppColors.primary.withOpacity(0.05),
               borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 10,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 4),
+                ),
+              ],
               border: Border.all(
                 color: isSelected
                     ? AppColors.primary
@@ -719,39 +785,35 @@ class _AddNewsViewState extends State<AddNewsView> {
                 width: isSelected ? 1.2 : 0,
               ),
             ),
-            child: Center(
-              child: SizedBox(
-                width: iconSize,
-                height: iconSize,
-                child: AspectRatioImage(
-                  imageUrl: category.icon ?? "",
-                  aspectRatio: 1,
-                ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: AspectRatioImage(
+                imageUrl: category.icon ?? "",
+                aspectRatio: 1,
               ),
             ),
           ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: Text(
-              AppLanguage.getText(category.name),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: fontSize,
-                fontWeight:
-                isSelected ? FontWeight.w700 : FontWeight.w600,
-                color: isSelected
-                    ? AppColors.primary
-                    : AppColors.textPrimary,
-              ),
+          const SizedBox(height: 6),
+          Text(
+            AppLanguage.getText(category.name),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: fontSize,
+              fontWeight:
+              isSelected ? FontWeight.w700 : FontWeight.w600,
+              color: isSelected
+                  ? AppColors.primary
+                  : AppColors.textPrimary,
+              height: 1.2,
             ),
           ),
         ],
       ),
     );
   }
+
 
 
 
