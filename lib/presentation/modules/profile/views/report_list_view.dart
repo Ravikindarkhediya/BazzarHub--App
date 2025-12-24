@@ -820,7 +820,7 @@ class _ReportListViewState extends State<ReportListView>
   Widget _buildUserReportListMobile(double padding) {
     return ListView.builder(
       controller: _userScrollController,
-      padding: EdgeInsets.symmetric(horizontal: padding, vertical: 16),
+      padding: const EdgeInsets.only(top: 8, bottom: 16),
       itemCount: _userReports.length + (_hasMoreUser ? 1 : 0),
       itemBuilder: (context, index) {
         if (index >= _userReports.length) {
@@ -830,62 +830,10 @@ class _ReportListViewState extends State<ReportListView>
           );
         }
         final report = _userReports[index];
-        return Dismissible(
-          key: Key('user-report-${report.id}'),
-          direction: DismissDirection.endToStart,
-          background: Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 20.0),
-            color: Colors.red,
-            child: const Icon(Icons.delete, color: Colors.white),
-          ),
-          confirmDismiss: (direction) async {
-            final result = await Get.dialog<bool>(
-              AlertDialog(
-                title: const Text('Delete Report'),
-                content: const Text('Are you sure you want to delete this report?'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Get.back(result: false),
-                    child: const Text('CANCEL'),
-                  ),
-                  TextButton(
-                    onPressed: () => Get.back(result: true),
-                    child: const Text('DELETE', style: TextStyle(color: Colors.red)),
-                  ),
-                ],
-              ),
-            );
-            
-            if (result == true) {
-              try {
-                final services = await getApiClient();
-                final response = await services.deleteUserReport(report.id ?? '');
-                if (response.data.status) {
-                  AppToast.showSuccess('Report deleted successfully');
-                  _handleReportDeletion({'success': true, 'reportId': report.id, 'reportType': 'user'});
-                  return true;
-                } else {
-                  AppToast.showError(response.data.message ?? 'Failed to delete report');
-                  return false;
-                }
-              } catch (e) {
-                AppToast.showError('Error deleting report');
-                return false;
-              }
-            }
-            return false;
-          },
-          onDismissed: (direction) {
-            setState(() {
-              _userReports.removeAt(index);
-            });
-          },
-          child: ReportItemCard(
-            report: report,
-            isNewsReport: false,
-            isUserReport: true,
-          ),
+        return ReportItemCard(
+          report: report,
+          isNewsReport: false,
+          isUserReport: true,
         );
       },
     );
@@ -907,62 +855,10 @@ class _ReportListViewState extends State<ReportListView>
           return const Center(child: CircularProgressIndicator());
         }
         final report = _userReports[index];
-        return Dismissible(
-          key: Key('user-report-web-${report.id}'),
-          direction: DismissDirection.endToStart,
-          background: Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: 20.0),
-            color: Colors.red,
-            child: const Icon(Icons.delete, color: Colors.white),
-          ),
-          confirmDismiss: (direction) async {
-            final result = await Get.dialog<bool>(
-              AlertDialog(
-                title: const Text('Delete Report'),
-                content: const Text('Are you sure you want to delete this report?'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Get.back(result: false),
-                    child: const Text('CANCEL'),
-                  ),
-                  TextButton(
-                    onPressed: () => Get.back(result: true),
-                    child: const Text('DELETE', style: TextStyle(color: Colors.red)),
-                  ),
-                ],
-              ),
-            );
-            
-            if (result == true) {
-              try {
-                final services = await getApiClient();
-                final response = await services.deleteUserReport(report.id ?? '');
-                if (response.data.status) {
-                  AppToast.showSuccess('Report deleted successfully');
-                  _handleReportDeletion({'success': true, 'reportId': report.id, 'reportType': 'user'});
-                  return true;
-                } else {
-                  AppToast.showError(response.data.message ?? 'Failed to delete report');
-                  return false;
-                }
-              } catch (e) {
-                AppToast.showError('Error deleting report');
-                return false;
-              }
-            }
-            return false;
-          },
-          onDismissed: (direction) {
-            setState(() {
-              _userReports.removeAt(index);
-            });
-          },
-          child: ReportItemCard(
-            report: report,
-            isNewsReport: false,
-            isUserReport: true,
-          ),
+        return ReportItemCard(
+          report: report,
+          isNewsReport: false,
+          isUserReport: true,
         );
       },
     );
